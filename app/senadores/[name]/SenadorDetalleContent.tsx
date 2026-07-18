@@ -9,6 +9,8 @@ import { MapPin, Mail, Phone, Twitter, Instagram, BookOpenText, AlertCircle, Use
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Image from "next/image"
+import { getPartyLogoPath } from "../../lib/utils/partyLogos"
 
 function truncateText(text: string, maxLength: number = 32) {
   return text.length > maxLength ? text.substring(0, maxLength - 3) + "..." : text
@@ -143,8 +145,23 @@ export default function SenadorDetalleContent({ name }: { name: string }) {
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-6">
                 <Avatar name={senatorInfo.name} imgUrl={senatorInfo.img} size={128} />
                 <div className="flex-1 text-center sm:text-left">
-                  <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900 dark:text-white">{senatorInfo.name}</h1>
-                  {senatorInfo.party && <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">{senatorInfo.party}</p>}
+                  <div className="flex items-center justify-center sm:justify-between mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{senatorInfo.name}</h1>
+                    {senatorInfo.party && getPartyLogoPath(senatorInfo.party) && (
+                      <div className="relative flex-shrink-0">
+                        <Image
+                          src={getPartyLogoPath(senatorInfo.party) || ""}
+                          alt={`Logo de ${senatorInfo.party}`}
+                          width={100}
+                          height={32}
+                          className="object-contain rounded"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {senatorInfo.party && (
+                    <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">{senatorInfo.party}</p>
+                  )}
                   <div className="space-y-3">
                     {senatorInfo.province && (
                       <div className="flex items-center text-gray-600 dark:text-gray-300 justify-center sm:justify-start">

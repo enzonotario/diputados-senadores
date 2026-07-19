@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Senador, FilterConfig } from "@/lib/types";
-import { getPartidoColores, getSenadoresConEstadisticas } from "@/lib/senadores-data";
+import { getPartidoColores, getSenadoresConActas } from "@/lib/senadores-data";
 import {
   filterSenadores,
   formatDate,
@@ -47,8 +47,8 @@ const mostrarActivos = computed({
   },
 });
 
-const { data } = await useAsyncData("senadores-con-estadisticas", () =>
-  getSenadoresConEstadisticas(),
+const { data } = await useAsyncData("senadores-con-actas", () =>
+  getSenadoresConActas(),
 );
 const senadores = computed(() => (data.value as any as Senador[]) || []);
 

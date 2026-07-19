@@ -2,7 +2,7 @@
 import {
   getPartidoColores,
   getSenadorConActasById,
-  getSenadoresAffinityPeers,
+  getSenadoresConActas,
 } from "@/lib/senadores-data";
 import { isSenadorActivo } from "@/lib/utils";
 import { partidoPath } from "@/utils/partido";
@@ -28,8 +28,8 @@ if (senador.value && senador.value.id !== id.value) {
   });
 }
 
-const { data: allSenadores } = await useAsyncData("senadores-affinity-peers", () =>
-  getSenadoresAffinityPeers(),
+const { data: allSenadores } = await useAsyncData("senadores-con-actas", () =>
+  getSenadoresConActas(),
 );
 
 const affinityPeers = computed<AffinityMemberInput[]>(() => {

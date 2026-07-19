@@ -6,7 +6,7 @@ import {
   getBloqueBySlug,
   getBloqueColores,
   getBloqueSlugs,
-  getDiputadosAffinityPeers,
+  getDiputadosConActas,
 } from "@/lib/diputados-data";
 import { isDiputadoActivo } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
@@ -35,9 +35,8 @@ const { data } = await useAsyncData(
 
 const bloque = computed(() => data.value || null);
 
-const { data: allDiputados } = await useAsyncData(
-  "diputados-affinity-peers",
-  () => getDiputadosAffinityPeers(),
+const { data: allDiputados } = await useAsyncData("diputados-con-actas", () =>
+  getDiputadosConActas(),
 );
 
 const cohesionMembers = computed<AffinityMemberInput[]>(() => {
@@ -84,7 +83,6 @@ const groupColors = computed(() => {
 });
 
 const actasMeta = computed(() => {
-  if (bloque.value?.actasMeta) return bloque.value.actasMeta;
   const map: Record<
     string,
     { id: string; titulo?: string | null; resultado?: string | null }

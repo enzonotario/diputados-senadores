@@ -31,8 +31,6 @@ Package manager: **pnpm**.
 
 SSR + ISR (`routeRules /** → isr: true`, sin expiración). Primera visita genera; CDN cachea hasta el próximo deploy o revalidación.
 
-**Payload:** las APIs de actas traen todos los `votos` (~64MB en diputados). El data layer **no** serializa esos arrays en listados/home (solo conteos + historial slim). Si ves `413 CONTENT_TOO_LARGE` o CF `Error 1102`, algo volvió a meter actas con `votos` en el HTML.
-
 ### Cloudflare Workers (recomendado)
 
 ```bash
@@ -40,7 +38,9 @@ pnpm build:cf   # NITRO_PRESET=cloudflare_module
 npx wrangler deploy
 ```
 
-Nitro genera el worker en `.output/server`. En el plan free, el cold start de diputados puede pegar el techo de CPU/RAM al parsear actas; plan pago o cache caliente ayuda. Un redeploy limpia ISR.
+Nitro genera `wrangler.json` en `.output/server` (o usá el dashboard de Workers conectado al repo con build `pnpm build:cf`).
+
+Secret: `NUXT_REVALIDATE_SECRET`. En CF el purge on-demand de ISR es limitado; un redeploy limpia todo. También podés purgar desde el dashboard de Cloudflare.
 
 ### Vercel
 

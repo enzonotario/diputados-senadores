@@ -58,25 +58,8 @@ function getApiOrigin() {
 }
 
 let _diputados: Diputado[] | null = null;
-/** Actas sin array `votos` (listados / home). */
-let _actasIndex: Acta[] | null = null;
-/** Actas con votos; joins + detalle. */
-let _actasFull: Acta[] | null = null;
+let _actas: Acta[] | null = null;
 let _diputadosConActas: Diputado[] | null = null;
-
-function withoutVotos(acta: Acta): Acta {
-  return { ...acta, votos: [] };
-}
-
-function slimActaForMember(
-  acta: Acta,
-  extra: { votoDiputado?: Voto; tipoVotoDiputado?: string },
-): Acta {
-  return {
-    ...withoutVotos(acta),
-    ...extra,
-  };
-}
 
 function maxByPeriod(a: any, b: any) {
   const aBloque = new Date(a?.periodoBloque?.inicio || 0).getTime();
@@ -113,30 +96,18 @@ export async function getDiputados(): Promise<Diputado[]> {
   return list;
 }
 
-async function loadActasFull(): Promise<Acta[]> {
-  if (_actasFull) return _actasFull;
+export async function getActas(): Promise<Acta[]> {
+  if (_actas) return _actas;
 
   const origin = getApiOrigin();
   const raw = await $fetch<Acta[]>(`${origin}/v1/diputados/actas`);
 
-  _actasFull = raw.map((acta) => ({
+  _actas = raw.map((acta) => ({
     ...acta,
     votos: (acta.votos || []).filter((v) => v.tipoVoto !== "presidente"),
   }));
-  _actasIndex = _actasFull.map(withoutVotos);
 
-  return _actasFull;
-}
-
-/** Listados / home: sin `votos` (~0.5MB vs ~64MB de la API cruda). */
-export async function getActas(): Promise<Acta[]> {
-  if (_actasIndex) return _actasIndex;
-  await loadActasFull();
-  return _actasIndex!;
-}
-
-export async function getActasWithVotos(): Promise<Acta[]> {
-  return loadActasFull();
+  return _actas;
 }
 
 export async function getDiputadosConActas(): Promise<Diputado[]> {
@@ -147,7 +118,7 @@ export async function getDiputadosConActas(): Promise<Diputado[]> {
     nombreSlug: slug(`${d.apellido}, ${d.nombre}`),
   }));
 
-  const actas = (await getActasWithVotos()).map((a) => ({
+  const actas = (await getActas()).map((a) => ({
     ...a,
     votos: (a.votos || []).map(
       (v) =>
@@ -189,48 +160,18 @@ export async function getDiputadosConActas(): Promise<Diputado[]> {
           });
         }
 
-        return slimActaForMember(acta, {
+        return {
+          ...acta,
           votoDiputado,
           tipoVotoDiputado: votoDiputado?.tipoVoto,
-        });
+        };
       });
 
     const estadisticas = calcularEstadisticasDiputado(actasDiputado as any);
     return { ...diputado, estadisticas, actasDiputado };
   });
 
-  // Tras el join no hace falta retener ~60MB de votos en memoria (Workers).
-  _actasFull = null;
-
   return _diputadosConActas;
-}
-
-/** Listados: estadísticas sin historial de actas en el payload. */
-export async function getDiputadosConEstadisticas(): Promise<Diputado[]> {
-  const list = await getDiputadosConActas();
-  return list.map(({ actasDiputado: _a, ...rest }) => rest);
-}
-
-/** Peers de afinidad: historial mínimo (id/fecha/voto). */
-export async function getDiputadosAffinityPeers(): Promise<Diputado[]> {
-  const list = await getDiputadosConActas();
-  return list.map((d) => ({
-    ...d,
-    actasDiputado: (d.actasDiputado || []).map((a) => ({
-      id: a.id,
-      fecha: a.fecha,
-      tipoVotoDiputado: a.tipoVotoDiputado,
-      votos: [] as Voto[],
-      votosAfirmativos: 0,
-      votosNegativos: 0,
-      abstenciones: 0,
-      ausentes: 0,
-      resultado: "",
-      titulo: "",
-      periodo: a.periodo,
-      reunion: a.reunion,
-    })),
-  }));
 }
 
 export async function getDiputadoConActasById(
@@ -243,7 +184,7 @@ export async function getDiputadoConActasById(
 export async function getActaWithDiputadosById(
   id: string,
 ): Promise<Acta | null> {
-  const actas = await getActasWithVotos();
+  const actas = await getActas();
   const actaById = actas.find((a) => a.id === id) || null;
   if (!actaById) return null;
 
@@ -380,13 +321,8 @@ export async function getBloqueSlugs() {
   }));
 }
 
-function withoutActasDiputado(d: Diputado): Diputado {
-  const { actasDiputado: _a, ...rest } = d;
-  return rest;
-}
-
 export async function getBloquesIndex() {
-  const diputados = await getDiputadosConEstadisticas();
+  const diputados = await getDiputadosConActas();
   const byBloque = new Map<string, Diputado[]>();
 
   for (const d of diputados) {
@@ -427,53 +363,16 @@ export async function getBloqueBySlug(slugParam: string) {
 
   const delBloque = diputados.filter((d) => d.bloque === nombre);
   const color = getBloqueColores([nombre])[nombre] ?? "#6b7280";
-  const activosFull = delBloque.filter(isDiputadoActivo);
+  const activos = delBloque.filter(isDiputadoActivo);
   const inactivos = delBloque.filter((d) => !isDiputadoActivo(d));
-
-  const actasMeta: Record<
-    string,
-    { id: string; titulo?: string | null; resultado?: string | null }
-  > = {};
-  for (const d of activosFull) {
-    for (const a of d.actasDiputado || []) {
-      if (!a?.id || actasMeta[a.id]) continue;
-      actasMeta[a.id] = {
-        id: String(a.id),
-        titulo: a.titulo,
-        resultado: a.resultado,
-      };
-    }
-  }
-
-  const toAffinity = (d: Diputado): Diputado => ({
-    ...withoutActasDiputado(d),
-    actasDiputado: (d.actasDiputado || []).map((a) => ({
-      id: a.id,
-      fecha: a.fecha,
-      tipoVotoDiputado: a.tipoVotoDiputado,
-      votos: [] as Voto[],
-      votosAfirmativos: 0,
-      votosNegativos: 0,
-      abstenciones: 0,
-      ausentes: 0,
-      resultado: "",
-      titulo: "",
-      periodo: a.periodo,
-      reunion: a.reunion,
-    })),
-    estadisticas: d.estadisticas,
-  });
 
   return {
     nombre,
     slug: target,
     color,
-    diputados: delBloque.map(withoutActasDiputado),
-    activos: activosFull.map(toAffinity),
-    inactivos: inactivos.map(withoutActasDiputado),
-    actasMeta,
-    presentismo: averagePresentismo(
-      activosFull.length ? activosFull : delBloque,
-    ),
+    diputados: delBloque,
+    activos,
+    inactivos,
+    presentismo: averagePresentismo(activos.length ? activos : delBloque),
   };
 }

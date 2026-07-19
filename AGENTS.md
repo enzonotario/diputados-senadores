@@ -44,12 +44,17 @@ El `nuxt build` / empaquetado Nitro pide **>1.5 GB de heap** (a veces ~3–4�
 **Solución:** build en GitHub Actions → imagen en GHCR → Coolify solo **pull**.
 
 1. Push a `feature/diputados-senadores` o `main` (workflow `.github/workflows/docker-image.yml`).
-2. En Coolify: recurso **Docker Image** (no Dockerfile build), imagen p.ej.  
-   `ghcr.io/<owner>/senadores:latest`  
-   (o `:feature-diputados-senadores` según el tag del workflow).
-3. Si el package es privado: login GHCR en Coolify (PAT con `read:packages`).
+2. Tags en GHCR (Coolify usa el **SHA completo** del commit):
+   - `ghcr.io/<owner>/senadores:<commit-sha-40-chars>`
+   - `ghcr.io/<owner>/senadores:latest`
+   - `ghcr.io/<owner>/senadores:feature-diputados-senadores`
+3. En Coolify (recurso Git + Dockerfile / pack):
+   - Activá deploy desde imagen prebuild (GHCR), no rebuild local.
+   - Si el package es **privado**: registry login con PAT (`read:packages`) en Coolify.
 4. Dominios `diputados.*` y `senadores.*` → mismo servicio. Puerto `3000`. Health: `GET /api/health`.
 5. Env: `NUXT_REVALIDATE_SECRET`, `NUXT_PUBLIC_API_BASE_URL` (ver `.env.example`).
+
+Si Coolify dice `Image not found (...:sha). Building new image.` → el tag no coincide o el package no es visible; no dejes que buildee en el VPS (OOM).
 
 ```bash
 # Local (máquina con RAM suficiente)

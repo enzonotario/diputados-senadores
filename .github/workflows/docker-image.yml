@@ -37,9 +37,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
+          # Coolify busca :${{ github.sha }} (SHA completo, sin prefijo).
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/diputados-senadores' }}
             type=ref,event=branch
+            type=sha,format=long,prefix=
             type=sha,prefix=sha-
 
       - name: Build and push

@@ -1,15 +1,10 @@
 export default defineNuxtPlugin(() => {
   const { chamber } = useChamber();
 
+  // Defaults de cámara. Los títulos/descriptions de página van en useChamberSeo
+  // (titleTemplate de nuxt-seo-utils queda anulado ahí con titleTemplate: "%s").
   useHead(() => ({
-    titleTemplate: (title) => {
-      const host = chamber.value.siteHost;
-      if (!title) return `${chamber.value.siteName} | ${host}`;
-      if (title.includes(host)) return title;
-      return `${title} | ${host}`;
-    },
     meta: [
-      { name: "description", content: chamber.value.siteDescription },
       { name: "keywords", content: chamber.value.keywords },
       { property: "og:site_name", content: chamber.value.siteName },
       {

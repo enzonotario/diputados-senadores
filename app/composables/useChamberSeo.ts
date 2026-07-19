@@ -1,31 +1,38 @@
 type ChamberSeoInput = {
-  /** Título corto de la página (sin host). El template agrega `| siteHost`. */
+  /** Título corto de la página (sin host). */
   title: string;
   description: string;
 };
 
 /**
- * SEO por cámara: document title vía titleTemplate; og/twitter con título completo.
+ * SEO por cámara.
+ *
+ * Importante: no pasar un getter a `useSeoMeta(() => …)` — Unhead 2 destruye
+ * el argumento y `title` queda undefined. Usar `useHead(() => …)` o getters
+ * por propiedad.
  */
 export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
   const { chamber } = useChamber();
 
-  useSeoMeta(() => {
+  useHead(() => {
     const { title, description } = toValue(input);
-    const fullTitle = title
-      ? `${title} | ${chamber.value.siteHost}`
-      : `${chamber.value.siteName} | ${chamber.value.siteHost}`;
+    const pageTitle = (title || "").trim() || chamber.value.siteName;
+    const fullTitle = `${pageTitle} | ${chamber.value.siteHost}`;
 
     return {
-      title: title || chamber.value.siteName,
-      description,
-      ogTitle: fullTitle,
-      ogDescription: description,
-      ogImage: "/og.png",
-      twitterCard: "summary_large_image" as const,
-      twitterTitle: fullTitle,
-      twitterDescription: description,
-      twitterImage: "/og.png",
+      // Título ya completo: anula el `%s %separator %siteName` de nuxt-seo-utils.
+      title: fullTitle,
+      titleTemplate: "%s",
+      meta: [
+        { name: "description", content: description },
+        { property: "og:title", content: fullTitle },
+        { property: "og:description", content: description },
+        { property: "og:image", content: "/og.png" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: fullTitle },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: "/og.png" },
+      ],
     };
   });
 }

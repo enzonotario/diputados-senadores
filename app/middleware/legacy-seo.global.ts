@@ -1,6 +1,7 @@
 /**
- * Redirects SEO de la app Next de senadores → rutas Nuxt.
- * Complementa routeRules / _redirects / vercel.json.
+ * Redirects SEO de la app Next de senadores → rutas Nuxt (navegación client).
+ * El 301 en el request inicial lo hace `server/middleware/legacy-seo.ts`
+ * (incluye mapa nombre→id).
  */
 export default defineNuxtRouteMiddleware((to) => {
   const { id: chamber } = useChamber();

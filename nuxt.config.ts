@@ -4,28 +4,25 @@ const defaultChamber: ChamberId =
   (process.env.NUXT_PUBLIC_DEFAULT_CHAMBER as ChamberId) || "senadores";
 const chamberSite = CHAMBERS[defaultChamber];
 
-/** Cache ISR; se invalida con deploy o POST /api/revalidate. */
-const ISR_FOREVER = {
-  expiration: false as const,
-  // Filtros viven en query (useRouteQuery / useMultiQuery).
-  passQuery: true,
-};
-
 const revalidateSecret =
   process.env.NUXT_REVALIDATE_SECRET || process.env.VERCEL_BYPASS_TOKEN || "";
+
+/** Preset explícito si se setea (ej. cloudflare_module). Si no, Nitro autodetecta. */
+const nitroPreset = process.env.NITRO_PRESET || undefined;
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
-  // SSR + ISR en Vercel (no `nuxt generate`).
+  // SSR + cache CDN (ISR/SWR). No `nuxt generate`.
   ssr: true,
   nitro: {
+    ...(nitroPreset ? { preset: nitroPreset } : {}),
     compressPublicAssets: true,
     minify: true,
+    // Vercel on-demand ISR (ignorado en Cloudflare).
     vercel: {
       config: {
-        // Mismo valor que NUXT_REVALIDATE_SECRET → header x-prerender-revalidate
         bypassToken: revalidateSecret || undefined,
       },
     },
@@ -33,7 +30,9 @@ export default defineNuxtConfig({
 
   routeRules: {
     "/api/**": { isr: false },
-    "/**": { isr: ISR_FOREVER },
+    // true = cache CDN casi eterno; se limpia con deploy o /api/revalidate.
+    // En Vercel: ISR. En Cloudflare Workers: Cache API (Nitro isr/swr).
+    "/**": { isr: true },
   },
 
   build: {

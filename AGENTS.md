@@ -18,7 +18,8 @@ Una sola app **Nuxt 4 (SSR)** que sirve **Diputados** y **Senadores** según el 
 ```bash
 pnpm install
 pnpm dev          # :3200 --host
-pnpm build        # SSR + ISR (Vercel); no usar generate en prod
+pnpm build        # SSR + ISR
+pnpm build:cf     # preset Cloudflare Workers
 pnpm preview
 pnpm lint
 pnpm lint:fix
@@ -28,30 +29,33 @@ Package manager: **pnpm**.
 
 ## Deploy / cache (ISR)
 
-En Vercel: **SSR + ISR** (`routeRules /** → isr` sin expiración). La página se genera en el primer hit y queda cacheada en CDN hasta el próximo deploy o revalidación manual.
+SSR + ISR (`routeRules /** → isr: true`, sin expiración). Primera visita genera; CDN cachea hasta el próximo deploy o revalidación.
 
-Env requerido en el proyecto Vercel (mismo valor en ambos):
-
-- `NUXT_REVALIDATE_SECRET` — secreto para el endpoint
-- `VERCEL_BYPASS_TOKEN` — mismo valor (Nitro lo usa como `bypassToken` de Vercel)
-
-Forzar refresh cuando haya movimiento en las cámaras:
+### Cloudflare Workers (recomendado)
 
 ```bash
-# Seeds (home, actas, listados) en ambos hosts
+pnpm build:cf   # NITRO_PRESET=cloudflare_module
+npx wrangler deploy
+```
+
+Nitro genera `wrangler.json` en `.output/server` (o usá el dashboard de Workers conectado al repo con build `pnpm build:cf`).
+
+Secret: `NUXT_REVALIDATE_SECRET`. En CF el purge on-demand de ISR es limitado; un redeploy limpia todo. También podés purgar desde el dashboard de Cloudflare.
+
+### Vercel
+
+Env: `NUXT_REVALIDATE_SECRET` y `VERCEL_BYPASS_TOKEN` (mismo valor).
+
+**Importante:** no subir un `vercel.json` con miles de redirects (límite 2048 routes). Los redirects legacy nombre→id van por `server/middleware/legacy-seo.ts`.
+
+```bash
 curl -X POST https://senadores.argentinadatos.com/api/revalidate \
   -H "Authorization: Bearer $NUXT_REVALIDATE_SECRET" \
   -H "Content-Type: application/json" \
   -d '{"chamber":"all"}'
-
-# Una ruta puntual (repetir por host si hace falta)
-curl -X POST https://senadores.argentinadatos.com/api/revalidate \
-  -H "Authorization: Bearer $NUXT_REVALIDATE_SECRET" \
-  -H "Content-Type: application/json" \
-  -d '{"paths":["/actas/1234"],"hosts":["https://senadores.argentinadatos.com"]}'
 ```
 
-`generate` / `generate:*` quedan solo para experimentos estáticos locales; el build de prod es `nuxt build`.
+`generate` / `generate:*` solo para experimentos estáticos; prod = `nuxt build` / `build:cf`.
 
 ## Reglas duras
 
@@ -80,7 +84,9 @@ app/
   middleware/            # chamber.global.ts
   plugins/               # chamber-seo.ts
 server/
-  api/revalidate.post.ts # purge ISR on-demand (secret)
+  api/revalidate.post.ts           # purge ISR (Vercel)
+  middleware/legacy-seo.ts         # redirects SEO + nombre→id
+  assets/legacy-senador-redirects.json  # mapa generado en prepare/build
 ```
 
 `nuxt.config.ts` usa `appDir: "app"`.

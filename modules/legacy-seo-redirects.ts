@@ -1,8 +1,16 @@
 import { defineNuxtModule, logger } from "@nuxt/kit";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 type RedirectRule = { from: string; to: string; status: 301 | 302 };
+
+/** Solo reglas estáticas en routeRules (no saturan el límite de plataformas). */
+const STATIC_REDIRECTS: RedirectRule[] = [
+  { from: "/votaciones", to: "/actas", status: 301 },
+  { from: "/votaciones/**", to: "/actas/**", status: 301 },
+  { from: "/afinidad", to: "/", status: 301 },
+  { from: "/comparativa", to: "/senadores", status: 301 },
+];
 
 function maxByPeriod(a: any, b: any) {
   const aLegal = new Date(a?.periodoLegal?.inicio || 0).getTime();
@@ -25,30 +33,10 @@ function toRouteRules(redirects: RedirectRule[]) {
   return rules;
 }
 
-function toNetlifyRedirects(redirects: RedirectRule[]) {
-  return (
-    redirects
-      .map(
-        (r) =>
-          `${r.from.replace(/\/\*\*$/, "/*")}\t${r.to.replace(/\/\*\*$/, "/:splat")}\t${r.status}`,
-      )
-      .join("\n") + "\n"
-  );
-}
-
-function toVercelRedirects(redirects: RedirectRule[]) {
-  return {
-    redirects: redirects.map((r) => ({
-      source: r.from.replace(/\/\*\*$/, "/:path*"),
-      destination: r.to.replace(/\/\*\*$/, "/:path*"),
-      permanent: r.status === 301,
-    })),
-  };
-}
-
-async function fetchSenadorNameRedirects(
+/** nombre (decoded) → id */
+async function fetchSenadorNameToId(
   apiOrigin: string,
-): Promise<RedirectRule[]> {
+): Promise<Record<string, string>> {
   const res = await fetch(`${apiOrigin}/v1/senado/senadores`, {
     headers: { "user-agent": "diputados-senadores-legacy-seo-redirects" },
   });
@@ -66,18 +54,12 @@ async function fetchSenadorNameRedirects(
     }
   }
 
-  const redirects: RedirectRule[] = [];
+  const map: Record<string, string> = {};
   for (const [nombre, raw] of byNombre) {
-    const id = String(raw.id);
-    if (!id) continue;
-    const encoded = encodeURIComponent(nombre);
-    redirects.push({
-      from: `/senadores/${encoded}`,
-      to: `/senadores/${id}`,
-      status: 301,
-    });
+    const id = String(raw.id || "").trim();
+    if (id) map[nombre] = id;
   }
-  return redirects;
+  return map;
 }
 
 export default defineNuxtModule({
@@ -85,14 +67,12 @@ export default defineNuxtModule({
     name: "legacy-seo-redirects",
   },
   async setup(_options, nuxt) {
-    const chamber =
-      process.env.NUXT_PUBLIC_DEFAULT_CHAMBER ||
-      (nuxt.options.runtimeConfig?.public as any)?.defaultChamber ||
-      "senadores";
+    const mapFile = join(
+      nuxt.options.rootDir,
+      "server/assets/legacy-senador-redirects.json",
+    );
 
-    if (chamber !== "senadores") {
-      return;
-    }
+    let nameToId: Record<string, string> = {};
 
     const apiOrigin = (
       process.env.NUXT_PUBLIC_API_URL ||
@@ -100,47 +80,37 @@ export default defineNuxtModule({
       "https://api.argentinadatos.com"
     ).replace(/\/$/, "");
 
-    const redirects: RedirectRule[] = [
-      { from: "/votaciones", to: "/actas", status: 301 },
-      { from: "/votaciones/**", to: "/actas/**", status: 301 },
-      { from: "/afinidad", to: "/", status: 301 },
-      { from: "/comparativa", to: "/senadores", status: 301 },
-    ];
-
     try {
-      const nameRedirects = await fetchSenadorNameRedirects(apiOrigin);
-      redirects.push(...nameRedirects);
+      nameToId = await fetchSenadorNameToId(apiOrigin);
       logger.info(
-        `[legacy-seo-redirects] ${nameRedirects.length} redirects nombre→id`,
+        `[legacy-seo-redirects] ${Object.keys(nameToId).length} nombres→id (runtime map)`,
       );
     } catch (error) {
       logger.warn(
-        `[legacy-seo-redirects] no se pudieron generar redirects por nombre: ${error}`,
+        `[legacy-seo-redirects] no se pudo armar mapa por nombre: ${error}`,
       );
     }
 
+    await mkdir(dirname(mapFile), { recursive: true });
+    await writeFile(mapFile, `${JSON.stringify(nameToId)}\n`, "utf8");
+
     nuxt.options.routeRules = {
       ...nuxt.options.routeRules,
-      ...toRouteRules(redirects),
+      ...toRouteRules(STATIC_REDIRECTS),
     };
 
+    // Evitar vercel.json gigante (1088 redirects → “max 2048 routes”).
     nuxt.hooks.hook("nitro:init", (nitro) => {
       nitro.hooks.hook("compiled", async () => {
-        const publicDir = nitro.options.output.publicDir;
-        await mkdir(publicDir, { recursive: true });
-
-        const netlify = toNetlifyRedirects(redirects);
-        await writeFile(join(publicDir, "_redirects"), netlify, "utf8");
-
-        const vercel = toVercelRedirects(redirects);
-        const vercelJson = `${JSON.stringify(vercel, null, 2)}\n`;
-        await writeFile(join(publicDir, "vercel.json"), vercelJson, "utf8");
-        // Root: útil si el deploy de Vercel usa el repo y Output Directory = .output/public
-        await writeFile(join(nuxt.options.rootDir, "vercel.json"), vercelJson, "utf8");
-
-        logger.success(
-          `[legacy-seo-redirects] wrote ${redirects.length} redirects (_redirects + vercel.json)`,
-        );
+        const rootVercel = join(nuxt.options.rootDir, "vercel.json");
+        try {
+          await unlink(rootVercel);
+          logger.info(
+            "[legacy-seo-redirects] removed root vercel.json (runtime redirects)",
+          );
+        } catch {
+          // no existía
+        }
       });
     });
   },

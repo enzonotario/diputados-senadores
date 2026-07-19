@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
+    "build:cf": "NITRO_PRESET=cloudflare_module nuxt build",
     "dev": "nuxt dev --port 3200 --host",
     "generate": "nuxt generate",
     "generate:senadores": "NUXT_PUBLIC_DEFAULT_CHAMBER=senadores nuxt generate",

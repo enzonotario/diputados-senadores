@@ -1,27 +1,34 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
 
-# dependencies
-/node_modules
+# Node dependencies
+node_modules
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Logs
+logs
+*.log
 .pnpm-debug.log*
 
-# env files
-.env*
+# Misc
+.DS_Store
+.fleet
+.idea
 
-# vercel
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Vercel
 .vercel
+# Generado en build (modules/legacy-seo-redirects.ts)
+vercel.json
+public/_redirects
 
-# typescript
+# TypeScript
 *.tsbuildinfo
-next-env.d.ts

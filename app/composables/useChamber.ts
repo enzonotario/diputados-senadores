@@ -9,7 +9,7 @@ import {
 } from "@/lib/chamber";
 
 /**
- * Cámara activa según Host (runtime) o DEFAULT_CHAMBER (prerender/SSG).
+ * Cámara activa según Host (runtime) o DEFAULT_CHAMBER (prerender).
  * Local: diputados.localhost.test / senadores.localhost.test (o *.localhost).
  */
 export function useChamber() {

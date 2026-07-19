@@ -18,13 +18,40 @@ Una sola app **Nuxt 4 (SSR)** que sirve **Diputados** y **Senadores** según el 
 ```bash
 pnpm install
 pnpm dev          # :3200 --host
-pnpm build        # SSR
+pnpm build        # SSR + ISR (Vercel); no usar generate en prod
 pnpm preview
 pnpm lint
 pnpm lint:fix
 ```
 
 Package manager: **pnpm**.
+
+## Deploy / cache (ISR)
+
+En Vercel: **SSR + ISR** (`routeRules /** → isr` sin expiración). La página se genera en el primer hit y queda cacheada en CDN hasta el próximo deploy o revalidación manual.
+
+Env requerido en el proyecto Vercel (mismo valor en ambos):
+
+- `NUXT_REVALIDATE_SECRET` — secreto para el endpoint
+- `VERCEL_BYPASS_TOKEN` — mismo valor (Nitro lo usa como `bypassToken` de Vercel)
+
+Forzar refresh cuando haya movimiento en las cámaras:
+
+```bash
+# Seeds (home, actas, listados) en ambos hosts
+curl -X POST https://senadores.argentinadatos.com/api/revalidate \
+  -H "Authorization: Bearer $NUXT_REVALIDATE_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"chamber":"all"}'
+
+# Una ruta puntual (repetir por host si hace falta)
+curl -X POST https://senadores.argentinadatos.com/api/revalidate \
+  -H "Authorization: Bearer $NUXT_REVALIDATE_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"paths":["/actas/1234"],"hosts":["https://senadores.argentinadatos.com"]}'
+```
+
+`generate` / `generate:*` quedan solo para experimentos estáticos locales; el build de prod es `nuxt build`.
 
 ## Reglas duras
 
@@ -52,6 +79,8 @@ app/
   utils/                 # bloque, partido, group*, votoTipo, presentismo
   middleware/            # chamber.global.ts
   plugins/               # chamber-seo.ts
+server/
+  api/revalidate.post.ts # purge ISR on-demand (secret)
 ```
 
 `nuxt.config.ts` usa `appDir: "app"`.

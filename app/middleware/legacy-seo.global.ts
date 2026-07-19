@@ -1,6 +1,6 @@
 /**
  * Redirects SEO de la app Next de senadores → rutas Nuxt.
- * Complementa routeRules / _redirects / vercel.json (hosting estático).
+ * Complementa routeRules / _redirects / vercel.json.
  */
 export default defineNuxtRouteMiddleware((to) => {
   const { id: chamber } = useChamber();

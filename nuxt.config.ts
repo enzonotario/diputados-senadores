@@ -4,34 +4,36 @@ const defaultChamber: ChamberId =
   (process.env.NUXT_PUBLIC_DEFAULT_CHAMBER as ChamberId) || "senadores";
 const chamberSite = CHAMBERS[defaultChamber];
 
-/** Entrypoints de la cámara del build; las dinámicas las aporta prerenderRoutes. */
-const chamberPrerenderRoutes =
-  defaultChamber === "diputados"
-    ? ["/", "/actas", "/diputados", "/diputados/bloques"]
-    : ["/", "/actas", "/senadores", "/senadores/partidos"];
+/** Cache ISR; se invalida con deploy o POST /api/revalidate. */
+const ISR_FOREVER = {
+  expiration: false as const,
+  // Filtros viven en query (useRouteQuery / useMultiQuery).
+  passQuery: true,
+};
+
+const revalidateSecret =
+  process.env.NUXT_REVALIDATE_SECRET || process.env.VERCEL_BYPASS_TOKEN || "";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
-  // SSG: HTML en build (`nuxt generate`). Un generate por cámara (DEFAULT_CHAMBER).
+  // SSR + ISR en Vercel (no `nuxt generate`).
   ssr: true,
   nitro: {
-    preset: "static",
     compressPublicAssets: true,
     minify: true,
-    prerender: {
-      crawlLinks: true,
-      routes: [...chamberPrerenderRoutes, "/sitemap.xml"],
-      ignore:
-        defaultChamber === "diputados"
-          ? ["/senadores", "/senadores/**"]
-          : ["/diputados", "/diputados/**"],
+    vercel: {
+      config: {
+        // Mismo valor que NUXT_REVALIDATE_SECRET → header x-prerender-revalidate
+        bypassToken: revalidateSecret || undefined,
+      },
     },
   },
 
   routeRules: {
-    "/**": { prerender: true },
+    "/api/**": { isr: false },
+    "/**": { isr: ISR_FOREVER },
   },
 
   build: {
@@ -139,6 +141,8 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // Solo server. Override: NUXT_REVALIDATE_SECRET
+    revalidateSecret,
     public: {
       defaultChamber,
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL || chamberSite.siteUrl,

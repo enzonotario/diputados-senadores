@@ -3,13 +3,15 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
+    "build": "NITRO_PRESET=node-server nuxt build",
     "build:cf": "NITRO_PRESET=cloudflare_module nuxt build",
+    "build:vercel": "NITRO_PRESET=vercel nuxt build",
     "dev": "nuxt dev --port 3200 --host",
     "generate": "nuxt generate",
     "generate:senadores": "NUXT_PUBLIC_DEFAULT_CHAMBER=senadores nuxt generate",
     "generate:diputados": "NUXT_PUBLIC_DEFAULT_CHAMBER=diputados nuxt generate",
     "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
     "postinstall": "nuxt prepare",
     "lint": "eslint --ext .js,.ts,.vue .",
     "lint:fix": "eslint --fix --ext .js,.ts,.vue ."

@@ -1,12 +1,16 @@
+import { clearDiputadosDataCache } from "../../app/lib/diputados-data";
+import { clearSenadoresDataCache } from "../../app/lib/senadores-data";
 import { CHAMBERS, type ChamberId } from "../../app/lib/chamber";
 
 type RevalidateBody = {
-  /** Paths a revalidar (default: seeds por cámara). */
+  /** Si true (default), limpia caches en memoria de actas/miembros. */
+  clearData?: boolean;
+  /** Paths a “calentar” con HEAD (opcional; útil detrás de CDN). */
   paths?: string[];
-  /** Hosts absolutos; default: ambos dominios de prod. */
   hosts?: string[];
-  /** Si se pasa, usa seeds de esa cámara (o ambas). */
   chamber?: ChamberId | "all";
+  /** También intenta purge estilo Vercel (x-prerender-revalidate). */
+  vercelPurge?: boolean;
 };
 
 const SEED_PATHS: Record<ChamberId, string[]> = {
@@ -20,7 +24,9 @@ function defaultHosts(): string[] {
 
 function resolvePaths(body: RevalidateBody): string[] {
   if (body.paths?.length) {
-    return [...new Set(body.paths.map((p) => (p.startsWith("/") ? p : `/${p}`)))];
+    return [
+      ...new Set(body.paths.map((p) => (p.startsWith("/") ? p : `/${p}`))),
+    ];
   }
 
   const chamber = body.chamber ?? "all";
@@ -37,16 +43,16 @@ function resolveHosts(body: RevalidateBody): string[] {
 }
 
 /**
- * Invalida cache ISR on-demand (Vercel).
+ * Refresco de datos / cache.
+ *
+ * En Coolify/VPS: limpia las caches en memoria del proceso Node
+ * (`*-data.ts`). El próximo request vuelve a bajar actas de la API.
  *
  * Auth: `Authorization: Bearer <NUXT_REVALIDATE_SECRET>`
- * o header `x-revalidate-token`.
+ * o `x-revalidate-token`.
  *
- * Body JSON opcional:
- * `{ "paths": ["/actas/123"], "chamber": "senadores", "hosts": ["https://..."] }`
- *
- * Sin paths: revalida seeds (home, actas, listados). Para una acta/miembro
- * concreto, pasá su path. Un deploy nuevo también limpia todo el ISR.
+ * Body opcional:
+ * `{ "clearData": true, "chamber": "all", "vercelPurge": false, "paths": ["/"] }`
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
@@ -70,47 +76,64 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = ((await readBody(event)) || {}) as RevalidateBody;
-  const paths = resolvePaths(body);
-  const hosts = resolveHosts(body);
+  const clearData = body.clearData !== false;
 
-  const results: Array<{
+  if (clearData) {
+    clearSenadoresDataCache();
+    clearDiputadosDataCache();
+  }
+
+  const warmResults: Array<{
     url: string;
     status: number;
     vercelCache: string | null;
   }> = [];
 
-  for (const host of hosts) {
-    for (const path of paths) {
-      const url = new URL(path, host.endsWith("/") ? host : `${host}/`).href;
-      try {
-        const res = await $fetch.raw(url, {
-          method: "HEAD",
-          headers: {
-            "x-prerender-revalidate": secret,
-          },
-          ignoreResponseError: true,
-        });
-        results.push({
-          url,
-          status: res.status,
-          vercelCache:
-            res.headers.get("x-vercel-cache") ||
-            res.headers.get("x-now-cache") ||
-            null,
-        });
-      } catch (err: any) {
-        results.push({
-          url,
-          status: err?.statusCode || err?.status || 0,
-          vercelCache: null,
-        });
+  const shouldWarm =
+    Boolean(body.paths?.length) ||
+    Boolean(body.vercelPurge) ||
+    body.chamber != null;
+
+  if (shouldWarm || body.vercelPurge) {
+    const paths = resolvePaths(body);
+    const hosts = resolveHosts(body);
+    const headers: Record<string, string> = {};
+    if (body.vercelPurge) {
+      headers["x-prerender-revalidate"] = secret;
+    }
+
+    for (const host of hosts) {
+      for (const path of paths) {
+        const url = new URL(path, host.endsWith("/") ? host : `${host}/`).href;
+        try {
+          const res = await $fetch.raw(url, {
+            method: "HEAD",
+            headers,
+            ignoreResponseError: true,
+          });
+          warmResults.push({
+            url,
+            status: res.status,
+            vercelCache:
+              res.headers.get("x-vercel-cache") ||
+              res.headers.get("x-now-cache") ||
+              null,
+          });
+        } catch (err: any) {
+          warmResults.push({
+            url,
+            status: err?.statusCode || err?.status || 0,
+            vercelCache: null,
+          });
+        }
       }
     }
   }
 
   return {
     ok: true,
-    revalidated: results.length,
-    results,
+    clearedData: clearData,
+    warmed: warmResults.length,
+    results: warmResults,
   };
 });

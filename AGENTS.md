@@ -18,8 +18,9 @@ Una sola app **Nuxt 4 (SSR)** que sirve **Diputados** y **Senadores** según el 
 ```bash
 pnpm install
 pnpm dev          # :3200 --host
-pnpm build        # SSR + ISR
-pnpm build:cf     # preset Cloudflare Workers
+pnpm build        # SSR Node (Coolify / Docker)
+pnpm start        # node .output/server/index.mjs
+pnpm build:cf     # preset Cloudflare Workers (opcional)
 pnpm preview
 pnpm lint
 pnpm lint:fix
@@ -27,35 +28,42 @@ pnpm lint:fix
 
 Package manager: **pnpm**.
 
-## Deploy / cache (ISR)
+## Deploy (Coolify / Docker / VPS) — recomendado
 
-SSR + ISR (`routeRules /** → isr: true`, sin expiración). Primera visita genera; CDN cachea hasta el próximo deploy o revalidación.
+Una sola app Node SSR. Ambos dominios apuntan al **mismo** servicio; la cámara sale del `Host`.
 
-### Cloudflare Workers (recomendado)
+No hace falta SQLite/API intermedia por ahora: en un VPS con ≥2 GB RAM las actas (~64 MB diputados) viven en caches en memoria de `*-data.ts` tras el primer hit. Vercel/CF fallaban por **límites de plataforma**, no porque Node no pueda.
 
 ```bash
-pnpm build:cf   # NITRO_PRESET=cloudflare_module
-npx wrangler deploy
+# Local
+docker build -t diputados-senadores .
+docker run --rm -p 3000:3000 -e NUXT_REVALIDATE_SECRET=dev diputados-senadores
 ```
 
-Nitro genera `wrangler.json` en `.output/server` (o usá el dashboard de Workers conectado al repo con build `pnpm build:cf`).
+En Coolify:
 
-Secret: `NUXT_REVALIDATE_SECRET`. En CF el purge on-demand de ISR es limitado; un redeploy limpia todo. También podés purgar desde el dashboard de Cloudflare.
+1. Nuevo recurso → **Dockerfile** (raiz del repo).
+2. Dominios: `diputados.argentinadatos.com` y `senadores.argentinadatos.com` → mismo servicio.
+3. Env: `NUXT_REVALIDATE_SECRET`, `NUXT_PUBLIC_API_BASE_URL` (ver `.env.example`).
+4. Puerto `3000`. Healthcheck: `GET /api/health`.
 
-### Vercel
-
-Env: `NUXT_REVALIDATE_SECRET` y `VERCEL_BYPASS_TOKEN` (mismo valor).
-
-**Importante:** no subir un `vercel.json` con miles de redirects (límite 2048 routes). Los redirects legacy nombre→id van por `server/middleware/legacy-seo.ts`.
+Cuando haya movimiento en las cámaras:
 
 ```bash
 curl -X POST https://senadores.argentinadatos.com/api/revalidate \
   -H "Authorization: Bearer $NUXT_REVALIDATE_SECRET" \
   -H "Content-Type: application/json" \
-  -d '{"chamber":"all"}'
+  -d '{"clearData":true}'
 ```
 
-`generate` / `generate:*` solo para experimentos estáticos; prod = `nuxt build` / `build:cf`.
+Eso vacía las caches en RAM; el próximo request vuelve a bajar datos de `api.argentinadatos.com`.
+
+**SQLite / API propia:** solo si más adelante querés varias réplicas sin compartir RAM, o payloads HTML más chicos. Hoy el cuello era serverless (4.5 MB / Worker limits), no el VPS.
+
+### Vercel / Cloudflare (legado)
+
+- No subir `vercel.json` masivo (límite 2048 routes); redirects nombre→id en `server/middleware/legacy-seo.ts`.
+- `pnpm build:cf` / `build:vercel` si hace falta. En esos hosts el HTML con actas+votos puede volver a 413/1102.
 
 ## Reglas duras
 
@@ -84,7 +92,8 @@ app/
   middleware/            # chamber.global.ts
   plugins/               # chamber-seo.ts
 server/
-  api/revalidate.post.ts           # purge ISR (Vercel)
+  api/health.get.ts                # healthcheck Coolify
+  api/revalidate.post.ts           # limpia caches en memoria (+ warm opcional)
   middleware/legacy-seo.ts         # redirects SEO + nombre→id
   assets/legacy-senador-redirects.json  # mapa generado en prepare/build
 ```

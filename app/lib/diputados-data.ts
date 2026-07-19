@@ -61,6 +61,13 @@ let _diputados: Diputado[] | null = null;
 let _actas: Acta[] | null = null;
 let _diputadosConActas: Diputado[] | null = null;
 
+/** Limpia caches en memoria. */
+export function clearDiputadosDataCache() {
+  _diputados = null;
+  _actas = null;
+  _diputadosConActas = null;
+}
+
 function maxByPeriod(a: any, b: any) {
   const aBloque = new Date(a?.periodoBloque?.inicio || 0).getTime();
   const bBloque = new Date(b?.periodoBloque?.inicio || 0).getTime();

@@ -7,20 +7,24 @@ const chamberSite = CHAMBERS[defaultChamber];
 const revalidateSecret =
   process.env.NUXT_REVALIDATE_SECRET || process.env.VERCEL_BYPASS_TOKEN || "";
 
-/** Preset explícito si se setea (ej. cloudflare_module). Si no, Nitro autodetecta. */
-const nitroPreset = process.env.NITRO_PRESET || undefined;
+/**
+ * Preset:
+ * - Coolify/Docker: `node-server` (default si no hay NITRO_PRESET)
+ * - Cloudflare: `NITRO_PRESET=cloudflare_module`
+ * - Vercel: autodetect o `NITRO_PRESET=vercel`
+ */
+const nitroPreset = process.env.NITRO_PRESET || "node-server";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
-  // SSR + cache CDN (ISR/SWR). No `nuxt generate`.
+  // SSR Node (Coolify). Misma app, dos hosts → cámara por Host.
   ssr: true,
   nitro: {
-    ...(nitroPreset ? { preset: nitroPreset } : {}),
+    preset: nitroPreset,
     compressPublicAssets: true,
     minify: true,
-    // Vercel on-demand ISR (ignorado en Cloudflare).
     vercel: {
       config: {
         bypassToken: revalidateSecret || undefined,
@@ -29,10 +33,10 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    "/api/**": { isr: false },
-    // true = cache CDN casi eterno; se limpia con deploy o /api/revalidate.
-    // En Vercel: ISR. En Cloudflare Workers: Cache API (Nitro isr/swr).
-    "/**": { isr: true },
+    // Sin ISR/SWR de página en Node: cachear solo por path mezclaría
+    // diputados.* y senadores.* (mismo path, distinto Host).
+    // La data pesada vive en caches en memoria de *-data.ts.
+    "/api/**": { cache: false },
   },
 
   build: {

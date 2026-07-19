@@ -34,6 +34,13 @@ let _senadores: Senador[] | null = null;
 let _actas: Acta[] | null = null;
 let _senadoresConActas: Senador[] | null = null;
 
+/** Limpia caches en memoria. */
+export function clearSenadoresDataCache() {
+  _senadores = null;
+  _actas = null;
+  _senadoresConActas = null;
+}
+
 function maxByPeriod(a: any, b: any) {
   const aLegal = new Date(a?.periodoLegal?.inicio || 0).getTime();
   const bLegal = new Date(b?.periodoLegal?.inicio || 0).getTime();

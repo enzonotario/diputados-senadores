@@ -79,23 +79,16 @@ const memberName = computed(
   () => senador.value?.nombreCompleto || senador.value?.nombre || "Senador",
 );
 
-useSeoMeta(() => {
-  const title = senador.value
-    ? `Con quién vota parecido · ${memberName.value} | senadores.argentinadatos.com`
-    : "Con quién vota parecido | senadores.argentinadatos.com";
-  const description = senador.value
-    ? `Con quién coincide ${memberName.value}, con quién no, y cuántas veces se apartó de su partido.`
-    : "Quién vota parecido a quién en el Senado.";
+useChamberSeo(() => {
+  if (!senador.value) {
+    return {
+      title: "Con quién vota parecido",
+      description: "Quién vota parecido a quién en el Senado.",
+    };
+  }
   return {
-    title,
-    description,
-    ogTitle: title,
-    ogDescription: description,
-    ogImage: "/og.png",
-    twitterCard: "summary_large_image",
-    twitterTitle: title,
-    twitterDescription: description,
-    twitterImage: "/og.png",
+    title: `Con quién vota parecido · ${memberName.value}`,
+    description: `Con quién coincide ${memberName.value}, con quién no, y cuántas veces se apartó de su partido.`,
   };
 });
 </script>

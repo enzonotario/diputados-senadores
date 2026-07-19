@@ -77,23 +77,16 @@ const memberName = computed(() =>
     : "Diputado",
 );
 
-useSeoMeta(() => {
-  const title = diputado.value
-    ? `Con quién vota parecido · ${memberName.value} | diputados.argentinadatos.com`
-    : "Con quién vota parecido | diputados.argentinadatos.com";
-  const description = diputado.value
-    ? `Con quién coincide ${memberName.value}, con quién no, y cuántas veces se apartó de su bloque.`
-    : "Quién vota parecido a quién en Diputados.";
+useChamberSeo(() => {
+  if (!diputado.value) {
+    return {
+      title: "Con quién vota parecido",
+      description: "Quién vota parecido a quién en Diputados.",
+    };
+  }
   return {
-    title,
-    description,
-    ogTitle: title,
-    ogDescription: description,
-    ogImage: "/og.png",
-    twitterCard: "summary_large_image",
-    twitterTitle: title,
-    twitterDescription: description,
-    twitterImage: "/og.png",
+    title: `Con quién vota parecido · ${memberName.value}`,
+    description: `Con quién coincide ${memberName.value}, con quién no, y cuántas veces se apartó de su bloque.`,
   };
 });
 </script>

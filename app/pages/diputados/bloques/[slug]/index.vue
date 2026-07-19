@@ -158,29 +158,29 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
   navigateTo(`/diputados/${row.original.id}`);
 }
 
-useSeoMeta(() => {
+useChamberSeo(() => {
   const name = bloque.value?.nombre;
   const isAfinidad = pageVista.value === "afinidad";
-  const title = name
-    ? isAfinidad
-      ? `Cómo votan juntos · ${name} | diputados.argentinadatos.com`
-      : `${name} | diputados.argentinadatos.com`
-    : "Bloque | diputados.argentinadatos.com";
-  const description = name
-    ? isAfinidad
-      ? `Qué tan unidos votan en ${name} y con qué otros bloques coinciden.`
-      : `Diputados del bloque ${name} en la Cámara de Diputados de la Nación Argentina.`
-    : "Bloques de la Cámara de Diputados de la Nación Argentina.";
+  if (!name) {
+    return {
+      title: "Bloque",
+      description:
+        "Bloques de la Cámara de Diputados de la Nación Argentina.",
+    };
+  }
+  if (isAfinidad) {
+    return {
+      title: `Cómo votan juntos · ${name}`,
+      description: `Qué tan unidos votan en ${name} y con qué otros bloques coinciden.`,
+    };
+  }
+  const n = bloque.value?.activos?.length;
   return {
-    title,
-    description,
-    ogTitle: title,
-    ogDescription: description,
-    ogImage: "/og.png",
-    twitterCard: "summary_large_image",
-    twitterTitle: title,
-    twitterDescription: description,
-    twitterImage: "/og.png",
+    title: name,
+    description:
+      n != null
+        ? `Bloque ${name}: ${n} diputados activos. Integrantes, presentismo y votos en la Cámara de Diputados.`
+        : `Diputados del bloque ${name} en la Cámara de Diputados de la Nación Argentina.`,
   };
 });
 </script>

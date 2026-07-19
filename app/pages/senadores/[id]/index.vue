@@ -61,23 +61,21 @@ const affinityGroupPeers = computed(() => {
   return affinityPeers.value.filter((p) => p.group === partido);
 });
 
-useSeoMeta(() => {
-  const title = senador.value
-    ? `${senador.value.nombreCompleto || senador.value.nombre} | senadores.argentinadatos.com`
-    : "Senador | senadores.argentinadatos.com";
+useChamberSeo(() => {
+  const s = senador.value;
+  if (!s) {
+    return {
+      title: "Senador",
+      description: "Perfil de un senador del Senado de la Nación Argentina.",
+    };
+  }
+  const name = s.nombreCompleto || s.nombre;
+  const bits = [s.partido, s.provincia].filter(Boolean);
   return {
-    title,
-    description:
-      "Conocé a los senadores del Senado de la Nación Argentina. Su historial de votos, cuánto asiste y con quién coincide.",
-    ogTitle: title,
-    ogDescription:
-      "Conocé a los senadores del Senado de la Nación Argentina. Su historial de votos, cuánto asiste y con quién coincide.",
-    ogImage: "/og.png",
-    twitterCard: "summary_large_image",
-    twitterTitle: title,
-    twitterDescription:
-      "Conocé a los senadores del Senado de la Nación Argentina. Su historial de votos, cuánto asiste y con quién coincide.",
-    twitterImage: "/og.png",
+    title: name,
+    description: bits.length
+      ? `${name} (${bits.join(" · ")}). Historial de votos, presentismo y afinidad en el Senado.`
+      : `${name}. Historial de votos, presentismo y afinidad en el Senado.`,
   };
 });
 

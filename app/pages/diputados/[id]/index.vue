@@ -54,23 +54,22 @@ const affinityGroupPeers = computed(() => {
   return affinityPeers.value.filter((p) => p.group === bloque);
 });
 
-useSeoMeta(() => {
-  const title = diputado.value
-    ? `${diputado.value.nombre} ${diputado.value.apellido} | diputados.argentinadatos.com`
-    : "Diputado | diputados.argentinadatos.com";
+useChamberSeo(() => {
+  const d = diputado.value;
+  if (!d) {
+    return {
+      title: "Diputado",
+      description:
+        "Perfil de un diputado de la Cámara de Diputados de la Nación Argentina.",
+    };
+  }
+  const name = `${d.nombre} ${d.apellido}`.trim();
+  const bits = [d.bloque, d.provincia].filter(Boolean);
   return {
-    title,
-    description:
-      "Conoce a los diputados de la Cámara de Diputados de la Nación Argentina. Su historial de votos, cuánto asiste y con quién coincide.",
-    ogTitle: title,
-    ogDescription:
-      "Conoce a los diputados de la Cámara de Diputados de la Nación Argentina. Su historial de votos, cuánto asiste y con quién coincide.",
-    ogImage: "/og.png",
-    twitterCard: "summary_large_image",
-    twitterTitle: title,
-    twitterDescription:
-      "Conoce a los diputados de la Cámara de Diputados de la Nación Argentina. Su historial de votos, cuánto asiste y con quién coincide.",
-    twitterImage: "/og.png",
+    title: name,
+    description: bits.length
+      ? `${name} (${bits.join(" · ")}). Historial de votos, presentismo y afinidad en la Cámara de Diputados.`
+      : `${name}. Historial de votos, presentismo y afinidad en la Cámara de Diputados.`,
   };
 });
 

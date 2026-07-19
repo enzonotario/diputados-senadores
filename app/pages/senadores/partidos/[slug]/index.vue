@@ -153,29 +153,28 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
   navigateTo(`/senadores/${row.original.id}`);
 }
 
-useSeoMeta(() => {
+useChamberSeo(() => {
   const name = partido.value?.nombre;
   const isAfinidad = pageVista.value === "afinidad";
-  const title = name
-    ? isAfinidad
-      ? `Cómo votan juntos · ${name} | senadores.argentinadatos.com`
-      : `${name} | senadores.argentinadatos.com`
-    : "Partido | senadores.argentinadatos.com";
-  const description = name
-    ? isAfinidad
-      ? `Qué tan unidos votan en ${name} y con qué otros partidos coinciden.`
-      : `Senadores del partido ${name} en el Senado de la Nación Argentina.`
-    : "Partidos del Senado de la Nación Argentina.";
+  if (!name) {
+    return {
+      title: "Partido",
+      description: "Partidos del Senado de la Nación Argentina.",
+    };
+  }
+  if (isAfinidad) {
+    return {
+      title: `Cómo votan juntos · ${name}`,
+      description: `Qué tan unidos votan en ${name} y con qué otros partidos coinciden.`,
+    };
+  }
+  const n = partido.value?.activos?.length;
   return {
-    title,
-    description,
-    ogTitle: title,
-    ogDescription: description,
-    ogImage: "/og.png",
-    twitterCard: "summary_large_image",
-    twitterTitle: title,
-    twitterDescription: description,
-    twitterImage: "/og.png",
+    title: name,
+    description:
+      n != null
+        ? `Partido ${name}: ${n} senadores activos. Integrantes, presentismo y votos en el Senado.`
+        : `Senadores del partido ${name} en el Senado de la Nación Argentina.`,
   };
 });
 </script>

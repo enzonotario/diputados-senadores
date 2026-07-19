@@ -22,23 +22,24 @@ const { data } = await useAsyncData(
 )
 const acta = computed(() => data.value || null);
 
-useSeoMeta(() => {
-  const title = acta.value
-    ? `${acta.value.titulo} | diputados.argentinadatos.com`
-    : "Votación | diputados.argentinadatos.com";
+useChamberSeo(() => {
+  const a = acta.value;
+  if (!a) {
+    return {
+      title: "Votación",
+      description: "Cómo se votó esta iniciativa en la Cámara de Diputados.",
+    };
+  }
+  const fecha = a.fecha ? formatDate(a.fecha) : null;
+  const parts = [
+    a.resultado ? `Resultado: ${a.resultado}` : null,
+    fecha ? `Votación del ${fecha}` : null,
+  ].filter(Boolean);
   return {
-    title,
-    description:
-      "Cómo se votó esta iniciativa en la Cámara de Diputados.",
-    ogTitle: title,
-    ogDescription:
-      "Cómo se votó esta iniciativa en la Cámara de Diputados.",
-    ogImage: "/og.png",
-    twitterCard: "summary_large_image",
-    twitterTitle: title,
-    twitterDescription:
-      "Cómo se votó esta iniciativa en la Cámara de Diputados.",
-    twitterImage: "/og.png",
+    title: a.titulo || "Votación",
+    description: parts.length
+      ? `${parts.join(". ")}. Cómo votó cada diputado.`
+      : "Cómo se votó esta iniciativa en la Cámara de Diputados.",
   };
 });
 

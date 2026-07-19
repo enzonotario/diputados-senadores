@@ -12,19 +12,10 @@ import { sortableHeader } from "@/utils/sortableHeader";
 import { groupActasBy } from "@/utils/groupActasBy";
 import { voteMarginSortValue } from "@/utils/voteMargin";
 
-useSeoMeta({
-  title: "Votaciones | senadores.argentinadatos.com",
+useChamberSeo({
+  title: "Votaciones",
   description:
     "Mirá las votaciones del Senado de la Nación Argentina y cómo votó cada uno.",
-  ogTitle: "Votaciones | senadores.argentinadatos.com",
-  ogDescription:
-    "Mirá las votaciones del Senado de la Nación Argentina y cómo votó cada uno.",
-  ogImage: "/og.png",
-  twitterCard: "summary_large_image",
-  twitterTitle: "Votaciones | senadores.argentinadatos.com",
-  twitterDescription:
-    "Mirá las votaciones del Senado de la Nación Argentina y cómo votó cada uno.",
-  twitterImage: "/og.png",
 });
 
 const { sorting } = useTableSorting("fecha", true);

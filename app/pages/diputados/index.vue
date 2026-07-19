@@ -12,19 +12,10 @@ import { sortableHeader } from "@/utils/sortableHeader";
 import { groupDiputadosBy } from "@/utils/groupDiputadosBy";
 import { bloquePath } from "@/utils/bloque";
 
-useSeoMeta({
-  title: "Diputados | diputados.argentinadatos.com",
+useChamberSeo({
+  title: "Diputados",
   description:
-    "Conoce a los diputados de la Cámara de Diputados de la Nación Argentina. Su historial de votos, cuánto asisten y con quién coinciden.",
-  ogTitle: "Diputados | diputados.argentinadatos.com",
-  ogDescription:
-    "Conoce a los diputados de la Cámara de Diputados de la Nación Argentina. Su historial de votos, cuánto asisten y con quién coinciden.",
-  ogImage: "/og.png",
-  twitterCard: "summary_large_image",
-  twitterTitle: "Diputados | diputados.argentinadatos.com",
-  twitterDescription:
-    "Conoce a los diputados de la Cámara de Diputados de la Nación Argentina. Su historial de votos, cuánto asisten y con quién coinciden.",
-  twitterImage: "/og.png",
+    "Conocé a los diputados de la Cámara de Diputados de la Nación Argentina. Historial de votos, presentismo y con quién coinciden.",
 });
 
 const { sorting } = useTableSorting("presentismo", true);

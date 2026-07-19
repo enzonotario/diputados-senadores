@@ -22,23 +22,24 @@ const { data } = await useAsyncData(
 )
 const acta = computed(() => data.value || null);
 
-useSeoMeta(() => {
-  const title = acta.value
-    ? `${acta.value.titulo} | senadores.argentinadatos.com`
-    : "Votación | senadores.argentinadatos.com";
+useChamberSeo(() => {
+  const a = acta.value;
+  if (!a) {
+    return {
+      title: "Votación",
+      description: "Cómo se votó esta iniciativa en el Senado.",
+    };
+  }
+  const fecha = a.fecha ? formatDate(a.fecha) : null;
+  const parts = [
+    a.resultado ? `Resultado: ${a.resultado}` : null,
+    fecha ? `Votación del ${fecha}` : null,
+  ].filter(Boolean);
   return {
-    title,
-    description:
-      "Cómo se votó esta iniciativa en el Senado.",
-    ogTitle: title,
-    ogDescription:
-      "Cómo se votó esta iniciativa en el Senado.",
-    ogImage: "/og.png",
-    twitterCard: "summary_large_image",
-    twitterTitle: title,
-    twitterDescription:
-      "Cómo se votó esta iniciativa en el Senado.",
-    twitterImage: "/og.png",
+    title: a.titulo || "Votación",
+    description: parts.length
+      ? `${parts.join(". ")}. Cómo votó cada senador.`
+      : "Cómo se votó esta iniciativa en el Senado.",
   };
 });
 

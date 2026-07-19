@@ -1,19 +1,10 @@
 <script setup lang="ts">
 import { getActas, getDiputadosPorBloques } from "@/lib/diputados-data";
 
-useSeoMeta({
-  title: "Cómo votan los diputados | diputados.argentinadatos.com",
+useChamberSeo({
+  title: "Cómo votan los diputados",
   description:
     "Mirá cómo votaron los diputados en cada proyecto de ley de la Cámara.",
-  ogTitle: "Cómo votan los diputados | diputados.argentinadatos.com",
-  ogDescription:
-    "Mirá cómo votaron los diputados en cada proyecto de ley de la Cámara.",
-  ogImage: "/og.png",
-  twitterCard: "summary_large_image",
-  twitterTitle: "Cómo votan los diputados | diputados.argentinadatos.com",
-  twitterDescription:
-    "Mirá cómo votaron los diputados en cada proyecto de ley de la Cámara.",
-  twitterImage: "/og.png",
 });
 
 const { data: bloquesData } = await useAsyncData("diputados-por-bloques", () =>

@@ -63,19 +63,10 @@ function onRowSelect(_e: Event, row: { original: BloqueRow }) {
   navigateTo(`/diputados/bloques/${row.original.slug}`);
 }
 
-useSeoMeta({
-  title: "Bloques | diputados.argentinadatos.com",
+useChamberSeo({
+  title: "Bloques",
   description:
-    "Explorá los bloques políticos activos de la Cámara de Diputados de la Nación Argentina, quiénes los integran y cuánto asisten a votar.",
-  ogTitle: "Bloques | diputados.argentinadatos.com",
-  ogDescription:
-    "Explorá los bloques políticos activos de la Cámara de Diputados de la Nación Argentina, quiénes los integran y cuánto asisten a votar.",
-  ogImage: "/og.png",
-  twitterCard: "summary_large_image",
-  twitterTitle: "Bloques | diputados.argentinadatos.com",
-  twitterDescription:
-    "Explorá los bloques políticos activos de la Cámara de Diputados de la Nación Argentina, quiénes los integran y cuánto asisten a votar.",
-  twitterImage: "/og.png",
+    "Explorá los bloques políticos activos de la Cámara de Diputados, quiénes los integran y cuánto asisten a votar.",
 });
 </script>
 

@@ -12,19 +12,10 @@ import { sortableHeader } from "@/utils/sortableHeader";
 import { groupSenadoresBy } from "@/utils/groupSenadoresBy";
 import { partidoPath } from "@/utils/partido";
 
-useSeoMeta({
-  title: "Senadores | senadores.argentinadatos.com",
+useChamberSeo({
+  title: "Senadores",
   description:
-    "Conoce a los senadores del Senado de la Nación Argentina. Su historial de votos, cuánto asisten y con quién coinciden.",
-  ogTitle: "Senadores | senadores.argentinadatos.com",
-  ogDescription:
-    "Conoce a los senadores del Senado de la Nación Argentina. Su historial de votos, cuánto asisten y con quién coinciden.",
-  ogImage: "/og.png",
-  twitterCard: "summary_large_image",
-  twitterTitle: "Senadores | senadores.argentinadatos.com",
-  twitterDescription:
-    "Conoce a los senadores del Senado de la Nación Argentina. Su historial de votos, cuánto asisten y con quién coinciden.",
-  twitterImage: "/og.png",
+    "Conocé a los senadores del Senado de la Nación Argentina. Historial de votos, presentismo y con quién coinciden.",
 });
 
 const { sorting } = useTableSorting("presentismo", true);

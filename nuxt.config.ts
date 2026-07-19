@@ -179,13 +179,8 @@ export default defineNuxtConfig({
       },
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
-      title: "Votaciones | argentinadatos.com",
+      // Título/description por cámara: plugins/chamber-seo.ts + useChamberSeo.
       meta: [
-        {
-          name: "description",
-          content:
-            "Explora y analiza las votaciones del Congreso de la Nación Argentina.",
-        },
         { name: "author", content: "Argentina Datos" },
         { name: "format-detection", content: "telephone=no" },
         { name: "theme-color", content: "#000000" },

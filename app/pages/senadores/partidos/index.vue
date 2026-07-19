@@ -60,19 +60,10 @@ function onRowSelect(_e: Event, row: { original: PartidoRow }) {
   navigateTo(`/senadores/partidos/${row.original.slug}`);
 }
 
-useSeoMeta({
-  title: "Partidos | senadores.argentinadatos.com",
+useChamberSeo({
+  title: "Partidos",
   description:
-    "Explorá los partidos políticos activos del Senado de la Nación Argentina, quiénes los integran y cuánto asisten a votar.",
-  ogTitle: "Partidos | senadores.argentinadatos.com",
-  ogDescription:
-    "Explorá los partidos políticos activos del Senado de la Nación Argentina, quiénes los integran y cuánto asisten a votar.",
-  ogImage: "/og.png",
-  twitterCard: "summary_large_image",
-  twitterTitle: "Partidos | senadores.argentinadatos.com",
-  twitterDescription:
-    "Explorá los partidos políticos activos del Senado de la Nación Argentina, quiénes los integran y cuánto asisten a votar.",
-  twitterImage: "/og.png",
+    "Explorá los partidos políticos activos del Senado, quiénes los integran y cuánto asisten a votar.",
 });
 </script>
 

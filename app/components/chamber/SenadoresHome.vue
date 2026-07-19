@@ -1,19 +1,10 @@
 <script setup lang="ts">
 import { getActas, getSenadoresPorPartidos } from "@/lib/senadores-data";
 
-useSeoMeta({
-  title: "Cómo votan los senadores | senadores.argentinadatos.com",
+useChamberSeo({
+  title: "Cómo votan los senadores",
   description:
     "Mirá cómo votaron los senadores en cada proyecto de ley del Senado.",
-  ogTitle: "Cómo votan los senadores | senadores.argentinadatos.com",
-  ogDescription:
-    "Mirá cómo votaron los senadores en cada proyecto de ley del Senado.",
-  ogImage: "/og.png",
-  twitterCard: "summary_large_image",
-  twitterTitle: "Cómo votan los senadores | senadores.argentinadatos.com",
-  twitterDescription:
-    "Mirá cómo votaron los senadores en cada proyecto de ley del Senado.",
-  twitterImage: "/og.png",
 });
 
 const { data: partidosData } = await useAsyncData("senadores-por-partidos", () =>

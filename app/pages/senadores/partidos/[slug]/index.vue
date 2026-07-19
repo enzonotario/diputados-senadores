@@ -6,7 +6,7 @@ import {
   getPartidoBySlug,
   getPartidoColores,
   getPartidoSlugs,
-  getSenadoresConActas,
+  getSenadoresAffinityPeers,
 } from "@/lib/senadores-data";
 import { isSenadorActivo } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
@@ -35,8 +35,8 @@ const { data } = await useAsyncData(
 
 const partido = computed(() => data.value || null);
 
-const { data: allSenadores } = await useAsyncData("senadores-con-actas", () =>
-  getSenadoresConActas(),
+const { data: allSenadores } = await useAsyncData("senadores-affinity-peers", () =>
+  getSenadoresAffinityPeers(),
 );
 
 const cohesionMembers = computed<AffinityMemberInput[]>(() => {
@@ -77,6 +77,7 @@ const groupColors = computed(() => {
 });
 
 const actasMeta = computed(() => {
+  if (partido.value?.actasMeta) return partido.value.actasMeta;
   const map: Record<
     string,
     { id: string; titulo?: string | null; resultado?: string | null }

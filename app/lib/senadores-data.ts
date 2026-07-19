@@ -31,8 +31,27 @@ function getApiOrigin() {
 }
 
 let _senadores: Senador[] | null = null;
-let _actas: Acta[] | null = null;
+/** Actas sin array `votos` (listados / home / charts). */
+let _actasIndex: Acta[] | null = null;
+/** Actas con votos; solo para joins y detalle. */
+let _actasFull: Acta[] | null = null;
 let _senadoresConActas: Senador[] | null = null;
+
+/** Quita el array de votos (es el 90%+ del peso de la API). */
+function withoutVotos(acta: Acta): Acta {
+  return { ...acta, votos: [] };
+}
+
+/** Historial por miembro: metadatos + su voto, sin votos de toda la cámara. */
+function slimActaForMember(
+  acta: Acta,
+  extra: { votoSenador?: Voto; tipoVotoSenador?: string },
+): Acta {
+  return {
+    ...withoutVotos(acta),
+    ...extra,
+  };
+}
 
 function maxByPeriod(a: any, b: any) {
   const aLegal = new Date(a?.periodoLegal?.inicio || 0).getTime();
@@ -120,27 +139,40 @@ export async function getSenadores(): Promise<Senador[]> {
   return _senadores;
 }
 
-export async function getActas(): Promise<Acta[]> {
-  if (_actas) return _actas;
+async function loadActasFull(): Promise<Acta[]> {
+  if (_actasFull) return _actasFull;
 
   const origin = getApiOrigin();
   const raw = await $fetch<any[]>(`${origin}/v1/senado/actas`);
 
-  _actas = raw
+  _actasFull = raw
     .filter((a) => a.fecha && String(a.fecha).trim())
     .map(mapActa)
     .sort(
       (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
     );
+  _actasIndex = _actasFull.map(withoutVotos);
 
-  return _actas;
+  return _actasFull;
+}
+
+/** Listados / home: sin `votos` (payload chico). */
+export async function getActas(): Promise<Acta[]> {
+  if (_actasIndex) return _actasIndex;
+  await loadActasFull();
+  return _actasIndex!;
+}
+
+/** Detalle de acta / joins internos: incluye `votos`. */
+export async function getActasWithVotos(): Promise<Acta[]> {
+  return loadActasFull();
 }
 
 export async function getSenadoresConActas(): Promise<Senador[]> {
   if (_senadoresConActas) return _senadoresConActas;
 
   const senadores = await getSenadores();
-  const actas = await getActas();
+  const actas = await getActasWithVotos();
 
   _senadoresConActas = senadores.map((senador) => {
     const actasSenador = actas
@@ -151,18 +183,45 @@ export async function getSenadoresConActas(): Promise<Senador[]> {
         const votoSenador = acta.votos.find(
           (v) => v.senadorSlug === senador.nombreSlug,
         );
-        return {
-          ...acta,
+        return slimActaForMember(acta, {
           votoSenador,
           tipoVotoSenador: votoSenador?.tipoVoto,
-        };
+        });
       });
 
     const estadisticas = calcularEstadisticasSenador(actasSenador);
     return { ...senador, estadisticas, actasSenador };
   });
 
+  _actasFull = null;
+
   return _senadoresConActas;
+}
+
+/** Listados: solo estadísticas (sin historial de actas en el payload). */
+export async function getSenadoresConEstadisticas(): Promise<Senador[]> {
+  const list = await getSenadoresConActas();
+  return list.map(({ actasSenador: _a, ...rest }) => rest);
+}
+
+/** Peers de afinidad: historial mínimo (id/fecha/voto) para no hinchar el HTML. */
+export async function getSenadoresAffinityPeers(): Promise<Senador[]> {
+  const list = await getSenadoresConActas();
+  return list.map((s) => ({
+    ...s,
+    actasSenador: (s.actasSenador || []).map((a) => ({
+      id: a.id,
+      fecha: a.fecha,
+      tipoVotoSenador: a.tipoVotoSenador,
+      votos: [] as Voto[],
+      votosAfirmativos: 0,
+      votosNegativos: 0,
+      abstenciones: 0,
+      ausentes: 0,
+      resultado: "",
+      titulo: "",
+    })),
+  }));
 }
 
 /** Param de ruta: id API, nombre completo (Next legacy) o nombreSlug. */
@@ -201,7 +260,7 @@ export async function getSenadorConActasById(
 export async function getActaWithSenadoresById(
   id: string,
 ): Promise<Acta | null> {
-  const actas = await getActas();
+  const actas = await getActasWithVotos();
   const actaById = actas.find((a) => a.id === id) || null;
   if (!actaById) return null;
 
@@ -307,8 +366,13 @@ export async function getPartidoSlugs() {
   }));
 }
 
+function withoutActasSenador(s: Senador): Senador {
+  const { actasSenador: _a, ...rest } = s;
+  return rest;
+}
+
 export async function getPartidosIndex() {
-  const senadores = await getSenadoresConActas();
+  const senadores = await getSenadoresConEstadisticas();
   const byPartido = new Map<string, Senador[]>();
 
   for (const d of senadores) {
@@ -349,16 +413,51 @@ export async function getPartidoBySlug(slugParam: string) {
 
   const delPartido = senadores.filter((d) => d.partido === nombre);
   const color = getPartidoColores([nombre])[nombre] ?? "#6b7280";
-  const activos = delPartido.filter(isSenadorActivo);
+  const activosFull = delPartido.filter(isSenadorActivo);
   const inactivos = delPartido.filter((d) => !isSenadorActivo(d));
+
+  const actasMeta: Record<
+    string,
+    { id: string; titulo?: string | null; resultado?: string | null }
+  > = {};
+  for (const s of activosFull) {
+    for (const a of s.actasSenador || []) {
+      if (!a?.id || actasMeta[a.id]) continue;
+      actasMeta[a.id] = {
+        id: String(a.id),
+        titulo: a.titulo,
+        resultado: a.resultado,
+      };
+    }
+  }
+
+  const toAffinity = (s: Senador): Senador => ({
+    ...withoutActasSenador(s),
+    actasSenador: (s.actasSenador || []).map((a) => ({
+      id: a.id,
+      fecha: a.fecha,
+      tipoVotoSenador: a.tipoVotoSenador,
+      votos: [] as Voto[],
+      votosAfirmativos: 0,
+      votosNegativos: 0,
+      abstenciones: 0,
+      ausentes: 0,
+      resultado: "",
+      titulo: "",
+    })),
+    estadisticas: s.estadisticas,
+  });
 
   return {
     nombre,
     slug: target,
     color,
-    senadores: delPartido,
-    activos,
-    inactivos,
-    presentismo: averagePresentismo(activos.length ? activos : delPartido),
+    senadores: delPartido.map(withoutActasSenador),
+    activos: activosFull.map(toAffinity),
+    inactivos: inactivos.map(withoutActasSenador),
+    actasMeta,
+    presentismo: averagePresentismo(
+      activosFull.length ? activosFull : delPartido,
+    ),
   };
 }

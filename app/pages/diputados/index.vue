@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Diputado, FilterConfig } from "@/lib/types-diputados";
-import { getBloqueColores, getDiputadosConActas } from "@/lib/diputados-data";
+import { getBloqueColores, getDiputadosConEstadisticas } from "@/lib/diputados-data";
 import {
   filterDiputados,
   formatDate,
@@ -48,8 +48,8 @@ const mostrarActivos = computed({
   },
 });
 
-const { data } = await useAsyncData("diputados-con-actas", () =>
-  getDiputadosConActas(),
+const { data } = await useAsyncData("diputados-con-estadisticas", () =>
+  getDiputadosConEstadisticas(),
 );
 const diputados = computed(() => (data.value as any as Diputado[]) || []);
 

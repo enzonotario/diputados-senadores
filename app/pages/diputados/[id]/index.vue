@@ -2,7 +2,7 @@
 import type { Acta } from "@/lib/types-diputados";
 import {
   getDiputadoConActasById,
-  getDiputadosConActas,
+  getDiputadosAffinityPeers,
 } from "@/lib/diputados-data";
 import { formatDate, isDiputadoActivo } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
@@ -23,8 +23,9 @@ const { data } = await useAsyncData(
 );
 const diputado = computed(() => data.value || null);
 
-const { data: allDiputados } = await useAsyncData("diputados-con-actas", () =>
-  getDiputadosConActas(),
+const { data: allDiputados } = await useAsyncData(
+  "diputados-affinity-peers",
+  () => getDiputadosAffinityPeers(),
 );
 
 const affinityPeers = computed<AffinityMemberInput[]>(() => {

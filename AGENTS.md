@@ -34,32 +34,20 @@ Una sola app Node SSR. Ambos dominios apuntan al **mismo** servicio; la cámara 
 
 No hace falta SQLite/API intermedia por ahora: en un VPS con ≥2 GB RAM las actas (~64 MB diputados) viven en caches en memoria de `*-data.ts` tras el primer hit. Vercel/CF fallaban por **límites de plataforma**, no porque Node no pueda.
 
-### Importante: no buildear Nitro en el VPS chico
+### Coolify: el VPS no debe compilar Nuxt
 
-El `nuxt build` / empaquetado Nitro pide **>1.5 GB de heap** (a veces ~3–4 GB peak). En Coolify eso termina en:
+El `Dockerfile` de la raíz **solo hace** `FROM ghcr.io/...` (pull). El build pesado está en `Dockerfile.build` (GitHub Actions).
 
-- exit **137** → OOM killer del kernel
-- exit **134** → `JavaScript heap out of memory`
-
-**Solución:** build en GitHub Actions → imagen en GHCR → Coolify solo **pull**.
-
-1. Push a `feature/diputados-senadores` o `main` (workflow `.github/workflows/docker-image.yml`).
-2. Tags en GHCR (Coolify usa el **SHA completo** del commit):
-   - `ghcr.io/<owner>/senadores:<commit-sha-40-chars>`
-   - `ghcr.io/<owner>/senadores:latest`
-   - `ghcr.io/<owner>/senadores:feature-diputados-senadores`
-3. En Coolify (recurso Git + Dockerfile / pack):
-   - Activá deploy desde imagen prebuild (GHCR), no rebuild local.
-   - Si el package es **privado**: registry login con PAT (`read:packages`) en Coolify.
-4. Dominios `diputados.*` y `senadores.*` → mismo servicio. Puerto `3000`. Health: `GET /api/health`.
-5. Env: `NUXT_REVALIDATE_SECRET`, `NUXT_PUBLIC_API_BASE_URL` (ver `.env.example`).
-
-Si Coolify dice `Image not found (...:sha). Building new image.` → el tag no coincide o el package no es visible; no dejes que buildee en el VPS (OOM).
+1. Push → Actions buildea con `Dockerfile.build` y publica tags (`:latest`, `:<sha>`, `:feature-diputados-senadores`).
+2. Coolify “build” del `Dockerfile` = pull de GHCR (segundos). **No** debe aparecer `RUN pnpm build` en los logs.
+3. Si ves `Building docker image` + `pnpm build` + exit 137: todavía está usando el Dockerfile viejo multi-stage; redeployá con el `Dockerfile` thin.
+4. Package GHCR privado → en Coolify, Docker Registry: `ghcr.io` + PAT `read:packages`.
+5. Build arg opcional `IMAGE_TAG` (default `feature-diputados-senadores`). Para un commit puntual: SHA de 40 chars.
+6. Evitá race Git vs Actions: desactivá auto-deploy al push y configurá el secret `COOLIFY_WEBHOOK_URL` (webhook de Coolify); el workflow lo dispara al terminar el push de imagen.
 
 ```bash
-# Local (máquina con RAM suficiente)
-docker build --build-arg NODE_MAX_OLD_SPACE_SIZE=6144 -t diputados-senadores .
-docker run --rm -p 3000:3000 -e NUXT_REVALIDATE_SECRET=dev diputados-senadores
+# Local (máquina con RAM)
+docker build -f Dockerfile.build --build-arg NODE_MAX_OLD_SPACE_SIZE=6144 -t diputados-senadores .
 ```
 
 Cuando haya movimiento en las cámaras:

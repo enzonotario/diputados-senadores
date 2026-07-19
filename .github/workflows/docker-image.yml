@@ -48,6 +48,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile.build
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -55,3 +56,15 @@ jobs:
             NODE_MAX_OLD_SPACE_SIZE=6144
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Opcional: secret COOLIFY_WEBHOOK_URL = URL del webhook de deploy en Coolify.
+      # Desactivá auto-deploy al git push para evitar race (Coolify antes que GHA).
+      - name: Trigger Coolify webhook
+        env:
+          WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "COOLIFY_WEBHOOK_URL no configurado; skip"
+            exit 0
+          fi
+          curl -fsS -X GET "$WEBHOOK" || curl -fsS -X POST "$WEBHOOK"

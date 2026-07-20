@@ -67,7 +67,7 @@ export const CHAMBERS: Record<ChamberId, ChamberConfig> = {
     groupsPath: "/senadores/partidos",
     officialUrl: "https://www.senadores.gob.ar/",
     officialLabel: "senadores.gob.ar",
-    githubUrl: "https://github.com/enzonotario/senadores",
+    githubUrl: "https://github.com/enzonotario/diputados-senadores",
     bodyName: "el Senado de la Nación Argentina",
   },
 };

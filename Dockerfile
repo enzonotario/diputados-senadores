@@ -10,7 +10,7 @@
 #   IMAGE_TAG=feature-diputados-senadores
 #   IMAGE_TAG=latest
 
-ARG GHCR_IMAGE=ghcr.io/enzonotario/senadores
+ARG GHCR_IMAGE=ghcr.io/enzonotario/diputados-senadores
 ARG IMAGE_TAG=feature-diputados-senadores
 
 FROM ${GHCR_IMAGE}:${IMAGE_TAG}

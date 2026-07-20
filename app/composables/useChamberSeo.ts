@@ -63,7 +63,12 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
     meta: [
       { name: "description", content: seo.value.description },
       // Open Graph: título invisible (imagen lleva el copy); description sí.
-      { property: "og:title", content: OG_TITLE_ZWSP },
+      // tagPriority alto: Nuxt SEO / Unhead suelen rellenar og:title desde <title>.
+      {
+        property: "og:title",
+        content: OG_TITLE_ZWSP,
+        tagPriority: 10,
+      },
       { property: "og:description", content: seo.value.description },
       { property: "og:url", content: pageUrl.value },
       { property: "og:image:alt", content: seo.value.imageAlt },
@@ -71,7 +76,11 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@enzonotario_" },
       { name: "twitter:creator", content: "@enzonotario_" },
-      { name: "twitter:title", content: OG_TITLE_ZWSP },
+      {
+        name: "twitter:title",
+        content: OG_TITLE_ZWSP,
+        tagPriority: 10,
+      },
       { name: "twitter:description", content: seo.value.description },
       { name: "twitter:image:alt", content: seo.value.imageAlt },
     ],

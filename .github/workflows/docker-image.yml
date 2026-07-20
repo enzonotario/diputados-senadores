@@ -14,6 +14,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
+  COOLIFY_API_BASE: https://app.coolify.io/api/v1
 
 jobs:
   build-push:
@@ -57,14 +58,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Opcional: secret COOLIFY_WEBHOOK_URL = URL del webhook de deploy en Coolify.
+      # Secrets: COOLIFY_API_TOKEN (Bearer) + COOLIFY_APP_UUID.
       # Desactivá auto-deploy al git push para evitar race (Coolify antes que GHA).
-      - name: Trigger Coolify webhook
+      - name: Trigger Coolify deploy
         env:
-          WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
         run: |
-          if [ -z "$WEBHOOK" ]; then
-            echo "COOLIFY_WEBHOOK_URL no configurado; skip"
+          if [ -z "$COOLIFY_API_TOKEN" ] || [ -z "$COOLIFY_APP_UUID" ]; then
+            echo "COOLIFY_API_TOKEN / COOLIFY_APP_UUID no configurados; skip"
             exit 0
           fi
-          curl -fsS -X GET "$WEBHOOK" || curl -fsS -X POST "$WEBHOOK"
+          curl -fsS -X POST \
+            "${COOLIFY_API_BASE}/deploy?uuid=${COOLIFY_APP_UUID}&force=false" \
+            -H "Authorization: Bearer ${COOLIFY_API_TOKEN}" \
+            -H "Accept: application/json"

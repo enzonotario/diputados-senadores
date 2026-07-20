@@ -43,7 +43,7 @@ El `Dockerfile` de la raíz **solo hace** `FROM ghcr.io/...` (pull). El build pe
 3. Si ves `Building docker image` + `pnpm build` + exit 137: todavía está usando el Dockerfile viejo multi-stage; redeployá con el `Dockerfile` thin.
 4. Package GHCR privado → en Coolify, Docker Registry: `ghcr.io` + PAT `read:packages`.
 5. Build arg opcional `IMAGE_TAG` (default `feature-diputados-senadores`). Para un commit puntual: SHA de 40 chars.
-6. Evitá race Git vs Actions: desactivá auto-deploy al push y configurá el secret `COOLIFY_WEBHOOK_URL` (webhook de Coolify); el workflow lo dispara al terminar el push de imagen.
+6. Evitá race Git vs Actions: desactivá auto-deploy al push y configurá los secrets `COOLIFY_API_TOKEN` + `COOLIFY_APP_UUID` (API deploy de Coolify); el workflow lo dispara al terminar el push de imagen.
 
 ```bash
 # Local (máquina con RAM)

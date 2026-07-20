@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Acta } from "@/lib/types";
+import { actaVoteTotal } from "@/lib/payload-slim";
 
 /** Compatible con Acta de diputados o senadores */
 const props = defineProps<{
@@ -14,7 +15,7 @@ const props = defineProps<{
   resultado: string;
 }>();
 
-const total = computed(() => props.acta.votos?.length || 0);
+const total = computed(() => actaVoteTotal(props.acta));
 const pct = computed(() => {
   const t = total.value || 1;
   return {

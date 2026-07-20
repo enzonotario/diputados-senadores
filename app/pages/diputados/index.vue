@@ -6,6 +6,7 @@ import {
   encodeOgHemiciclo,
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
+import { slimMembersStats } from "@/lib/payload-slim";
 import {
   filterDiputados,
   formatDate,
@@ -37,8 +38,8 @@ const mostrarActivos = computed({
   },
 });
 
-const { data } = await useAsyncData("diputados-con-actas", () =>
-  getDiputadosConActas(),
+const { data } = await useAsyncData("diputados-list", async () =>
+  slimMembersStats(await getDiputadosConActas()),
 );
 const diputados = computed(() => (data.value as any as Diputado[]) || []);
 

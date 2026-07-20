@@ -8,6 +8,7 @@ import { isSenadorActivo } from "@/lib/utils";
 import { partidoPath } from "@/utils/partido";
 import {
   votesFromSenador,
+  memberActasInWindow,
   type AffinityMemberInput,
 } from "@/utils/votingAffinity";
 
@@ -28,26 +29,47 @@ if (senador.value && senador.value.id !== id.value) {
   });
 }
 
-const { data: allSenadores } = await useAsyncData("senadores-con-actas", () =>
-  getSenadoresConActas(),
+const { data: allSenadores } = await useAsyncData(
+  "senadores-affinity-peers",
+  async () => {
+    const all = await getSenadoresConActas();
+    return all.map((s) => ({
+      id: s.id,
+      name: s.nombreCompleto || s.nombre,
+      group: s.partido,
+      foto: s.foto,
+      votes: memberActasInWindow(votesFromSenador(s)),
+      activo: isSenadorActivo(s),
+    }));
+  },
+  { server: false },
 );
 
 const affinityPeers = computed<AffinityMemberInput[]>(() => {
   const all = allSenadores.value || [];
-  const byId = new Map<string, (typeof all)[number]>();
+  const byId = new Map<string, AffinityMemberInput>();
   for (const s of all) {
-    if (isSenadorActivo(s)) byId.set(s.id, s);
+    if (s.activo) {
+      byId.set(s.id, {
+        id: s.id,
+        name: s.name,
+        group: s.group,
+        foto: s.foto,
+        votes: s.votes,
+      });
+    }
   }
   const current = senador.value;
-  if (current) byId.set(current.id, current);
-
-  return [...byId.values()].map((s) => ({
-    id: s.id,
-    name: s.nombreCompleto || s.nombre,
-    group: s.partido,
-    foto: s.foto,
-    votes: votesFromSenador(s),
-  }));
+  if (current) {
+    byId.set(current.id, {
+      id: current.id,
+      name: current.nombreCompleto || current.nombre,
+      group: current.partido,
+      foto: current.foto,
+      votes: memberActasInWindow(votesFromSenador(current)),
+    });
+  }
+  return [...byId.values()];
 });
 
 const affinityGroupPeers = computed(() => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatDate } from "@/lib/utils";
+import { actaVoteTotal } from "@/lib/payload-slim";
 
 type ActaCard = {
   id: string;
@@ -17,7 +18,7 @@ const props = defineProps<{
   acta: ActaCard;
 }>();
 
-const totalVotos = computed(() => props.acta.votos?.length || 0);
+const totalVotos = computed(() => actaVoteTotal(props.acta));
 
 function pct(n: number) {
   if (!totalVotos.value) return "0";

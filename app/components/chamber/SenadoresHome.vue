@@ -4,12 +4,15 @@ import {
   encodeOgHemiciclo,
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
+import { slimActas } from "@/lib/payload-slim";
 
 const { data: partidosData } = await useAsyncData("senadores-por-partidos", () =>
   getSenadoresPorPartidos(),
 );
 
-const { data: actasData } = await useAsyncData("actas", () => getActas());
+const { data: actasData } = await useAsyncData("actas", async () =>
+  slimActas(await getActas()),
+);
 
 const senadores = computed(() => partidosData.value?.senadores || []);
 const partidoColores = computed(() => partidosData.value?.partidoColores || {});

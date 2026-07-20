@@ -168,7 +168,20 @@ export async function getDiputadosConActas(): Promise<Diputado[]> {
         }
 
         return {
-          ...acta,
+          id: acta.id,
+          titulo: acta.titulo,
+          proyecto: acta.proyecto,
+          descripcion: acta.descripcion,
+          fecha: acta.fecha,
+          periodo: acta.periodo,
+          reunion: acta.reunion,
+          resultado: acta.resultado,
+          votosAfirmativos: acta.votosAfirmativos,
+          votosNegativos: acta.votosNegativos,
+          abstenciones: acta.abstenciones,
+          ausentes: acta.ausentes,
+          presentes: acta.presentes,
+          miembros: acta.miembros,
           votoDiputado,
           tipoVotoDiputado: votoDiputado?.tipoVoto,
         };

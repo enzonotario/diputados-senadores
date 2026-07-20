@@ -8,11 +8,13 @@ import {
   getPartidoSlugs,
   getSenadoresConActas,
 } from "@/lib/senadores-data";
+import { slimMembersStats } from "@/lib/payload-slim";
 import { isSenadorActivo } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { partidoSlug } from "@/utils/partido";
 import {
   votesFromSenador,
+  memberActasInWindow,
   type AffinityMemberInput,
 } from "@/utils/votingAffinity";
 
@@ -29,42 +31,72 @@ if (import.meta.prerender && slugs.value?.length) {
 
 const { data } = await useAsyncData(
   () => `partido-${slug.value}`,
-  () => getPartidoBySlug(slug.value),
+  async () => {
+    const p = await getPartidoBySlug(slug.value);
+    if (!p) return null;
+    const actasMeta: Record<
+      string,
+      { id: string; titulo?: string | null; resultado?: string | null }
+    > = {};
+    for (const s of p.activos) {
+      for (const a of s.actasSenador || []) {
+        if (!a?.id || actasMeta[a.id]) continue;
+        actasMeta[String(a.id)] = {
+          id: String(a.id),
+          titulo: a.titulo,
+          resultado: a.resultado,
+        };
+      }
+    }
+    return {
+      nombre: p.nombre,
+      slug: p.slug,
+      color: p.color,
+      presentismo: p.presentismo,
+      activos: slimMembersStats(p.activos),
+      inactivos: slimMembersStats(p.inactivos),
+      cohesionPeers: p.activos.map((s) => ({
+        id: s.id,
+        name: s.nombreCompleto || s.nombre,
+        group: s.partido,
+        foto: s.foto,
+        votes: memberActasInWindow(votesFromSenador(s)),
+      })),
+      actasMeta,
+    };
+  },
   { watch: [slug] },
 );
 
 const partido = computed(() => data.value || null);
 
-const { data: allSenadores } = await useAsyncData("senadores-con-actas", () =>
-  getSenadoresConActas(),
+const { data: allActivePeers } = await useAsyncData(
+  "senadores-affinity-peers",
+  async () => {
+    const all = await getSenadoresConActas();
+    return all.filter(isSenadorActivo).map((s) => ({
+      id: s.id,
+      name: s.nombreCompleto || s.nombre,
+      group: s.partido,
+      foto: s.foto,
+      votes: memberActasInWindow(votesFromSenador(s)),
+    }));
+  },
+  { server: false },
 );
 
-const cohesionMembers = computed<AffinityMemberInput[]>(() => {
-  const list = partido.value?.activos || [];
-  return list.map((s) => ({
-    id: s.id,
-    name: s.nombreCompleto || s.nombre,
-    group: s.partido,
-    foto: s.foto,
-    votes: votesFromSenador(s),
-  }));
-});
+const cohesionMembers = computed<AffinityMemberInput[]>(
+  () => partido.value?.cohesionPeers || [],
+);
 
-const allActiveMembers = computed<AffinityMemberInput[]>(() => {
-  const list = (allSenadores.value || []).filter(isSenadorActivo);
-  return list.map((s) => ({
-    id: s.id,
-    name: s.nombreCompleto || s.nombre,
-    group: s.partido,
-    foto: s.foto,
-    votes: votesFromSenador(s),
-  }));
-});
+const allActiveMembers = computed<AffinityMemberInput[]>(
+  () => allActivePeers.value || [],
+);
 
 const groupSlugs = computed(() => {
   const map: Record<string, string> = {};
-  for (const s of allSenadores.value || []) {
-    const name = s.partido?.trim();
+  for (const s of allActivePeers.value || []) {
+    const name = s.group?.trim();
     if (!name || map[name]) continue;
     map[name] = partidoSlug(name);
   }
@@ -76,23 +108,7 @@ const groupColors = computed(() => {
   return getPartidoColores(names);
 });
 
-const actasMeta = computed(() => {
-  const map: Record<
-    string,
-    { id: string; titulo?: string | null; resultado?: string | null }
-  > = {};
-  for (const s of partido.value?.activos || []) {
-    for (const a of s.actasSenador || []) {
-      if (!a?.id || map[a.id]) continue;
-      map[a.id] = {
-        id: String(a.id),
-        titulo: a.titulo,
-        resultado: a.resultado,
-      };
-    }
-  }
-  return map;
-});
+const actasMeta = computed(() => partido.value?.actasMeta || {});
 
 const pageVista = useRouteQuery("vista", "integrantes");
 const pageVistaItems: TabsItem[] = [

@@ -2,6 +2,7 @@
 import { useRouteQuery } from "@vueuse/router";
 import type { Acta, FilterConfig } from "@/lib/types";
 import { getActas } from "@/lib/senadores-data";
+import { slimActas } from "@/lib/payload-slim";
 import {
   filterActas,
   formatDate,
@@ -29,7 +30,9 @@ const vistaItems = [
   { label: "Por año", value: "anios" },
 ];
 
-const { data } = await useAsyncData("actas", () => getActas());
+const { data } = await useAsyncData("actas", async () =>
+  slimActas(await getActas()),
+);
 const actas = computed(() => (data.value as any as Acta[]) || []);
 
 if (import.meta.prerender) {

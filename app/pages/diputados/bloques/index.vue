@@ -3,12 +3,38 @@ import { getBloquesIndex } from "@/lib/diputados-data";
 import { sortableHeader } from "@/utils/sortableHeader";
 import {
   votesFromDiputado,
+  memberActasInWindow,
   type AffinityGroupInput,
 } from "@/utils/votingAffinity";
 
-type BloqueRow = Awaited<ReturnType<typeof getBloquesIndex>>[number];
+type BloqueRow = {
+  nombre: string;
+  slug: string;
+  color: string;
+  activos: number;
+  presentismo: number;
+};
 
-const { data } = await useAsyncData("bloques-index", () => getBloquesIndex());
+const { data } = await useAsyncData("bloques-index", async () => {
+  const rows = await getBloquesIndex();
+  return rows.map((b) => ({
+    nombre: b.nombre,
+    slug: b.slug,
+    color: b.color,
+    activos: b.activos,
+    presentismo: b.presentismo,
+    affinityMembers: (b.diputados || []).map((d) => ({
+      id: d.id,
+      name:
+        d.nombreCompleto ||
+        `${d.apellido}, ${d.nombre}` ||
+        `${d.nombre} ${d.apellido}`,
+      group: b.nombre,
+      foto: d.foto,
+      votes: memberActasInWindow(votesFromDiputado(d)),
+    })),
+  }));
+});
 const bloques = computed(() => data.value || []);
 
 if (import.meta.prerender && bloques.value.length) {
@@ -20,16 +46,7 @@ const affinityGroups = computed<AffinityGroupInput[]>(() =>
     id: b.slug,
     name: b.nombre,
     slug: b.slug,
-    members: (b.diputados || []).map((d) => ({
-      id: d.id,
-      name:
-        d.nombreCompleto ||
-        `${d.apellido}, ${d.nombre}` ||
-        `${d.nombre} ${d.apellido}`,
-      group: b.nombre,
-      foto: d.foto,
-      votes: votesFromDiputado(d),
-    })),
+    members: b.affinityMembers || [],
   })),
 );
 

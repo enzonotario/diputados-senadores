@@ -159,7 +159,20 @@ export async function getSenadoresConActas(): Promise<Senador[]> {
           (v) => v.senadorSlug === senador.nombreSlug,
         );
         return {
-          ...acta,
+          id: acta.id,
+          titulo: acta.titulo,
+          proyecto: acta.proyecto,
+          descripcion: acta.descripcion,
+          fecha: acta.fecha,
+          periodo: acta.periodo,
+          reunion: acta.reunion,
+          resultado: acta.resultado,
+          votosAfirmativos: acta.votosAfirmativos,
+          votosNegativos: acta.votosNegativos,
+          abstenciones: acta.abstenciones,
+          ausentes: acta.ausentes,
+          presentes: acta.presentes,
+          miembros: acta.miembros,
           votoSenador,
           tipoVotoSenador: votoSenador?.tipoVoto,
         };

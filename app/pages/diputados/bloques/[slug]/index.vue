@@ -8,11 +8,13 @@ import {
   getBloqueSlugs,
   getDiputadosConActas,
 } from "@/lib/diputados-data";
+import { slimMembersStats } from "@/lib/payload-slim";
 import { isDiputadoActivo } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { bloqueSlug } from "@/utils/bloque";
 import {
   votesFromDiputado,
+  memberActasInWindow,
   type AffinityMemberInput,
 } from "@/utils/votingAffinity";
 
@@ -29,48 +31,79 @@ if (import.meta.prerender && slugs.value?.length) {
 
 const { data } = await useAsyncData(
   () => `bloque-${slug.value}`,
-  () => getBloqueBySlug(slug.value),
+  async () => {
+    const b = await getBloqueBySlug(slug.value);
+    if (!b) return null;
+    const actasMeta: Record<
+      string,
+      { id: string; titulo?: string | null; resultado?: string | null }
+    > = {};
+    for (const d of b.activos) {
+      for (const a of d.actasDiputado || []) {
+        if (!a?.id || actasMeta[a.id]) continue;
+        actasMeta[String(a.id)] = {
+          id: String(a.id),
+          titulo: a.titulo,
+          resultado: a.resultado,
+        };
+      }
+    }
+    return {
+      nombre: b.nombre,
+      slug: b.slug,
+      color: b.color,
+      presentismo: b.presentismo,
+      activos: slimMembersStats(b.activos),
+      inactivos: slimMembersStats(b.inactivos),
+      cohesionPeers: b.activos.map((d) => ({
+        id: d.id,
+        name:
+          d.nombreCompleto ||
+          `${d.apellido}, ${d.nombre}` ||
+          `${d.nombre} ${d.apellido}`,
+        group: d.bloque,
+        foto: d.foto,
+        votes: memberActasInWindow(votesFromDiputado(d)),
+      })),
+      actasMeta,
+    };
+  },
   { watch: [slug] },
 );
 
 const bloque = computed(() => data.value || null);
 
-const { data: allDiputados } = await useAsyncData("diputados-con-actas", () =>
-  getDiputadosConActas(),
+const { data: allActivePeers } = await useAsyncData(
+  "diputados-affinity-peers",
+  async () => {
+    const all = await getDiputadosConActas();
+    return all.filter(isDiputadoActivo).map((d) => ({
+      id: d.id,
+      name:
+        d.nombreCompleto ||
+        `${d.apellido}, ${d.nombre}` ||
+        `${d.nombre} ${d.apellido}`,
+      group: d.bloque,
+      foto: d.foto,
+      votes: memberActasInWindow(votesFromDiputado(d)),
+    }));
+  },
+  // No SSR: scrapers OG no necesitan peers; baja HTML bajo 5 MB.
+  { server: false },
 );
 
-const cohesionMembers = computed<AffinityMemberInput[]>(() => {
-  const list = bloque.value?.activos || [];
-  return list.map((d) => ({
-    id: d.id,
-    name:
-      d.nombreCompleto ||
-      `${d.apellido}, ${d.nombre}` ||
-      `${d.nombre} ${d.apellido}`,
-    group: d.bloque,
-    foto: d.foto,
-    votes: votesFromDiputado(d),
-  }));
-});
+const cohesionMembers = computed<AffinityMemberInput[]>(
+  () => bloque.value?.cohesionPeers || [],
+);
 
-const allActiveMembers = computed<AffinityMemberInput[]>(() => {
-  const list = (allDiputados.value || []).filter(isDiputadoActivo);
-  return list.map((d) => ({
-    id: d.id,
-    name:
-      d.nombreCompleto ||
-      `${d.apellido}, ${d.nombre}` ||
-      `${d.nombre} ${d.apellido}`,
-    group: d.bloque,
-    foto: d.foto,
-    votes: votesFromDiputado(d),
-  }));
-});
+const allActiveMembers = computed<AffinityMemberInput[]>(
+  () => allActivePeers.value || [],
+);
 
 const groupSlugs = computed(() => {
   const map: Record<string, string> = {};
-  for (const d of allDiputados.value || []) {
-    const name = d.bloque?.trim();
+  for (const d of allActivePeers.value || []) {
+    const name = d.group?.trim();
     if (!name || map[name]) continue;
     map[name] = bloqueSlug(name);
   }
@@ -82,23 +115,7 @@ const groupColors = computed(() => {
   return getBloqueColores(names);
 });
 
-const actasMeta = computed(() => {
-  const map: Record<
-    string,
-    { id: string; titulo?: string | null; resultado?: string | null }
-  > = {};
-  for (const d of bloque.value?.activos || []) {
-    for (const a of d.actasDiputado || []) {
-      if (!a?.id || map[a.id]) continue;
-      map[a.id] = {
-        id: String(a.id),
-        titulo: a.titulo,
-        resultado: a.resultado,
-      };
-    }
-  }
-  return map;
-});
+const actasMeta = computed(() => bloque.value?.actasMeta || {});
 
 const pageVista = useRouteQuery("vista", "integrantes");
 const pageVistaItems: TabsItem[] = [

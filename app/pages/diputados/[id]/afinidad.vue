@@ -8,6 +8,7 @@ import { isDiputadoActivo } from "@/lib/utils";
 import { bloquePath } from "@/utils/bloque";
 import {
   votesFromDiputado,
+  memberActasInWindow,
   type AffinityMemberInput,
 } from "@/utils/votingAffinity";
 
@@ -21,29 +22,53 @@ const { data } = await useAsyncData(
 );
 const diputado = computed(() => data.value || null);
 
-const { data: allDiputados } = await useAsyncData("diputados-con-actas", () =>
-  getDiputadosConActas(),
+const { data: allDiputados } = await useAsyncData(
+  "diputados-affinity-peers",
+  async () => {
+    const all = await getDiputadosConActas();
+    return all.map((d) => ({
+      id: d.id,
+      name:
+        d.nombreCompleto ||
+        `${d.apellido}, ${d.nombre}` ||
+        `${d.nombre} ${d.apellido}`,
+      group: d.bloque,
+      foto: d.foto,
+      votes: memberActasInWindow(votesFromDiputado(d)),
+      activo: isDiputadoActivo(d),
+    }));
+  },
+  { server: false },
 );
 
 const affinityPeers = computed<AffinityMemberInput[]>(() => {
   const all = allDiputados.value || [];
-  const byId = new Map<string, (typeof all)[number]>();
+  const byId = new Map<string, AffinityMemberInput>();
   for (const d of all) {
-    if (isDiputadoActivo(d)) byId.set(d.id, d);
+    if (d.activo) {
+      byId.set(d.id, {
+        id: d.id,
+        name: d.name,
+        group: d.group,
+        foto: d.foto,
+        votes: d.votes,
+      });
+    }
   }
   const current = diputado.value;
-  if (current) byId.set(current.id, current);
-
-  return [...byId.values()].map((d) => ({
-    id: d.id,
-    name:
-      d.nombreCompleto ||
-      `${d.apellido}, ${d.nombre}` ||
-      `${d.nombre} ${d.apellido}`,
-    group: d.bloque,
-    foto: d.foto,
-    votes: votesFromDiputado(d),
-  }));
+  if (current) {
+    byId.set(current.id, {
+      id: current.id,
+      name:
+        current.nombreCompleto ||
+        `${current.apellido}, ${current.nombre}` ||
+        `${current.nombre} ${current.apellido}`,
+      group: current.bloque,
+      foto: current.foto,
+      votes: memberActasInWindow(votesFromDiputado(current)),
+    });
+  }
+  return [...byId.values()];
 });
 
 const affinityGroupPeers = computed(() => {

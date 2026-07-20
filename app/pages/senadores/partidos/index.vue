@@ -3,12 +3,35 @@ import { getPartidosIndex } from "@/lib/senadores-data";
 import { sortableHeader } from "@/utils/sortableHeader";
 import {
   votesFromSenador,
+  memberActasInWindow,
   type AffinityGroupInput,
 } from "@/utils/votingAffinity";
 
-type PartidoRow = Awaited<ReturnType<typeof getPartidosIndex>>[number];
+type PartidoRow = {
+  nombre: string;
+  slug: string;
+  color: string;
+  activos: number;
+  presentismo: number;
+};
 
-const { data } = await useAsyncData("partidos-index", () => getPartidosIndex());
+const { data } = await useAsyncData("partidos-index", async () => {
+  const rows = await getPartidosIndex();
+  return rows.map((p) => ({
+    nombre: p.nombre,
+    slug: p.slug,
+    color: p.color,
+    activos: p.activos,
+    presentismo: p.presentismo,
+    affinityMembers: (p.senadores || []).map((s) => ({
+      id: s.id,
+      name: s.nombreCompleto || s.nombre,
+      group: p.nombre,
+      foto: s.foto,
+      votes: memberActasInWindow(votesFromSenador(s)),
+    })),
+  }));
+});
 const partidos = computed(() => data.value || []);
 
 if (import.meta.prerender && partidos.value.length) {
@@ -20,13 +43,7 @@ const affinityGroups = computed<AffinityGroupInput[]>(() =>
     id: p.slug,
     name: p.nombre,
     slug: p.slug,
-    members: (p.senadores || []).map((s) => ({
-      id: s.id,
-      name: s.nombreCompleto || s.nombre,
-      group: p.nombre,
-      foto: s.foto,
-      votes: votesFromSenador(s),
-    })),
+    members: p.affinityMembers || [],
   })),
 );
 

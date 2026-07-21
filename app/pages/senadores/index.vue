@@ -36,8 +36,10 @@ const mostrarActivos = computed({
   },
 });
 
+const { localFetch } = useLocalApi();
+
 const { data } = await useAsyncData("senadores-list", async () => {
-  const res = await $fetch<{ members: Senador[] }>("/api/members");
+  const res = await localFetch<{ members: Senador[] }>("/api/members");
   return res.members || [];
 });
 const senadores = computed(() => (data.value as any as Senador[]) || []);

@@ -8,9 +8,10 @@ export type AffinityPeerDto = AffinityMemberInput & { activo: boolean };
  * El browser pide a /api/affinity-peers (cache RAM), nunca el dump de actas.
  */
 export function useAffinityPeers(key = "affinity-peers") {
+  const { localFetch } = useLocalApi();
   return useAsyncData(
     key,
-    () => $fetch<{ peers: AffinityPeerDto[] }>("/api/affinity-peers"),
+    () => localFetch<{ peers: AffinityPeerDto[] }>("/api/affinity-peers"),
     { server: false },
   );
 }

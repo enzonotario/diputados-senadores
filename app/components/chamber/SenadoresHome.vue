@@ -5,12 +5,14 @@ import {
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
 
+const { localFetch } = useLocalApi();
+
 const { data: partidosData } = await useAsyncData("senadores-por-partidos", () =>
   getSenadoresPorPartidos(),
 );
 
 const { data: actasData } = await useAsyncData("actas", async () => {
-  const res = await $fetch<{ actas: any[] }>("/api/actas");
+  const res = await localFetch<{ actas: any[] }>("/api/actas");
   return res.actas || [];
 });
 

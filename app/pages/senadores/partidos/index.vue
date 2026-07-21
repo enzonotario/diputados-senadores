@@ -15,8 +15,10 @@ type AffinityIndexResponse = {
   groups: AffinityGroupInput[];
 };
 
+const { localFetch } = useLocalApi();
+
 const { data: partidos } = await useAsyncData("partidos-index", async () => {
-  const res = await $fetch<AffinityIndexResponse>(
+  const res = await localFetch<AffinityIndexResponse>(
     "/api/groups/affinity-index",
     { query: { rowsOnly: "1" } },
   );
@@ -32,7 +34,7 @@ if (import.meta.prerender && partidos.value?.length) {
 const { data: affinityGroups } = await useAsyncData(
   "partidos-affinity-groups",
   async () => {
-    const res = await $fetch<AffinityIndexResponse>(
+    const res = await localFetch<AffinityIndexResponse>(
       "/api/groups/affinity-index",
     );
     return res.groups || [];

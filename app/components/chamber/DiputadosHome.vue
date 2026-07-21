@@ -5,6 +5,8 @@ import {
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
 
+const { localFetch } = useLocalApi();
+
 const { data: bloquesData } = await useAsyncData("diputados-por-bloques", () =>
   getDiputadosPorBloques(),
 );
@@ -12,7 +14,7 @@ const { data: bloquesData } = await useAsyncData("diputados-por-bloques", () =>
 const { data: actasData } = await useAsyncData(
   "diputados-actas-home",
   async () => {
-    const res = await $fetch<{ actas: any[] }>("/api/actas");
+    const res = await localFetch<{ actas: any[] }>("/api/actas");
     return res.actas || [];
   },
 );

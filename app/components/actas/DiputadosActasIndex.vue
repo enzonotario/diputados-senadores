@@ -29,8 +29,10 @@ const vistaItems = [
   { label: "Por período", value: "periodos" },
 ];
 
+const { localFetch } = useLocalApi();
+
 const { data } = await useAsyncData("actas", async () => {
-  const res = await $fetch<{ actas: Acta[] }>("/api/actas");
+  const res = await localFetch<{ actas: Acta[] }>("/api/actas");
   return res.actas || [];
 });
 const actas = computed(() => (data.value as any as Acta[]) || []);

@@ -14,6 +14,7 @@ type SearchItem = {
 };
 
 const { chamber, otherChamber, otherChamberUrl } = useChamber();
+const { localFetch } = useLocalApi();
 
 const open = ref(false);
 const searchTerm = ref("");
@@ -30,7 +31,7 @@ async function loadCatalog() {
 
   loading.value = true;
   try {
-    const catalog = await $fetch<{
+    const catalog = await localFetch<{
       members: SearchItem[];
       groups: SearchItem[];
       actas: SearchItem[];

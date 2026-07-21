@@ -37,8 +37,10 @@ const mostrarActivos = computed({
   },
 });
 
+const { localFetch } = useLocalApi();
+
 const { data } = await useAsyncData("diputados-list", async () => {
-  const res = await $fetch<{ members: Diputado[] }>("/api/members");
+  const res = await localFetch<{ members: Diputado[] }>("/api/members");
   return res.members || [];
 });
 const diputados = computed(() => (data.value as any as Diputado[]) || []);

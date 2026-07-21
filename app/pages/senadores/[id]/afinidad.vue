@@ -20,10 +20,11 @@ type MemberProfileResponse = {
 
 const route = useRoute();
 const id = computed(() => String(route.params.id));
+const { localFetch } = useLocalApi();
 
 const { data } = await useAsyncData(
   () => `senador-afinidad-${id.value}`,
-  () => $fetch<MemberProfileResponse>(`/api/members/${id.value}`),
+  () => localFetch<MemberProfileResponse>(`/api/members/${id.value}`),
   { watch: [id] },
 );
 const senador = computed(() => data.value?.member || null);

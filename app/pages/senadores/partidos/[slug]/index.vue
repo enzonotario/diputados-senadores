@@ -23,10 +23,11 @@ type GroupDetailResponse = {
 
 const route = useRoute();
 const slug = computed(() => String(route.params.slug || ""));
+const { localFetch } = useLocalApi();
 
 const { data } = await useAsyncData(
   () => `partido-${slug.value}`,
-  () => $fetch<GroupDetailResponse>(`/api/groups/${slug.value}`),
+  () => localFetch<GroupDetailResponse>(`/api/groups/${slug.value}`),
   { watch: [slug] },
 );
 

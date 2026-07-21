@@ -15,8 +15,10 @@ type AffinityIndexResponse = {
   groups: AffinityGroupInput[];
 };
 
+const { localFetch } = useLocalApi();
+
 const { data: bloques } = await useAsyncData("bloques-index", async () => {
-  const res = await $fetch<AffinityIndexResponse>(
+  const res = await localFetch<AffinityIndexResponse>(
     "/api/groups/affinity-index",
     { query: { rowsOnly: "1" } },
   );
@@ -30,7 +32,7 @@ if (import.meta.prerender && bloques.value?.length) {
 const { data: affinityGroups } = await useAsyncData(
   "bloques-affinity-groups",
   async () => {
-    const res = await $fetch<AffinityIndexResponse>(
+    const res = await localFetch<AffinityIndexResponse>(
       "/api/groups/affinity-index",
     );
     return res.groups || [];

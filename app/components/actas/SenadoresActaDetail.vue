@@ -14,10 +14,11 @@ import { resultadoBadgeLabel } from "@/lib/og";
 
 const route = useRoute();
 const id = computed(() => String(route.params.id));
+const { localFetch } = useLocalApi();
 
 const { data } = await useAsyncData(
   () => `acta-${id.value}`,
-  () => $fetch(`/api/actas/${id.value}`),
+  () => localFetch(`/api/actas/${id.value}`),
   { watch: [id] },
 );
 const acta = computed(() => data.value || null);

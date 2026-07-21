@@ -154,7 +154,7 @@ curl -sI -H 'Host: diputados.localhost' http://127.0.0.1:3200/
 curl -sI -H 'Host: senadores.localhost' http://127.0.0.1:3200/
 # Cross-chamber debe 302:
 curl -sI -H 'Host: diputados.localhost' http://127.0.0.1:3200/senadores
-# Mini-API (slices, no dump):
-curl -s -H 'Host: diputados.localhost' http://127.0.0.1:3200/api/search-catalog | head -c 200
-curl -s -H 'Host: diputados.localhost' http://127.0.0.1:3200/api/affinity-peers | head -c 200
+# Mini-API (slices, no dump). Pasá chamber en query si no hay Host (SSR interno):
+curl -s -H 'Host: diputados.localhost' 'http://127.0.0.1:3200/api/search-catalog?chamber=diputados' | head -c 200
+curl -s 'http://127.0.0.1:3200/api/members/HCDN3181?chamber=diputados' | head -c 200
 ```

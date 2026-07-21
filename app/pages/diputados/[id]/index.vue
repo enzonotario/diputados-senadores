@@ -50,11 +50,12 @@ type MemberProfileResponse = {
 const HISTORY_LIMIT = 40;
 const route = useRoute();
 const id = computed(() => String(route.params.id));
+const { localFetch } = useLocalApi();
 
 const { data } = await useAsyncData(
   () => `diputado-${id.value}`,
   () =>
-    $fetch<MemberProfileResponse>(`/api/members/${id.value}`, {
+    localFetch<MemberProfileResponse>(`/api/members/${id.value}`, {
       query: { limit: HISTORY_LIMIT },
     }),
   { watch: [id] },
@@ -146,7 +147,7 @@ watch(searchDebounced, async (q) => {
   if (!id.value) return;
   historyLoading.value = true;
   try {
-    const res = await $fetch<{
+    const res = await localFetch<{
       page: number;
       limit: number;
       total: number;
@@ -171,7 +172,7 @@ async function loadMoreHistory() {
   historyLoading.value = true;
   try {
     const next = historyPage.value + 1;
-    const res = await $fetch<{
+    const res = await localFetch<{
       page: number;
       items: HistoryRow[];
       total: number;

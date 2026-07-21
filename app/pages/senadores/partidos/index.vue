@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import { getPartidosIndex } from "@/lib/senadores-data";
 import { sortableHeader } from "@/utils/sortableHeader";
-import {
-  votesFromSenador,
-  memberActasInWindow,
-  type AffinityGroupInput,
-} from "@/utils/votingAffinity";
+import type { AffinityGroupInput } from "@/utils/votingAffinity";
 
 type PartidoRow = {
   nombre: string;
@@ -15,36 +10,34 @@ type PartidoRow = {
   presentismo: number;
 };
 
-const { data } = await useAsyncData("partidos-index", async () => {
-  const rows = await getPartidosIndex();
-  return rows.map((p) => ({
-    nombre: p.nombre,
-    slug: p.slug,
-    color: p.color,
-    activos: p.activos,
-    presentismo: p.presentismo,
-    affinityMembers: (p.senadores || []).map((s) => ({
-      id: s.id,
-      name: s.nombreCompleto || s.nombre,
-      group: p.nombre,
-      foto: s.foto,
-      votes: memberActasInWindow(votesFromSenador(s)),
-    })),
-  }));
-});
-const partidos = computed(() => data.value || []);
+type AffinityIndexResponse = {
+  rows: PartidoRow[];
+  groups: AffinityGroupInput[];
+};
 
-if (import.meta.prerender && partidos.value.length) {
-  prerenderRoutes(partidos.value.map((b) => `/senadores/partidos/${b.slug}`));
+const { data: partidos } = await useAsyncData("partidos-index", async () => {
+  const res = await $fetch<AffinityIndexResponse>(
+    "/api/groups/affinity-index",
+    { query: { rowsOnly: "1" } },
+  );
+  return res.rows || [];
+});
+
+if (import.meta.prerender && partidos.value?.length) {
+  prerenderRoutes(
+    partidos.value.map((b) => `/senadores/partidos/${b.slug}`),
+  );
 }
 
-const affinityGroups = computed<AffinityGroupInput[]>(() =>
-  partidos.value.map((p) => ({
-    id: p.slug,
-    name: p.nombre,
-    slug: p.slug,
-    members: p.affinityMembers || [],
-  })),
+const { data: affinityGroups } = await useAsyncData(
+  "partidos-affinity-groups",
+  async () => {
+    const res = await $fetch<AffinityIndexResponse>(
+      "/api/groups/affinity-index",
+    );
+    return res.groups || [];
+  },
+  { server: false },
 );
 
 const { sorting } = useTableSorting("activos", true);
@@ -90,15 +83,16 @@ useChamberSeo({
     <div class="space-y-2">
       <h1 class="text-3xl font-bold tracking-tight">Partidos</h1>
       <p class="text-muted max-w-2xl">
-        {{ partidos.length }} partidos con senadores activos. La asistencia es el
-        promedio de cuánto asiste cada integrante a las votaciones.
+        {{ (partidos || []).length }} partidos con senadores activos. La
+        asistencia es el promedio de cuánto asiste cada integrante a las
+        votaciones.
       </p>
     </div>
 
     <DataTableCard>
       <UTable
         v-model:sorting="sorting"
-        :data="partidos"
+        :data="partidos || []"
         :columns="tableColumns"
         :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
         empty="No se encontraron partidos con senadores activos."
@@ -150,9 +144,9 @@ useChamberSeo({
     </DataTableCard>
 
     <AnalisisInterGroupAffinityHeatmap
-      v-if="affinityGroups.length >= 2"
+      v-if="(affinityGroups || []).length >= 2"
       group-label="partido"
-      :groups="affinityGroups"
+      :groups="affinityGroups || []"
       group-base-path="/senadores/partidos"
     />
   </div>

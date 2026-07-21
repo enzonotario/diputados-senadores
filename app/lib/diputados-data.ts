@@ -40,14 +40,10 @@ function parseNombreVoto(raw: string) {
 }
 
 function getApiOrigin() {
-  const nuxtApp = tryUseNuxtApp();
-  const publicConfig = (nuxtApp?.$config?.public || {}) as Record<
-    string,
-    unknown
-  >;
+  // Sin tryUseNuxtApp: este módulo también corre desde server/api (Nitro).
   const raw = String(
-    publicConfig.apiUrl ||
-      publicConfig.apiBaseUrl ||
+    process.env.NUXT_PUBLIC_API_URL ||
+      process.env.NUXT_PUBLIC_API_BASE_URL ||
       "https://api.argentinadatos.com",
   );
   try {
@@ -60,6 +56,14 @@ function getApiOrigin() {
 let _diputados: Diputado[] | null = null;
 let _actas: Acta[] | null = null;
 let _diputadosConActas: Diputado[] | null = null;
+
+function assertServerData() {
+  if (import.meta.client) {
+    throw new Error(
+      "diputados-data: getActas/getDiputadosConActas solo en server. Usá /api/* (mini-API Nitro).",
+    );
+  }
+}
 
 /** Limpia caches en memoria. */
 export function clearDiputadosDataCache() {
@@ -104,6 +108,7 @@ export async function getDiputados(): Promise<Diputado[]> {
 }
 
 export async function getActas(): Promise<Acta[]> {
+  assertServerData();
   if (_actas) return _actas;
 
   const origin = getApiOrigin();
@@ -118,6 +123,7 @@ export async function getActas(): Promise<Acta[]> {
 }
 
 export async function getDiputadosConActas(): Promise<Diputado[]> {
+  assertServerData();
   if (_diputadosConActas) return _diputadosConActas;
 
   const diputados = (await getDiputados()).map((d) => ({

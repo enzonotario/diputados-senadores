@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Acta, FilterConfig } from "@/lib/types-diputados";
-import { getActas } from "@/lib/diputados-data";
-import { slimActas } from "@/lib/payload-slim";
 import {
   filterActas,
   formatDate,
@@ -31,9 +29,10 @@ const vistaItems = [
   { label: "Por período", value: "periodos" },
 ];
 
-const { data } = await useAsyncData("actas", async () =>
-  slimActas(await getActas()),
-);
+const { data } = await useAsyncData("actas", async () => {
+  const res = await $fetch<{ actas: Acta[] }>("/api/actas");
+  return res.actas || [];
+});
 const actas = computed(() => (data.value as any as Acta[]) || []);
 
 if (import.meta.prerender) {

@@ -1,74 +1,66 @@
 <script setup lang="ts">
 import {
   getBloqueColores,
-  getDiputadoConActasById,
-  getDiputadosConActas,
 } from "@/lib/diputados-data";
-import { isDiputadoActivo } from "@/lib/utils";
 import { bloquePath } from "@/utils/bloque";
 import {
-  votesFromDiputado,
   memberActasInWindow,
   type AffinityMemberInput,
 } from "@/utils/votingAffinity";
+import type { Diputado } from "@/lib/types-diputados";
+
+type MemberProfileResponse = {
+  member: Diputado;
+  chartActas: Array<{
+    id: string;
+    fecha?: string | null;
+    titulo?: string | null;
+    resultado?: string | null;
+    tipoVotoDiputado?: string | null;
+  }>;
+  actasMeta: Array<{
+    id: string;
+    titulo?: string | null;
+    resultado?: string | null;
+  }>;
+};
 
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 
 const { data } = await useAsyncData(
-  "diputado-afinidad",
-  () => getDiputadoConActasById(id.value),
+  () => `diputado-afinidad-${id.value}`,
+  () => $fetch<MemberProfileResponse>(`/api/members/${id.value}`),
   { watch: [id] },
 );
-const diputado = computed(() => data.value || null);
+const diputado = computed(() => data.value?.member || null);
+const chartActas = computed(() => data.value?.chartActas || []);
 
-const { data: allDiputados } = await useAsyncData(
+const { data: peersPayload } = await useAffinityPeers(
   "diputados-affinity-peers",
-  async () => {
-    const all = await getDiputadosConActas();
-    return all.map((d) => ({
-      id: d.id,
-      name:
-        d.nombreCompleto ||
-        `${d.apellido}, ${d.nombre}` ||
-        `${d.nombre} ${d.apellido}`,
-      group: d.bloque,
-      foto: d.foto,
-      votes: memberActasInWindow(votesFromDiputado(d)),
-      activo: isDiputadoActivo(d),
-    }));
-  },
-  { server: false },
 );
 
 const affinityPeers = computed<AffinityMemberInput[]>(() => {
-  const all = allDiputados.value || [];
-  const byId = new Map<string, AffinityMemberInput>();
-  for (const d of all) {
-    if (d.activo) {
-      byId.set(d.id, {
-        id: d.id,
-        name: d.name,
-        group: d.group,
-        foto: d.foto,
-        votes: d.votes,
-      });
-    }
-  }
   const current = diputado.value;
-  if (current) {
-    byId.set(current.id, {
-      id: current.id,
-      name:
-        current.nombreCompleto ||
-        `${current.apellido}, ${current.nombre}` ||
-        `${current.nombre} ${current.apellido}`,
-      group: current.bloque,
-      foto: current.foto,
-      votes: memberActasInWindow(votesFromDiputado(current)),
-    });
-  }
-  return [...byId.values()];
+  const ensure: AffinityMemberInput | null = current
+    ? {
+        id: current.id,
+        name:
+          current.nombreCompleto ||
+          `${current.apellido}, ${current.nombre}` ||
+          `${current.nombre} ${current.apellido}`,
+        group: current.bloque,
+        foto: current.foto,
+        votes: memberActasInWindow(
+          chartActas.value.map((a) => ({
+            id: a.id,
+            fecha: String(a.fecha || ""),
+            voto: a.tipoVotoDiputado,
+          })),
+        ),
+      }
+    : null;
+  return peersToAffinityInputs(peersPayload.value?.peers, { ensure });
 });
 
 const affinityGroupPeers = computed(() => {
@@ -87,7 +79,7 @@ const groupColors = computed(() => {
 });
 
 const actas = computed(() =>
-  (diputado.value?.actasDiputado || []).map((a) => ({
+  chartActas.value.map((a) => ({
     id: String(a.id),
     titulo: a.titulo,
     resultado: a.resultado,

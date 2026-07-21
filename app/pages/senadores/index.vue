@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Senador, FilterConfig } from "@/lib/types";
-import { getPartidoColores, getSenadoresConActas } from "@/lib/senadores-data";
+import { getPartidoColores } from "@/lib/senadores-data";
 import {
   encodeOgHemiciclo,
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
-import { slimMembersStats } from "@/lib/payload-slim";
 import {
   filterSenadores,
   formatDate,
@@ -37,9 +36,10 @@ const mostrarActivos = computed({
   },
 });
 
-const { data } = await useAsyncData("senadores-list", async () =>
-  slimMembersStats(await getSenadoresConActas()),
-);
+const { data } = await useAsyncData("senadores-list", async () => {
+  const res = await $fetch<{ members: Senador[] }>("/api/members");
+  return res.members || [];
+});
 const senadores = computed(() => (data.value as any as Senador[]) || []);
 
 if (import.meta.prerender) {

@@ -17,14 +17,10 @@ function slug(value: string) {
 }
 
 function getApiOrigin() {
-  const nuxtApp = tryUseNuxtApp();
-  const publicConfig = (nuxtApp?.$config?.public || {}) as Record<
-    string,
-    unknown
-  >;
+  // Sin tryUseNuxtApp: este módulo también corre desde server/api (Nitro).
   const raw = String(
-    publicConfig.apiUrl ||
-      publicConfig.apiBaseUrl ||
+    process.env.NUXT_PUBLIC_API_URL ||
+      process.env.NUXT_PUBLIC_API_BASE_URL ||
       "https://api.argentinadatos.com",
   );
   try {
@@ -37,6 +33,14 @@ function getApiOrigin() {
 let _senadores: Senador[] | null = null;
 let _actas: Acta[] | null = null;
 let _senadoresConActas: Senador[] | null = null;
+
+function assertServerData() {
+  if (import.meta.client) {
+    throw new Error(
+      "senadores-data: getActas/getSenadoresConActas solo en server. Usá /api/* (mini-API Nitro).",
+    );
+  }
+}
 
 /** Limpia caches en memoria. */
 export function clearSenadoresDataCache() {
@@ -143,6 +147,7 @@ export async function getSenadores(): Promise<Senador[]> {
 }
 
 export async function getActas(): Promise<Acta[]> {
+  assertServerData();
   if (_actas) return _actas;
 
   const origin = getApiOrigin();
@@ -159,6 +164,7 @@ export async function getActas(): Promise<Acta[]> {
 }
 
 export async function getSenadoresConActas(): Promise<Senador[]> {
+  assertServerData();
   if (_senadoresConActas) return _senadoresConActas;
 
   const senadores = await getSenadores();

@@ -61,7 +61,7 @@ curl -X POST https://senadores.argentinadatos.com/api/revalidate \
 
 Eso vacía las caches en RAM; el próximo request vuelve a bajar datos de `api.argentinadatos.com`.
 
-**SQLite / API propia:** solo si más adelante querés varias réplicas sin compartir RAM, o payloads HTML más chicos. Hoy el cuello era serverless (4.5 MB / Worker limits), no el VPS.
+**SQLite / API propia:** la mini-API Nitro (`server/api/*`) ya sirve slices desde las caches RAM de `*-data.ts`. El browser **no** debe llamar a `getActas` / `get*ConActas` ni al dump de `api.argentinadatos.com` para actas. SQLite solo si más adelante hay varias réplicas sin compartir RAM, o queries SQL fuera de proceso.
 
 ### Vercel / Cloudflare (legado)
 
@@ -133,9 +133,11 @@ Diputados tiene lista local en `diputados-data.ts`.
 | Cambiar brand/nav/footer/SEO por cámara | `lib/chamber.ts`, `AppNavbar`, `AppFooter`, `plugins/chamber-seo.ts` |
 | Nueva página de miembros | `pages/diputados/*` o `pages/senadores/*` (no “genérica” que rompa URLs) |
 | Home o actas distintas por cámara | `components/chamber/*`, `components/actas/*` + wrapper en `pages/` |
-| Lógica de API / stats | `lib/*-data.ts`, `lib/utils.ts` |
+| Lógica de API / stats | `lib/*-data.ts` (solo server) + `server/utils/mini-api.ts` + `server/api/*` |
 | Hemiciclo / hover grupos | `HemicicloChart.vue` (+ wrappers `DiputadosChart` / `SenadoresChart`) |
 | Colores de voto/resultado | `utils/votoTipo.ts`, badges existentes |
+
+**Regla:** páginas/composables del cliente consumen `/api/*` (Host → cámara). No importar `getActas` / `get*ConActas` en código que corra en el browser.
 
 ## Convenciones de código
 
@@ -152,4 +154,7 @@ curl -sI -H 'Host: diputados.localhost' http://127.0.0.1:3200/
 curl -sI -H 'Host: senadores.localhost' http://127.0.0.1:3200/
 # Cross-chamber debe 302:
 curl -sI -H 'Host: diputados.localhost' http://127.0.0.1:3200/senadores
+# Mini-API (slices, no dump):
+curl -s -H 'Host: diputados.localhost' http://127.0.0.1:3200/api/search-catalog | head -c 200
+curl -s -H 'Host: diputados.localhost' http://127.0.0.1:3200/api/affinity-peers | head -c 200
 ```

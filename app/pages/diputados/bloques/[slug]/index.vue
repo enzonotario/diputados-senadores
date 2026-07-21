@@ -2,107 +2,51 @@
 import { useRouteQuery } from "@vueuse/router";
 import type { TabsItem } from "@nuxt/ui";
 import type { Diputado } from "@/lib/types-diputados";
-import {
-  getBloqueBySlug,
-  getBloqueColores,
-  getBloqueSlugs,
-  getDiputadosConActas,
-} from "@/lib/diputados-data";
-import { slimMembersStats } from "@/lib/payload-slim";
-import { isDiputadoActivo } from "@/lib/utils";
+import { getBloqueColores } from "@/lib/diputados-data";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { bloqueSlug } from "@/utils/bloque";
-import {
-  votesFromDiputado,
-  memberActasInWindow,
-  type AffinityMemberInput,
-} from "@/utils/votingAffinity";
+import type { AffinityMemberInput } from "@/utils/votingAffinity";
+
+type GroupDetailResponse = {
+  nombre: string;
+  slug: string;
+  color: string;
+  presentismo: number | null;
+  activos: Diputado[];
+  inactivos: Diputado[];
+  cohesionPeers: AffinityMemberInput[];
+  actasMeta: Record<
+    string,
+    { id: string; titulo?: string | null; resultado?: string | null }
+  >;
+};
 
 const route = useRoute();
 const slug = computed(() => String(route.params.slug || ""));
 
-const { data: slugs } = await useAsyncData("bloque-slugs", () =>
-  getBloqueSlugs(),
-);
-
-if (import.meta.prerender && slugs.value?.length) {
-  prerenderRoutes(slugs.value.map((b) => `/diputados/bloques/${b.slug}`));
-}
-
 const { data } = await useAsyncData(
   () => `bloque-${slug.value}`,
-  async () => {
-    const b = await getBloqueBySlug(slug.value);
-    if (!b) return null;
-    const actasMeta: Record<
-      string,
-      { id: string; titulo?: string | null; resultado?: string | null }
-    > = {};
-    for (const d of b.activos) {
-      for (const a of d.actasDiputado || []) {
-        if (!a?.id || actasMeta[a.id]) continue;
-        actasMeta[String(a.id)] = {
-          id: String(a.id),
-          titulo: a.titulo,
-          resultado: a.resultado,
-        };
-      }
-    }
-    return {
-      nombre: b.nombre,
-      slug: b.slug,
-      color: b.color,
-      presentismo: b.presentismo,
-      activos: slimMembersStats(b.activos),
-      inactivos: slimMembersStats(b.inactivos),
-      cohesionPeers: b.activos.map((d) => ({
-        id: d.id,
-        name:
-          d.nombreCompleto ||
-          `${d.apellido}, ${d.nombre}` ||
-          `${d.nombre} ${d.apellido}`,
-        group: d.bloque,
-        foto: d.foto,
-        votes: memberActasInWindow(votesFromDiputado(d)),
-      })),
-      actasMeta,
-    };
-  },
+  () => $fetch<GroupDetailResponse>(`/api/groups/${slug.value}`),
   { watch: [slug] },
 );
 
 const bloque = computed(() => data.value || null);
 
-const { data: allActivePeers } = await useAsyncData(
+const { data: peersPayload } = await useAffinityPeers(
   "diputados-affinity-peers",
-  async () => {
-    const all = await getDiputadosConActas();
-    return all.filter(isDiputadoActivo).map((d) => ({
-      id: d.id,
-      name:
-        d.nombreCompleto ||
-        `${d.apellido}, ${d.nombre}` ||
-        `${d.nombre} ${d.apellido}`,
-      group: d.bloque,
-      foto: d.foto,
-      votes: memberActasInWindow(votesFromDiputado(d)),
-    }));
-  },
-  // No SSR: scrapers OG no necesitan peers; baja HTML bajo 5 MB.
-  { server: false },
 );
 
 const cohesionMembers = computed<AffinityMemberInput[]>(
   () => bloque.value?.cohesionPeers || [],
 );
 
-const allActiveMembers = computed<AffinityMemberInput[]>(
-  () => allActivePeers.value || [],
+const allActiveMembers = computed<AffinityMemberInput[]>(() =>
+  peersToAffinityInputs(peersPayload.value?.peers),
 );
 
 const groupSlugs = computed(() => {
   const map: Record<string, string> = {};
-  for (const d of allActivePeers.value || []) {
+  for (const d of allActiveMembers.value) {
     const name = d.group?.trim();
     if (!name || map[name]) continue;
     map[name] = bloqueSlug(name);
@@ -116,7 +60,6 @@ const groupColors = computed(() => {
 });
 
 const actasMeta = computed(() => bloque.value?.actasMeta || {});
-
 const pageVista = useRouteQuery("vista", "integrantes");
 const pageVistaItems: TabsItem[] = [
   { label: "Integrantes", value: "integrantes", icon: "i-lucide-users" },

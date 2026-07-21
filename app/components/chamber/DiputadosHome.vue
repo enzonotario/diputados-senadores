@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { getActas, getDiputadosPorBloques } from "@/lib/diputados-data";
+import { getDiputadosPorBloques } from "@/lib/diputados-data";
 import {
   encodeOgHemiciclo,
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
-import { slimActas } from "@/lib/payload-slim";
 
 const { data: bloquesData } = await useAsyncData("diputados-por-bloques", () =>
   getDiputadosPorBloques(),
 );
 
-const { data: actasData } = await useAsyncData("diputados-actas-home", async () =>
-  slimActas(await getActas()),
+const { data: actasData } = await useAsyncData(
+  "diputados-actas-home",
+  async () => {
+    const res = await $fetch<{ actas: any[] }>("/api/actas");
+    return res.actas || [];
+  },
 );
 
 const diputados = computed(() => bloquesData.value?.diputados || []);

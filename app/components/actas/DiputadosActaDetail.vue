@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Diputado, FilterConfig, Voto } from "@/lib/types-diputados";
-import { getActaWithDiputadosById } from "@/lib/diputados-data";
 import { filterDiputados, formatDate, getUniqueValues } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { groupDiputadosBy } from "@/utils/groupDiputadosBy";
@@ -18,9 +17,9 @@ const id = computed(() => String(route.params.id));
 
 const { data } = await useAsyncData(
   () => `acta-${id.value}`,
-  () => getActaWithDiputadosById(id.value),
+  () => $fetch(`/api/actas/${id.value}`),
   { watch: [id] },
-)
+);
 const acta = computed(() => data.value || null);
 
 useChamberSeo(() => {

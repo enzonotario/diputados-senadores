@@ -2,100 +2,51 @@
 import { useRouteQuery } from "@vueuse/router";
 import type { TabsItem } from "@nuxt/ui";
 import type { Senador } from "@/lib/types";
-import {
-  getPartidoBySlug,
-  getPartidoColores,
-  getPartidoSlugs,
-  getSenadoresConActas,
-} from "@/lib/senadores-data";
-import { slimMembersStats } from "@/lib/payload-slim";
-import { isSenadorActivo } from "@/lib/utils";
+import { getPartidoColores } from "@/lib/senadores-data";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { partidoSlug } from "@/utils/partido";
-import {
-  votesFromSenador,
-  memberActasInWindow,
-  type AffinityMemberInput,
-} from "@/utils/votingAffinity";
+import type { AffinityMemberInput } from "@/utils/votingAffinity";
+
+type GroupDetailResponse = {
+  nombre: string;
+  slug: string;
+  color: string;
+  presentismo: number | null;
+  activos: Senador[];
+  inactivos: Senador[];
+  cohesionPeers: AffinityMemberInput[];
+  actasMeta: Record<
+    string,
+    { id: string; titulo?: string | null; resultado?: string | null }
+  >;
+};
 
 const route = useRoute();
 const slug = computed(() => String(route.params.slug || ""));
 
-const { data: slugs } = await useAsyncData("partido-slugs", () =>
-  getPartidoSlugs(),
-);
-
-if (import.meta.prerender && slugs.value?.length) {
-  prerenderRoutes(slugs.value.map((b) => `/senadores/partidos/${b.slug}`));
-}
-
 const { data } = await useAsyncData(
   () => `partido-${slug.value}`,
-  async () => {
-    const p = await getPartidoBySlug(slug.value);
-    if (!p) return null;
-    const actasMeta: Record<
-      string,
-      { id: string; titulo?: string | null; resultado?: string | null }
-    > = {};
-    for (const s of p.activos) {
-      for (const a of s.actasSenador || []) {
-        if (!a?.id || actasMeta[a.id]) continue;
-        actasMeta[String(a.id)] = {
-          id: String(a.id),
-          titulo: a.titulo,
-          resultado: a.resultado,
-        };
-      }
-    }
-    return {
-      nombre: p.nombre,
-      slug: p.slug,
-      color: p.color,
-      presentismo: p.presentismo,
-      activos: slimMembersStats(p.activos),
-      inactivos: slimMembersStats(p.inactivos),
-      cohesionPeers: p.activos.map((s) => ({
-        id: s.id,
-        name: s.nombreCompleto || s.nombre,
-        group: s.partido,
-        foto: s.foto,
-        votes: memberActasInWindow(votesFromSenador(s)),
-      })),
-      actasMeta,
-    };
-  },
+  () => $fetch<GroupDetailResponse>(`/api/groups/${slug.value}`),
   { watch: [slug] },
 );
 
 const partido = computed(() => data.value || null);
 
-const { data: allActivePeers } = await useAsyncData(
+const { data: peersPayload } = await useAffinityPeers(
   "senadores-affinity-peers",
-  async () => {
-    const all = await getSenadoresConActas();
-    return all.filter(isSenadorActivo).map((s) => ({
-      id: s.id,
-      name: s.nombreCompleto || s.nombre,
-      group: s.partido,
-      foto: s.foto,
-      votes: memberActasInWindow(votesFromSenador(s)),
-    }));
-  },
-  { server: false },
 );
 
 const cohesionMembers = computed<AffinityMemberInput[]>(
   () => partido.value?.cohesionPeers || [],
 );
 
-const allActiveMembers = computed<AffinityMemberInput[]>(
-  () => allActivePeers.value || [],
+const allActiveMembers = computed<AffinityMemberInput[]>(() =>
+  peersToAffinityInputs(peersPayload.value?.peers),
 );
 
 const groupSlugs = computed(() => {
   const map: Record<string, string> = {};
-  for (const s of allActivePeers.value || []) {
+  for (const s of allActiveMembers.value) {
     const name = s.group?.trim();
     if (!name || map[name]) continue;
     map[name] = partidoSlug(name);
@@ -109,7 +60,6 @@ const groupColors = computed(() => {
 });
 
 const actasMeta = computed(() => partido.value?.actasMeta || {});
-
 const pageVista = useRouteQuery("vista", "integrantes");
 const pageVistaItems: TabsItem[] = [
   { label: "Integrantes", value: "integrantes", icon: "i-lucide-users" },

@@ -1,77 +1,109 @@
 <script setup lang="ts">
-import type { Acta } from "@/lib/types-diputados";
-import {
-  getDiputadoConActasById,
-  getDiputadosConActas,
-} from "@/lib/diputados-data";
+import type { Diputado } from "@/lib/types-diputados";
 import { formatDate, isDiputadoActivo } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { bloquePath } from "@/utils/bloque";
 import { formatGenero, type ProfileFactSection } from "@/utils/memberProfile";
 import {
-  votesFromDiputado,
   memberActasInWindow,
   type AffinityMemberInput,
 } from "@/utils/votingAffinity";
 
+type HistoryRow = {
+  id: string;
+  titulo?: string | null;
+  resultado?: string | null;
+  fecha?: string | null;
+  periodo?: string | null;
+  tipoVoto?: string | null;
+};
+
+type MemberProfileResponse = {
+  member: Diputado;
+  chartActas: Array<{
+    id: string;
+    fecha?: string | null;
+    titulo?: string | null;
+    resultado?: string | null;
+    periodo?: string | null;
+    votosAfirmativos?: number | null;
+    votosNegativos?: number | null;
+    abstenciones?: number | null;
+    ausentes?: number | null;
+    presentes?: number | null;
+    miembros?: number | null;
+    tipoVotoDiputado?: string | null;
+  }>;
+  actasMeta: Array<{
+    id: string;
+    titulo?: string | null;
+    resultado?: string | null;
+  }>;
+  history: {
+    page: number;
+    limit: number;
+    total: number;
+    items: HistoryRow[];
+  };
+};
+
+const HISTORY_LIMIT = 40;
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 
 const { data } = await useAsyncData(
-  "diputado",
-  () => getDiputadoConActasById(id.value),
+  () => `diputado-${id.value}`,
+  () =>
+    $fetch<MemberProfileResponse>(`/api/members/${id.value}`, {
+      query: { limit: HISTORY_LIMIT },
+    }),
   { watch: [id] },
 );
-const diputado = computed(() => data.value || null);
 
-const { data: allDiputados } = await useAsyncData(
-  "diputados-affinity-peers",
-  async () => {
-    const all = await getDiputadosConActas();
-    return all.map((d) => ({
-      id: d.id,
-      name:
-        d.nombreCompleto ||
-        `${d.apellido}, ${d.nombre}` ||
-        `${d.nombre} ${d.apellido}`,
-      group: d.bloque,
-      foto: d.foto,
-      // Solo ventana de afinidad → payload mucho más chico para scrapers OG.
-      votes: memberActasInWindow(votesFromDiputado(d)),
-      activo: isDiputadoActivo(d),
-    }));
+const diputado = computed(() => data.value?.member || null);
+const chartActas = computed(() => data.value?.chartActas || []);
+const actasMeta = computed(() => data.value?.actasMeta || []);
+
+const historyItems = ref<HistoryRow[]>([]);
+const historyTotal = ref(0);
+const historyPage = ref(1);
+const historyLoading = ref(false);
+
+watch(
+  data,
+  (payload) => {
+    historyItems.value = payload?.history?.items || [];
+    historyTotal.value = payload?.history?.total || 0;
+    historyPage.value = payload?.history?.page || 1;
   },
-  { server: false },
+  { immediate: true },
+);
+
+const { data: peersPayload } = await useAffinityPeers(
+  "diputados-affinity-peers",
 );
 
 const affinityPeers = computed<AffinityMemberInput[]>(() => {
-  const all = allDiputados.value || [];
-  const byId = new Map<string, AffinityMemberInput>();
-  for (const d of all) {
-    if (d.activo) {
-      byId.set(d.id, {
-        id: d.id,
-        name: d.name,
-        group: d.group,
-        foto: d.foto,
-        votes: d.votes,
-      });
-    }
-  }
   const current = diputado.value;
-  if (current) {
-    byId.set(current.id, {
-      id: current.id,
-      name:
-        current.nombreCompleto ||
-        `${current.apellido}, ${current.nombre}` ||
-        `${current.nombre} ${current.apellido}`,
-      group: current.bloque,
-      foto: current.foto,
-      votes: memberActasInWindow(votesFromDiputado(current)),
-    });
-  }
-  return [...byId.values()];
+  const ensure: AffinityMemberInput | null = current
+    ? {
+        id: current.id,
+        name:
+          current.nombreCompleto ||
+          `${current.apellido}, ${current.nombre}` ||
+          `${current.nombre} ${current.apellido}`,
+        group: current.bloque,
+        foto: current.foto,
+        votes: memberActasInWindow(
+          chartActas.value.map((a) => ({
+            id: a.id,
+            fecha: String(a.fecha || ""),
+            voto: a.tipoVotoDiputado,
+          })),
+        ),
+      }
+    : null;
+  return peersToAffinityInputs(peersPayload.value?.peers, { ensure });
 });
 
 const affinityGroupPeers = computed(() => {
@@ -108,20 +140,55 @@ useChamberSeo(() => {
 
 const { sorting } = useTableSorting("fecha", true, { syncQuery: false });
 const searchQuery = ref("");
+const searchDebounced = refDebounced(searchQuery, 300);
 
-const actasFiltered = computed<Acta[]>(() => {
-  const list = diputado.value?.actasDiputado || [];
-  const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return list;
-  return list.filter((a) => {
-    return (
-      a.titulo?.toLowerCase().includes(q) ||
-      a.resultado?.toLowerCase().includes(q) ||
-      a.fecha?.toLowerCase().includes(q) ||
-      a.tipoVotoDiputado?.toLowerCase().includes(q)
-    );
-  });
+watch(searchDebounced, async (q) => {
+  if (!id.value) return;
+  historyLoading.value = true;
+  try {
+    const res = await $fetch<{
+      page: number;
+      limit: number;
+      total: number;
+      items: HistoryRow[];
+    }>(`/api/members/${id.value}/history`, {
+      query: { page: 1, limit: HISTORY_LIMIT, q: q.trim() || undefined },
+    });
+    historyItems.value = res.items;
+    historyTotal.value = res.total;
+    historyPage.value = res.page;
+  } finally {
+    historyLoading.value = false;
+  }
 });
+
+const hasMoreHistory = computed(
+  () => historyItems.value.length < historyTotal.value,
+);
+
+async function loadMoreHistory() {
+  if (!hasMoreHistory.value || historyLoading.value) return;
+  historyLoading.value = true;
+  try {
+    const next = historyPage.value + 1;
+    const res = await $fetch<{
+      page: number;
+      items: HistoryRow[];
+      total: number;
+    }>(`/api/members/${id.value}/history`, {
+      query: {
+        page: next,
+        limit: HISTORY_LIMIT,
+        q: searchQuery.value.trim() || undefined,
+      },
+    });
+    historyItems.value = [...historyItems.value, ...res.items];
+    historyPage.value = res.page;
+    historyTotal.value = res.total;
+  } finally {
+    historyLoading.value = false;
+  }
+}
 
 const tableColumns = [
   { id: "fecha", accessorKey: "fecha", header: sortableHeader("Fecha") },
@@ -131,9 +198,9 @@ const tableColumns = [
     header: sortableHeader("Título"),
     meta: {
       class: {
-        td: 'max-w-xs whitespace-normal',
+        td: "max-w-xs whitespace-normal",
       },
-    }
+    },
   },
   {
     id: "resultado",
@@ -142,12 +209,12 @@ const tableColumns = [
   },
   {
     id: "voto",
-    accessorKey: "tipoVotoDiputado",
+    accessorKey: "tipoVoto",
     header: sortableHeader("Voto"),
   },
 ];
 
-function onRowSelect(_e: Event, row: { original: Acta }) {
+function onRowSelect(_e: Event, row: { original: HistoryRow }) {
   navigateTo(`/actas/${row.original.id}`);
 }
 
@@ -168,8 +235,7 @@ const profileSections = computed<ProfileFactSection[]>(() => {
   const bloqueFin = d.periodoBloque?.fin
     ? formatDate(d.periodoBloque.fin)
     : "hoy";
-  const periodoBloque =
-    bloqueInicio && `${bloqueInicio} – ${bloqueFin}`;
+  const periodoBloque = bloqueInicio && `${bloqueInicio} – ${bloqueFin}`;
 
   return [
     {
@@ -302,7 +368,8 @@ const profileSections = computed<ProfileFactSection[]>(() => {
               </div>
               <div
                 class="rounded-lg border border-gray-300! p-3 bg-gray-50 dark:border-gray-600! dark:bg-gray-950"
-              >                <div class="text-sm text-gray-600 dark:text-gray-300">
+              >
+                <div class="text-sm text-gray-600 dark:text-gray-300">
                   Ausencias
                 </div>
                 <div
@@ -332,9 +399,11 @@ const profileSections = computed<ProfileFactSection[]>(() => {
     </UCard>
 
     <ChartsMemberVotingCharts
-      v-if="diputado?.actasDiputado?.length"
-      :actas="diputado.actasDiputado"
-      :member-label="`${diputado.nombre} ${diputado.apellido}`"
+      v-if="chartActas.length"
+      :actas="chartActas"
+      :member-label="
+        diputado ? `${diputado.nombre} ${diputado.apellido}` : undefined
+      "
     />
 
     <AnalisisMemberAffinityPanel
@@ -346,7 +415,7 @@ const profileSections = computed<ProfileFactSection[]>(() => {
       member-base-path="/diputados"
       :peers="affinityPeers"
       :group-peers="affinityGroupPeers"
-      :actas="diputado.actasDiputado"
+      :actas="actasMeta"
       :detail-to="`/diputados/${diputado.id}/afinidad`"
     />
 
@@ -362,33 +431,48 @@ const profileSections = computed<ProfileFactSection[]>(() => {
 
       <UTable
         v-model:sorting="sorting"
-        :data="actasFiltered"
+        :data="historyItems"
         :columns="tableColumns"
+        :loading="historyLoading"
         :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
         empty="No se encontraron votaciones para este diputado."
         :on-select="onRowSelect"
       >
         <template #fecha-cell="{ row }">
-          <span>{{ formatDate((row.original as Acta).fecha) }}</span>
+          <span>{{ formatDate((row.original as HistoryRow).fecha || "") }}</span>
         </template>
         <template #titulo-cell="{ row }">
           <NuxtLink
-            :to="`/actas/${(row.original as Acta).id}`"
+            :to="`/actas/${(row.original as HistoryRow).id}`"
             class="hover:underline line-clamp-5"
             @click.stop
           >
-            {{ (row.original as Acta).titulo }}
+            {{ (row.original as HistoryRow).titulo }}
           </NuxtLink>
         </template>
         <template #resultado-cell="{ row }">
-          <ResultadoBadge :resultado="(row.original as Acta).resultado" />
+          <ResultadoBadge :resultado="(row.original as HistoryRow).resultado" />
         </template>
         <template #voto-cell="{ row }">
           <TipoVotoLabel
-            :tipo="(row.original as Acta).tipoVotoDiputado || 'ausente'"
+            :tipo="(row.original as HistoryRow).tipoVoto || 'ausente'"
           />
         </template>
       </UTable>
+
+      <div
+        v-if="hasMoreHistory"
+        class="flex justify-center pt-4"
+      >
+        <UButton
+          color="neutral"
+          variant="outline"
+          :loading="historyLoading"
+          @click="loadMoreHistory"
+        >
+          Cargar más ({{ historyItems.length }} / {{ historyTotal }})
+        </UButton>
+      </div>
     </DataTableCard>
   </div>
 </template>

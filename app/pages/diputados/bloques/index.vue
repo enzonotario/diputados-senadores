@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import { getBloquesIndex } from "@/lib/diputados-data";
 import { sortableHeader } from "@/utils/sortableHeader";
-import {
-  votesFromDiputado,
-  memberActasInWindow,
-  type AffinityGroupInput,
-} from "@/utils/votingAffinity";
+import type { AffinityGroupInput } from "@/utils/votingAffinity";
 
 type BloqueRow = {
   nombre: string;
@@ -15,39 +10,32 @@ type BloqueRow = {
   presentismo: number;
 };
 
-const { data } = await useAsyncData("bloques-index", async () => {
-  const rows = await getBloquesIndex();
-  return rows.map((b) => ({
-    nombre: b.nombre,
-    slug: b.slug,
-    color: b.color,
-    activos: b.activos,
-    presentismo: b.presentismo,
-    affinityMembers: (b.diputados || []).map((d) => ({
-      id: d.id,
-      name:
-        d.nombreCompleto ||
-        `${d.apellido}, ${d.nombre}` ||
-        `${d.nombre} ${d.apellido}`,
-      group: b.nombre,
-      foto: d.foto,
-      votes: memberActasInWindow(votesFromDiputado(d)),
-    })),
-  }));
-});
-const bloques = computed(() => data.value || []);
+type AffinityIndexResponse = {
+  rows: BloqueRow[];
+  groups: AffinityGroupInput[];
+};
 
-if (import.meta.prerender && bloques.value.length) {
+const { data: bloques } = await useAsyncData("bloques-index", async () => {
+  const res = await $fetch<AffinityIndexResponse>(
+    "/api/groups/affinity-index",
+    { query: { rowsOnly: "1" } },
+  );
+  return res.rows || [];
+});
+
+if (import.meta.prerender && bloques.value?.length) {
   prerenderRoutes(bloques.value.map((b) => `/diputados/bloques/${b.slug}`));
 }
 
-const affinityGroups = computed<AffinityGroupInput[]>(() =>
-  bloques.value.map((b) => ({
-    id: b.slug,
-    name: b.nombre,
-    slug: b.slug,
-    members: b.affinityMembers || [],
-  })),
+const { data: affinityGroups } = await useAsyncData(
+  "bloques-affinity-groups",
+  async () => {
+    const res = await $fetch<AffinityIndexResponse>(
+      "/api/groups/affinity-index",
+    );
+    return res.groups || [];
+  },
+  { server: false },
 );
 
 const { sorting } = useTableSorting("activos", true);
@@ -93,15 +81,15 @@ useChamberSeo({
     <div class="space-y-2">
       <h1 class="text-3xl font-bold tracking-tight">Bloques</h1>
       <p class="text-muted max-w-2xl">
-        {{ bloques.length }} bloques con diputados activos. La asistencia es el
-        promedio de cuánto asiste cada integrante a las votaciones.
+        {{ (bloques || []).length }} bloques con diputados activos. La asistencia
+        es el promedio de cuánto asiste cada integrante a las votaciones.
       </p>
     </div>
 
     <DataTableCard>
       <UTable
         v-model:sorting="sorting"
-        :data="bloques"
+        :data="bloques || []"
         :columns="tableColumns"
         :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
         empty="No se encontraron bloques con diputados activos."
@@ -147,9 +135,9 @@ useChamberSeo({
     </DataTableCard>
 
     <AnalisisInterGroupAffinityHeatmap
-      v-if="affinityGroups.length >= 2"
+      v-if="(affinityGroups || []).length >= 2"
       group-label="bloque"
-      :groups="affinityGroups"
+      :groups="affinityGroups || []"
       group-base-path="/diputados/bloques"
     />
   </div>

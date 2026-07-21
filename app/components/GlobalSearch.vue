@@ -1,22 +1,4 @@
 <script setup lang="ts">
-import {
-  getActas as getActasDiputados,
-  getBloqueSlugs,
-  getDiputados,
-} from "@/lib/diputados-data";
-import {
-  getActas as getActasSenadores,
-  getPartidoSlugs,
-  getSenadores,
-} from "@/lib/senadores-data";
-import {
-  formatDate,
-  isDiputadoActivo,
-  isSenadorActivo,
-} from "@/lib/utils";
-import { bloquePath } from "@/utils/bloque";
-import { partidoPath } from "@/utils/partido";
-
 type SearchItem = {
   id: string;
   label: string;
@@ -48,118 +30,15 @@ async function loadCatalog() {
 
   loading.value = true;
   try {
-    if (id === "diputados") {
-      const [diputados, bloques, listaActas] = await Promise.all([
-        getDiputados(),
-        getBloqueSlugs(),
-        getActasDiputados(),
-      ]);
+    const catalog = await $fetch<{
+      members: SearchItem[];
+      groups: SearchItem[];
+      actas: SearchItem[];
+    }>("/api/search-catalog");
 
-      members.value = [...diputados]
-        .sort((a, b) => {
-          const aAct = isDiputadoActivo(a) ? 0 : 1;
-          const bAct = isDiputadoActivo(b) ? 0 : 1;
-          if (aAct !== bAct) return aAct - bAct;
-          return String(a.nombreCompleto || "").localeCompare(
-            String(b.nombreCompleto || ""),
-            "es",
-          );
-        })
-        .map((d) => {
-          const activo = isDiputadoActivo(d);
-          return {
-            id: `diputado-${d.id}`,
-            label: d.nombreCompleto || `${d.apellido}, ${d.nombre}`,
-            suffix: activo ? "Activo" : "Inactivo",
-            description: [d.bloque, d.provincia].filter(Boolean).join(" · "),
-            to: `/diputados/${d.id}`,
-            avatar: d.foto ? { src: d.foto } : undefined,
-          } satisfies SearchItem;
-        });
-
-      groups.value = bloques
-        .map((b) => {
-          const to = bloquePath(b.nombre);
-          if (!to) return null;
-          return {
-            id: `bloque-${b.slug}`,
-            label: b.nombre,
-            suffix: "Bloque",
-            icon: "i-lucide-shapes",
-            to,
-          } satisfies SearchItem;
-        })
-        .filter(Boolean) as SearchItem[];
-
-      actas.value = [...listaActas]
-        .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
-        .map((a) => ({
-          id: `acta-${a.id}`,
-          label: a.titulo || `Acta ${a.id}`,
-          suffix: formatDate(a.fecha),
-          description: a.resultado || undefined,
-          resultado: a.resultado || undefined,
-          icon: "i-lucide-file-text",
-          to: `/actas/${a.id}`,
-        }));
-    } else {
-      const [senadores, partidos, listaActas] = await Promise.all([
-        getSenadores(),
-        getPartidoSlugs(),
-        getActasSenadores(),
-      ]);
-
-      members.value = [...senadores]
-        .sort((a, b) => {
-          const aAct = isSenadorActivo(a) ? 0 : 1;
-          const bAct = isSenadorActivo(b) ? 0 : 1;
-          if (aAct !== bAct) return aAct - bAct;
-          return String(a.nombreCompleto || a.nombre || "").localeCompare(
-            String(b.nombreCompleto || b.nombre || ""),
-            "es",
-          );
-        })
-        .map((s) => {
-          const activo = isSenadorActivo(s);
-          return {
-            id: `senador-${s.id}`,
-            label: s.nombreCompleto || s.nombre,
-            suffix: activo ? "Activo" : "Inactivo",
-            description: [s.partido, s.provincia].filter(Boolean).join(" · "),
-            to: `/senadores/${s.id}`,
-            avatar: s.foto ? { src: s.foto } : undefined,
-          } satisfies SearchItem;
-        });
-
-      groups.value = partidos
-        .map((p) => {
-          const to = partidoPath(p.nombre);
-          if (!to) return null;
-          return {
-            id: `partido-${p.slug}`,
-            label: p.nombre,
-            suffix: "Partido",
-            icon: "i-lucide-shapes",
-            to,
-          } satisfies SearchItem;
-        })
-        .filter(Boolean) as SearchItem[];
-
-      actas.value = [...listaActas]
-        .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
-        .map((a) => ({
-          id: `acta-${a.id}`,
-          label: a.titulo || `Acta ${a.id}`,
-          suffix: formatDate(a.fecha),
-          description:
-            [a.proyecto, a.resultado].filter(Boolean).join(" · ") || undefined,
-          resultado: a.resultado || undefined,
-          proyecto: a.proyecto || undefined,
-          icon: "i-lucide-file-text",
-          to: `/actas/${a.id}`,
-        }));
-    }
-
+    members.value = catalog.members || [];
+    groups.value = catalog.groups || [];
+    actas.value = catalog.actas || [];
     loadedFor = id;
   } finally {
     loading.value = false;

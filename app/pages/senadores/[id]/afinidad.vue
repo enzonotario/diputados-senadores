@@ -1,26 +1,33 @@
 <script setup lang="ts">
-import {
-  getPartidoColores,
-  getSenadorConActasById,
-  getSenadoresConActas,
-} from "@/lib/senadores-data";
-import { isSenadorActivo } from "@/lib/utils";
+import { getPartidoColores } from "@/lib/senadores-data";
 import { partidoPath } from "@/utils/partido";
 import {
-  votesFromSenador,
   memberActasInWindow,
   type AffinityMemberInput,
 } from "@/utils/votingAffinity";
+import type { Senador } from "@/lib/types";
+
+type MemberProfileResponse = {
+  member: Senador;
+  chartActas: Array<{
+    id: string;
+    fecha?: string | null;
+    titulo?: string | null;
+    resultado?: string | null;
+    tipoVotoSenador?: string | null;
+  }>;
+};
 
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 
 const { data } = await useAsyncData(
-  "senador-afinidad",
-  () => getSenadorConActasById(id.value),
+  () => `senador-afinidad-${id.value}`,
+  () => $fetch<MemberProfileResponse>(`/api/members/${id.value}`),
   { watch: [id] },
 );
-const senador = computed(() => data.value || null);
+const senador = computed(() => data.value?.member || null);
+const chartActas = computed(() => data.value?.chartActas || []);
 
 if (senador.value && senador.value.id !== id.value) {
   await navigateTo(`/senadores/${senador.value.id}/afinidad`, {
@@ -29,47 +36,28 @@ if (senador.value && senador.value.id !== id.value) {
   });
 }
 
-const { data: allSenadores } = await useAsyncData(
+const { data: peersPayload } = await useAffinityPeers(
   "senadores-affinity-peers",
-  async () => {
-    const all = await getSenadoresConActas();
-    return all.map((s) => ({
-      id: s.id,
-      name: s.nombreCompleto || s.nombre,
-      group: s.partido,
-      foto: s.foto,
-      votes: memberActasInWindow(votesFromSenador(s)),
-      activo: isSenadorActivo(s),
-    }));
-  },
-  { server: false },
 );
 
 const affinityPeers = computed<AffinityMemberInput[]>(() => {
-  const all = allSenadores.value || [];
-  const byId = new Map<string, AffinityMemberInput>();
-  for (const s of all) {
-    if (s.activo) {
-      byId.set(s.id, {
-        id: s.id,
-        name: s.name,
-        group: s.group,
-        foto: s.foto,
-        votes: s.votes,
-      });
-    }
-  }
   const current = senador.value;
-  if (current) {
-    byId.set(current.id, {
-      id: current.id,
-      name: current.nombreCompleto || current.nombre,
-      group: current.partido,
-      foto: current.foto,
-      votes: memberActasInWindow(votesFromSenador(current)),
-    });
-  }
-  return [...byId.values()];
+  const ensure: AffinityMemberInput | null = current
+    ? {
+        id: current.id,
+        name: current.nombreCompleto || current.nombre,
+        group: current.partido,
+        foto: current.foto,
+        votes: memberActasInWindow(
+          chartActas.value.map((a) => ({
+            id: a.id,
+            fecha: String(a.fecha || ""),
+            voto: a.tipoVotoSenador,
+          })),
+        ),
+      }
+    : null;
+  return peersToAffinityInputs(peersPayload.value?.peers, { ensure });
 });
 
 const affinityGroupPeers = computed(() => {
@@ -88,7 +76,7 @@ const groupColors = computed(() => {
 });
 
 const actas = computed(() =>
-  (senador.value?.actasSenador || []).map((a) => ({
+  chartActas.value.map((a) => ({
     id: String(a.id),
     titulo: a.titulo,
     resultado: a.resultado,

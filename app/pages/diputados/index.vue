@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Diputado, FilterConfig } from "@/lib/types-diputados";
-import { getBloqueColores, getDiputadosConActas } from "@/lib/diputados-data";
+import { getBloqueColores } from "@/lib/diputados-data";
 import {
   encodeOgHemiciclo,
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
-import { slimMembersStats } from "@/lib/payload-slim";
 import {
   filterDiputados,
   formatDate,
@@ -38,9 +37,10 @@ const mostrarActivos = computed({
   },
 });
 
-const { data } = await useAsyncData("diputados-list", async () =>
-  slimMembersStats(await getDiputadosConActas()),
-);
+const { data } = await useAsyncData("diputados-list", async () => {
+  const res = await $fetch<{ members: Diputado[] }>("/api/members");
+  return res.members || [];
+});
 const diputados = computed(() => (data.value as any as Diputado[]) || []);
 
 if (import.meta.prerender) {

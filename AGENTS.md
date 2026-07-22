@@ -59,7 +59,7 @@ El `Dockerfile` de la raíz **solo hace** `FROM ghcr.io/...` (pull). El build pe
 3. Si ves `Building docker image` + `pnpm build` + exit 137: todavía está usando el Dockerfile viejo multi-stage; redeployá con el `Dockerfile` thin.
 4. Package GHCR privado → en Coolify, Docker Registry: `ghcr.io` + PAT `read:packages`.
 5. Build arg `IMAGE_TAG` = `diputados-latest` o `senadores-latest` (o `diputados-<sha>` puntual).
-6. Evitá race Git vs Actions: desactivá auto-deploy al push. Secrets GHA: `COOLIFY_API_TOKEN`, `COOLIFY_APP_UUID_DIPUTADOS`, `COOLIFY_APP_UUID_SENADORES` (fallback legado: `COOLIFY_APP_UUID` → senadores).
+6. Evitá race Git vs Actions: desactivá auto-deploy al push. Secrets GHA: `COOLIFY_API_TOKEN`, `COOLIFY_APP_UUID_DIPUTADOS`, `COOLIFY_APP_UUID_SENADORES`.
 
 ```bash
 # Local (máquina con RAM) — una cámara

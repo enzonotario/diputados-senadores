@@ -1,19 +1,26 @@
-import { CHAMBERS, type ChamberId } from "./app/lib/chamber";
+import {
+  parseSiteId,
+  SITES,
+  type SiteId,
+} from "./app/lib/chamber";
 import {
   ACTAS_SSG_YEARS,
-  collectChamberPrerenderRoutes,
+  collectSitePrerenderRoutes,
 } from "./app/lib/prerender-manifest";
 
-const defaultChamber: ChamberId =
-  (process.env.NUXT_PUBLIC_DEFAULT_CHAMBER as ChamberId) || "senadores";
-const chamberSite = CHAMBERS[defaultChamber];
+/** Sitio del build: diputados | senadores | congreso (env DEFAULT_CHAMBER). */
+const defaultSite: SiteId = parseSiteId(
+  process.env.NUXT_PUBLIC_DEFAULT_CHAMBER,
+  "senadores",
+);
+const siteConfig = SITES[defaultSite];
 
 const revalidateSecret = process.env.NUXT_REVALIDATE_SECRET || "";
 
 /**
  * Nitro `node-server` (Coolify / Docker).
- * Hybrid SSG: dos imágenes/servicios (DEFAULT_CHAMBER=diputados|senadores).
- * Índices + activos + actas ≤4a → prerender; resto SSR + Cache-Control largo.
+ * Hybrid SSG: una imagen por sitio (DEFAULT_CHAMBER=diputados|senadores|congreso).
+ * Cámaras: índices + activos + actas ≤4a. Congreso: solo `/`.
  * En Docker (`DOCKER_BUILD=1`): menos RAM peak (minify + rollup paralelo).
  */
 const dockerBuild = process.env.DOCKER_BUILD === "1";
@@ -26,11 +33,26 @@ const ssrLongCache = {
   },
 } as const;
 
+const chamberIndexRules =
+  defaultSite === "diputados"
+    ? {
+        "/actas": { prerender: true },
+        "/diputados": { prerender: true },
+        "/diputados/bloques": { prerender: true },
+      }
+    : defaultSite === "senadores"
+      ? {
+          "/actas": { prerender: true },
+          "/senadores": { prerender: true },
+          "/senadores/partidos": { prerender: true },
+        }
+      : {};
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
-  // SSR + prerender selectivo (hybrid). Cámara fijada en build vía DEFAULT_CHAMBER.
+  // SSR + prerender selectivo (hybrid). Sitio fijado en build vía DEFAULT_CHAMBER.
   // Hosts: diputados.* / senadores.* / congreso.* (mismo path ≠ mismo sitio).
   ssr: true,
   nitro: {
@@ -39,7 +61,7 @@ export default defineNuxtConfig({
     compressPublicAssets: !dockerBuild,
     minify: !dockerBuild,
     prerender: {
-      // Rutas las agrega el hook `prerender:routes` (manifiesto por cámara).
+      // Rutas las agrega el hook `prerender:routes` (manifiesto por sitio).
       crawlLinks: false,
       failOnError: false,
     },
@@ -54,12 +76,16 @@ export default defineNuxtConfig({
 
   hooks: {
     async "prerender:routes"(ctx) {
-      const routes = await collectChamberPrerenderRoutes(defaultChamber);
+      const routes = await collectSitePrerenderRoutes(defaultSite);
       for (const route of routes) {
         ctx.routes.add(route);
       }
+      const detail =
+        defaultSite === "congreso"
+          ? "solo /"
+          : `índices + activos + actas ≤${ACTAS_SSG_YEARS}a`;
       console.info(
-        `[prerender] ${defaultChamber}: ${routes.length} rutas (índices + activos + actas ≤${ACTAS_SSG_YEARS}a)`,
+        `[prerender] ${defaultSite}: ${routes.length} rutas (${detail})`,
       );
     },
   },
@@ -67,18 +93,8 @@ export default defineNuxtConfig({
   routeRules: {
     // Cache por path no distingue Host (diputados / senadores / congreso).
     "/api/**": { cache: false },
-    // Shells de índice: SSG solo de la cámara de esta imagen.
     "/": { prerender: true },
-    "/actas": { prerender: true },
-    ...(defaultChamber === "diputados"
-      ? {
-          "/diputados": { prerender: true },
-          "/diputados/bloques": { prerender: true },
-        }
-      : {
-          "/senadores": { prerender: true },
-          "/senadores/partidos": { prerender: true },
-        }),
+    ...chamberIndexRules,
     // Detalle: HTML prerenderizado si está en el manifiesto; si no, SSR + cache larga.
     "/diputados/**": ssrLongCache,
     "/senadores/**": ssrLongCache,
@@ -133,9 +149,9 @@ export default defineNuxtConfig({
   },
 
   site: {
-    url: chamberSite.siteUrl,
-    name: chamberSite.siteName,
-    description: chamberSite.siteDescription,
+    url: siteConfig.siteUrl,
+    name: siteConfig.siteName,
+    description: siteConfig.siteDescription,
   },
 
   // Takumi renderer: components/**/*.takumi.vue
@@ -206,11 +222,11 @@ export default defineNuxtConfig({
     // Solo server. Override: NUXT_REVALIDATE_SECRET
     revalidateSecret,
     public: {
-      defaultChamber,
-      baseUrl: process.env.NUXT_PUBLIC_BASE_URL || chamberSite.siteUrl,
-      siteUrl: chamberSite.siteUrl,
-      siteName: chamberSite.siteName,
-      siteDescription: chamberSite.siteDescription,
+      defaultChamber: defaultSite,
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL || siteConfig.siteUrl,
+      siteUrl: siteConfig.siteUrl,
+      siteName: siteConfig.siteName,
+      siteDescription: siteConfig.siteDescription,
       apiUrl:
         process.env.NUXT_PUBLIC_API_URL ||
         process.env.NUXT_PUBLIC_API_BASE_URL ||

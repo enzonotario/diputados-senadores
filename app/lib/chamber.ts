@@ -110,6 +110,22 @@ export function isChamberId(id: SiteId): id is ChamberId {
   return id === "diputados" || id === "senadores";
 }
 
+export function isSiteId(id: string): id is SiteId {
+  return id === "diputados" || id === "senadores" || id === "congreso";
+}
+
+/** Env / runtime: `NUXT_PUBLIC_DEFAULT_CHAMBER` acepta SiteId (incl. congreso). */
+export function parseSiteId(
+  raw: unknown,
+  fallback: SiteId = "senadores",
+): SiteId {
+  const v = String(raw || "")
+    .trim()
+    .toLowerCase();
+  return isSiteId(v) ? v : fallback;
+}
+
+
 /** Local + prod host patterns. Prefer explicit site markers in hostname. */
 export function resolveSiteFromHost(
   hostname: string,

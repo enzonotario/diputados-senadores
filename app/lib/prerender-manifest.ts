@@ -1,5 +1,6 @@
 import slugify from "slugify";
-import type { ChamberId } from "./chamber";
+import type { ChamberId, SiteId } from "./chamber";
+import { isChamberId } from "./chamber";
 import { isDiputadoActivo, isSenadorActivo } from "./utils";
 import { bloquePath } from "../utils/bloque";
 import { partidoPath } from "../utils/partido";
@@ -69,6 +70,15 @@ function dedupeById(raw: any[]): any[] {
     if (!byId.has(id)) byId.set(id, d);
   });
   return Array.from(byId.values());
+}
+
+/** Manifiesto SSG por sitio de build (`NUXT_PUBLIC_DEFAULT_CHAMBER`). */
+export async function collectSitePrerenderRoutes(
+  site: SiteId,
+): Promise<string[]> {
+  if (site === "congreso") return ["/"];
+  if (isChamberId(site)) return collectChamberPrerenderRoutes(site);
+  return ["/"];
 }
 
 /**

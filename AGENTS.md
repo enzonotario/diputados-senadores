@@ -32,21 +32,22 @@ Package manager: **pnpm**.
 
 ## Deploy (Coolify / Docker / VPS) — recomendado
 
-**Dos servicios Coolify** (misma imagen base, distinto tag y `NUXT_PUBLIC_DEFAULT_CHAMBER`). Congreso puede compartir cualquiera (solo landing `/`) o un tercero ligero:
+**Tres servicios Coolify** (misma imagen base, distinto tag y `NUXT_PUBLIC_DEFAULT_CHAMBER`):
+
 | Servicio | Dominio | `IMAGE_TAG` | `NUXT_PUBLIC_DEFAULT_CHAMBER` |
 |----------|---------|-------------|-------------------------------|
 | Diputados | `diputados.argentinadatos.com` | `diputados-latest` | `diputados` |
 | Senadores | `senadores.argentinadatos.com` | `senadores-latest` | `senadores` |
+| Congreso | `congreso.argentinadatos.com` | `congreso-latest` | `congreso` |
 
-Runtime sigue resolviendo cámara por `Host`; el env fija el **manifiesto SSG** del build (hybrid).
+Runtime sigue resolviendo sitio por `Host`; el env fija el **manifiesto SSG** del build (hybrid). Congreso solo prerenderiza `/`.
 
 ### Hybrid SSG
 
 En build (`app/lib/prerender-manifest.ts` + hook `prerender:routes`):
 
-- Índices (`/`, `/actas`, listados de miembros/grupos)
-- Miembros **activos** (sin `/afinidad`: esa ruta es SSR + cache larga)
-- Actas con `fecha >= buildDate − 4 años` (rolling, `ACTAS_SSG_YEARS`)
+- **Congreso:** solo `/` (landing)
+- **Cámaras:** índices (`/`, `/actas`, listados) + miembros **activos** (sin `/afinidad`) + actas `fecha >= buildDate − 4 años` (`ACTAS_SSG_YEARS`)
 
 El resto: SSR + `Cache-Control` largo (`max-age=31536000`). Tras deploy, **purge Cloudflare** de esos paths si el CDN cacheó HTML viejo.
 
@@ -56,12 +57,12 @@ Datos en RAM (`*-data.ts`) + mini-API Nitro (`server/api/*`). El browser no baja
 
 El `Dockerfile` de la raíz **solo hace** `FROM ghcr.io/...` (pull). El build pesado está en `Dockerfile.build` (GitHub Actions, matrix por cámara).
 
-1. Push → Actions buildea **dos** imágenes (`diputados-latest` / `senadores-latest` + `:<chamber>-<sha>`).
+1. Push → Actions buildea **tres** imágenes (`diputados-latest` / `senadores-latest` / `congreso-latest` + `:<site>-<sha>`).
 2. Coolify “build” del `Dockerfile` = pull de GHCR (segundos). **No** debe aparecer `RUN pnpm build` en los logs.
 3. Si ves `Building docker image` + `pnpm build` + exit 137: todavía está usando el Dockerfile viejo multi-stage; redeployá con el `Dockerfile` thin.
 4. Package GHCR privado → en Coolify, Docker Registry: `ghcr.io` + PAT `read:packages`.
-5. Build arg `IMAGE_TAG` = `diputados-latest` o `senadores-latest` (o `diputados-<sha>` puntual).
-6. Evitá race Git vs Actions: desactivá auto-deploy al push. Secrets GHA: `COOLIFY_API_TOKEN`, `COOLIFY_APP_UUID_DIPUTADOS`, `COOLIFY_APP_UUID_SENADORES`.
+5. Build arg `IMAGE_TAG` = `diputados-latest`, `senadores-latest` o `congreso-latest` (o `diputados-<sha>` puntual).
+6. Evitá race Git vs Actions: desactivá auto-deploy al push. Secrets GHA: `COOLIFY_API_TOKEN`, `COOLIFY_APP_UUID_DIPUTADOS`, `COOLIFY_APP_UUID_SENADORES`, `COOLIFY_APP_UUID_CONGRESO`.
 
 ```bash
 # Local (máquina con RAM) — una cámara

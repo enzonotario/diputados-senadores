@@ -5,6 +5,7 @@ import {
   getSiteConfig,
   isChamberId,
   otherChamberId,
+  parseSiteId,
   resolveSiteFromHost,
   rewritePathForChamber,
   type ChamberConfig,
@@ -20,21 +21,24 @@ import {
 export function useChamber() {
   const config = useRuntimeConfig();
   const route = useRoute();
-  const fallback = (config.public.defaultChamber as ChamberId) || "senadores";
+  const fallbackSite = parseSiteId(config.public.defaultChamber, "senadores");
+  const fallbackChamber: ChamberId = isChamberId(fallbackSite)
+    ? fallbackSite
+    : "senadores";
 
-  const id = useState<SiteId>("site-id", () => fallback);
+  const id = useState<SiteId>("site-id", () => fallbackSite);
 
-  // En generate el hostname del crawler no es el de prod: fijar cámara del build.
+  // En generate el hostname del crawler no es el de prod: fijar sitio del build.
   if (import.meta.prerender) {
-    id.value = fallback;
+    id.value = fallbackSite;
   } else {
     try {
       const hostname = import.meta.server
         ? useRequestURL().hostname
         : window.location.hostname;
-      id.value = resolveSiteFromHost(hostname, fallback);
+      id.value = resolveSiteFromHost(hostname, fallbackSite);
     } catch {
-      id.value = fallback;
+      id.value = fallbackSite;
     }
   }
 
@@ -48,7 +52,7 @@ export function useChamber() {
   const isLegislative = computed(() => isChamberId(id.value));
 
   const chamberId = computed<ChamberId>(() =>
-    isChamberId(id.value) ? id.value : fallback,
+    isChamberId(id.value) ? id.value : fallbackChamber,
   );
 
   const otherId = computed(() => otherChamberId(chamberId.value));

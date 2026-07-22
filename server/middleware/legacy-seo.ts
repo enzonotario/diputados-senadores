@@ -1,7 +1,7 @@
 import nameToId from "../assets/legacy-senador-redirects.json";
 import {
+  parseSiteId,
   resolveSiteFromHost,
-  type ChamberId,
 } from "../../app/lib/chamber";
 
 const STATIC: Record<string, string> = {
@@ -17,7 +17,7 @@ function siteFromEvent(event: any) {
     "";
   const hostname = String(host).split(",")[0].trim().split(":")[0];
   const config = useRuntimeConfig(event);
-  const fallback = (config.public.defaultChamber as ChamberId) || "senadores";
+  const fallback = parseSiteId(config.public.defaultChamber, "senadores");
   return resolveSiteFromHost(hostname, fallback);
 }
 

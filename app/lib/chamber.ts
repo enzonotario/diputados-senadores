@@ -58,7 +58,7 @@ export const CHAMBERS: Record<ChamberId, ChamberConfig> = {
     groupsPath: "/diputados/bloques",
     officialUrl: "https://www.diputados.gob.ar/",
     officialLabel: "diputados.gob.ar",
-    githubUrl: "https://github.com/enzonotario/diputados",
+    githubUrl: "https://github.com/enzonotario/diputados-senadores",
     bodyName: "la Cámara de Diputados de la Nación Argentina",
   },
   senadores: {
@@ -98,7 +98,7 @@ export const CONGRESO: CongresoConfig = {
   brand: "congreso",
   logoSrc: "",
   logoSrcDark: "",
-  githubUrl: "https://github.com/enzonotario/senadores",
+  githubUrl: "https://github.com/enzonotario/diputados-senadores",
 };
 
 export const SITES: Record<SiteId, SiteConfig> = {

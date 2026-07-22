@@ -219,8 +219,9 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    // Solo server. Override: NUXT_REVALIDATE_SECRET
+    // Solo server. Override: NUXT_REVALIDATE_SECRET / NUXT_CORS_ORIGINS
     revalidateSecret,
+    corsOrigins: process.env.NUXT_CORS_ORIGINS || "",
     public: {
       defaultChamber: defaultSite,
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL || siteConfig.siteUrl,
@@ -234,6 +235,10 @@ export default defineNuxtConfig({
       apiBaseUrl:
         process.env.NUXT_PUBLIC_API_BASE_URL ||
         "https://api.argentinadatos.com",
+      /** Base de la mini-API (`/api/*`). Vacío = same-origin. */
+      appApiBaseUrl: (
+        process.env.NUXT_PUBLIC_APP_API_BASE_URL || ""
+      ).replace(/\/$/, ""),
     },
   },
 

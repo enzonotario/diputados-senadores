@@ -1,23 +1,28 @@
 import {
   buildChamberAbsoluteUrl,
+  buildSiteAbsoluteUrl,
   getChamberConfig,
+  getSiteConfig,
+  isChamberId,
   otherChamberId,
-  resolveChamberFromHost,
+  resolveSiteFromHost,
   rewritePathForChamber,
   type ChamberConfig,
   type ChamberId,
+  type SiteConfig,
+  type SiteId,
 } from "@/lib/chamber";
 
 /**
- * Cámara activa según Host (runtime) o DEFAULT_CHAMBER (prerender).
- * Local: diputados.localhost.test / senadores.localhost.test (o *.localhost).
+ * Sitio activo según Host (runtime) o DEFAULT_CHAMBER (prerender).
+ * Local: diputados|senadores|congreso.localhost(.test).
  */
 export function useChamber() {
   const config = useRuntimeConfig();
   const route = useRoute();
   const fallback = (config.public.defaultChamber as ChamberId) || "senadores";
 
-  const id = useState<ChamberId>("chamber-id", () => fallback);
+  const id = useState<SiteId>("site-id", () => fallback);
 
   // En generate el hostname del crawler no es el de prod: fijar cámara del build.
   if (import.meta.prerender) {
@@ -27,18 +32,29 @@ export function useChamber() {
       const hostname = import.meta.server
         ? useRequestURL().hostname
         : window.location.hostname;
-      id.value = resolveChamberFromHost(hostname, fallback);
+      id.value = resolveSiteFromHost(hostname, fallback);
     } catch {
       id.value = fallback;
     }
   }
 
-  const chamber = computed<ChamberConfig>(() => getChamberConfig(id.value));
+  const site = computed<SiteConfig>(() => getSiteConfig(id.value));
+  /** Alias de `site` para SEO/brand (incluye congreso). */
+  const chamber = site;
+
   const isDiputados = computed(() => id.value === "diputados");
   const isSenadores = computed(() => id.value === "senadores");
+  const isCongreso = computed(() => id.value === "congreso");
+  const isLegislative = computed(() => isChamberId(id.value));
 
-  const otherId = computed(() => otherChamberId(id.value));
-  const otherChamber = computed(() => getChamberConfig(otherId.value));
+  const chamberId = computed<ChamberId>(() =>
+    isChamberId(id.value) ? id.value : fallback,
+  );
+
+  const otherId = computed(() => otherChamberId(chamberId.value));
+  const otherChamber = computed<ChamberConfig>(() =>
+    getChamberConfig(otherId.value),
+  );
 
   function currentLocation() {
     try {
@@ -52,7 +68,7 @@ export function useChamber() {
       };
     } catch {
       return {
-        hostname: getChamberConfig(id.value).siteHost,
+        hostname: getSiteConfig(id.value).siteHost,
         protocol: "https:",
         port: "",
       };
@@ -83,14 +99,32 @@ export function useChamber() {
     });
   });
 
+  /** URL absoluta al home de una cámara (útil desde congreso). */
+  function chamberHomeUrl(to: ChamberId) {
+    return buildSiteAbsoluteUrl(to, {
+      ...currentLocation(),
+      path: "/",
+    });
+  }
+
+  const diputadosUrl = computed(() => chamberHomeUrl("diputados"));
+  const senadoresUrl = computed(() => chamberHomeUrl("senadores"));
+
   return {
     id,
+    site,
     chamber,
+    chamberId,
     isDiputados,
     isSenadores,
+    isCongreso,
+    isLegislative,
     otherId,
     otherChamber,
     otherChamberUrl,
     otherChamberUrlForCurrentPath,
+    diputadosUrl,
+    senadoresUrl,
+    chamberHomeUrl,
   };
 }

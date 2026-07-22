@@ -1,9 +1,13 @@
+<script setup lang="ts">
+const { isLegislative } = useChamber();
+</script>
+
 <template>
   <UApp>
     <UDashboardGroup
       class="!relative !inset-auto !overflow-visible !h-auto min-h-dvh flex flex-col"
     >
-      <GlobalSearch />
+      <GlobalSearch v-if="isLegislative" />
       <AppNavbar />
       <NuxtRouteAnnouncer />
 

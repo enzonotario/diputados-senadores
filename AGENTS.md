@@ -4,14 +4,17 @@ Instrucciones para agentes que trabajan en este repo.
 
 ## Qué es
 
-Una sola app **Nuxt 4 (SSR)** que sirve **Diputados** y **Senadores** según el `Host`. Misma codebase, dos sitios.
+Una sola app **Nuxt 4 (SSR)** que sirve **Congreso** (landing), **Diputados** y **Senadores** según el `Host`. Misma codebase, tres sitios.
 
-| Cámara | Host local | Host prod |
+| Sitio | Host local | Host prod |
 |--------|------------|-----------|
+| Congreso (landing) | `congreso.localhost:3200` | `congreso.argentinadatos.com` |
 | Diputados | `diputados.localhost:3200` | `diputados.argentinadatos.com` |
 | Senadores | `senadores.localhost:3200` | `senadores.argentinadatos.com` |
 
 `*.localhost` suele bastar (sin `/etc/hosts`). Alternativa: `*.localhost.test` (ver `vite.server.allowedHosts` en `nuxt.config.ts`).
+
+En **congreso.** solo existe `/` (landing con CTAs a las dos cámaras). Cualquier otra ruta hace 302 a `/`.
 
 ## Arranque
 
@@ -29,8 +32,7 @@ Package manager: **pnpm**.
 
 ## Deploy (Coolify / Docker / VPS) — recomendado
 
-**Dos servicios Coolify** (misma imagen base, distinto tag y `NUXT_PUBLIC_DEFAULT_CHAMBER`):
-
+**Dos servicios Coolify** (misma imagen base, distinto tag y `NUXT_PUBLIC_DEFAULT_CHAMBER`). Congreso puede compartir cualquiera (solo landing `/`) o un tercero ligero:
 | Servicio | Dominio | `IMAGE_TAG` | `NUXT_PUBLIC_DEFAULT_CHAMBER` |
 |----------|---------|-------------|-------------------------------|
 | Diputados | `diputados.argentinadatos.com` | `diputados-latest` | `diputados` |
@@ -85,7 +87,7 @@ Redirects SEO nombre→id: `server/middleware/legacy-seo.ts` (mapa en `assets/le
 ## Reglas duras
 
 1. **No unificar paths entre cámaras.** Conservar `/diputados`, `/diputados/bloques`, `/senadores`, `/senadores/partidos`, `/actas`. El middleware solo *reescribe* rutas de la cámara equivocada.
-2. **Cámara = Host**, no un flag de usuario. Entrypoint: `app/lib/chamber.ts` + `useChamber()` + `middleware/chamber.global.ts`.
+2. **Sitio = Host**, no un flag de usuario. Entrypoint: `app/lib/chamber.ts` + `useChamber()` + `middleware/chamber.global.ts`. `SiteId` = `diputados` | `senadores` | `congreso`; `ChamberId` sigue siendo solo las dos cámaras legislativas.
 3. **Datos separados.** No mezclar tipos ni caches:
    - Diputados → `app/lib/diputados-data.ts` + `types-diputados.ts` → API `/v1/diputados/`
    - Senadores → `app/lib/senadores-data.ts` + `types.ts` → API `/v1/senado/`
@@ -144,7 +146,8 @@ Diputados tiene lista local en `diputados-data.ts`.
 
 | Quiero… | Empiezo en… |
 |---------|-------------|
-| Cambiar brand/nav/footer/SEO por cámara | `lib/chamber.ts`, `AppNavbar`, `AppFooter`, `plugins/chamber-seo.ts` |
+| Cambiar brand/nav/footer/SEO por sitio | `lib/chamber.ts`, `AppNavbar`, `AppFooter`, `plugins/chamber-seo.ts` |
+| Landing Congreso | `components/chamber/CongresoHome.vue` + wrapper en `pages/index.vue` |
 | Nueva página de miembros | `pages/diputados/*` o `pages/senadores/*` (no “genérica” que rompa URLs) |
 | Home o actas distintas por cámara | `components/chamber/*`, `components/actas/*` + wrapper en `pages/` |
 | Lógica de API / stats | `lib/*-data.ts` (solo server) + `server/utils/mini-api.ts` + `server/api/*` |
@@ -164,10 +167,13 @@ Diputados tiene lista local en `diputados-data.ts`.
 ## Smoke rápido
 
 ```bash
+curl -sI -H 'Host: congreso.localhost' http://127.0.0.1:3200/
 curl -sI -H 'Host: diputados.localhost' http://127.0.0.1:3200/
 curl -sI -H 'Host: senadores.localhost' http://127.0.0.1:3200/
 # Cross-chamber debe 302:
 curl -sI -H 'Host: diputados.localhost' http://127.0.0.1:3200/senadores
+# Congreso deep path → home:
+curl -sI -H 'Host: congreso.localhost' http://127.0.0.1:3200/actas
 # Mini-API (slices, no dump). Pasá chamber en query si no hay Host (SSR interno):
 curl -s -H 'Host: diputados.localhost' 'http://127.0.0.1:3200/api/search-catalog?chamber=diputados' | head -c 200
 curl -s 'http://127.0.0.1:3200/api/members/HCDN3181?chamber=diputados' | head -c 200

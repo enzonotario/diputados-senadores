@@ -1,6 +1,6 @@
 import nameToId from "../assets/legacy-senador-redirects.json";
 import {
-  resolveChamberFromHost,
+  resolveSiteFromHost,
   type ChamberId,
 } from "../../app/lib/chamber";
 
@@ -10,7 +10,7 @@ const STATIC: Record<string, string> = {
   "/comparativa": "/senadores",
 };
 
-function chamberFromEvent(event: any): ChamberId {
+function siteFromEvent(event: any) {
   const host =
     getRequestHeader(event, "x-forwarded-host") ||
     getRequestHeader(event, "host") ||
@@ -18,7 +18,7 @@ function chamberFromEvent(event: any): ChamberId {
   const hostname = String(host).split(",")[0].trim().split(":")[0];
   const config = useRuntimeConfig(event);
   const fallback = (config.public.defaultChamber as ChamberId) || "senadores";
-  return resolveChamberFromHost(hostname, fallback);
+  return resolveSiteFromHost(hostname, fallback);
 }
 
 /**
@@ -26,7 +26,7 @@ function chamberFromEvent(event: any): ChamberId {
  * Los ~1k nombre→id van por mapa JSON (no routeRules masivos).
  */
 export default defineEventHandler((event) => {
-  if (chamberFromEvent(event) !== "senadores") return;
+  if (siteFromEvent(event) !== "senadores") return;
 
   const url = getRequestURL(event);
   const path = url.pathname.replace(/\/$/, "") || "/";

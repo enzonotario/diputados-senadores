@@ -4,8 +4,8 @@
  * (incluye mapa nombre→id).
  */
 export default defineNuxtRouteMiddleware((to) => {
-  const { id: chamber } = useChamber();
-  if (chamber.value !== "senadores") return;
+  const { id } = useChamber();
+  if (id.value !== "senadores") return;
 
   const path = to.path.replace(/\/$/, "") || "/";
 

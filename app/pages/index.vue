@@ -1,8 +1,9 @@
 <script setup lang="ts">
-const { isDiputados } = useChamber();
+const { isDiputados, isCongreso } = useChamber();
 </script>
 
 <template>
-  <ChamberDiputadosHome v-if="isDiputados" />
+  <ChamberCongresoHome v-if="isCongreso" />
+  <ChamberDiputadosHome v-else-if="isDiputados" />
   <ChamberSenadoresHome v-else />
 </template>

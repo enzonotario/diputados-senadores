@@ -20,6 +20,10 @@ const { chamber } = useChamber();
 const logoClass = computed(() =>
   props.size === "lg" ? "h-28 w-auto sm:h-36 md:h-44" : "h-8 w-auto sm:h-9",
 );
+
+const showLogo = computed(
+  () => props.logo && Boolean(chamber.value.logoSrc),
+);
 </script>
 
 <template>
@@ -28,7 +32,7 @@ const logoClass = computed(() =>
     class="flex items-center gap-2 font-semibold shrink-0 min-w-0"
     :aria-label="`${chamber.siteName} — inicio`"
   >
-    <span v-if="logo" class="relative shrink-0">
+    <span v-if="showLogo" class="relative shrink-0">
       <img
         :src="chamber.logoSrc"
         :alt="chamber.siteName"

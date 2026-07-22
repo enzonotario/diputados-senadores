@@ -31,6 +31,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   // SSR + prerender selectivo (hybrid). Cámara fijada en build vía DEFAULT_CHAMBER.
+  // Hosts: diputados.* / senadores.* / congreso.* (mismo path ≠ mismo sitio).
   ssr: true,
   nitro: {
     preset: "node-server",
@@ -64,6 +65,7 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
+    // Cache por path no distingue Host (diputados / senadores / congreso).
     "/api/**": { cache: false },
     // Shells de índice: SSG solo de la cámara de esta imagen.
     "/": { prerender: true },
@@ -185,6 +187,7 @@ export default defineNuxtConfig({
         ".localhost.test",
         "diputados.localhost.test",
         "senadores.localhost.test",
+        "congreso.localhost.test",
       ],
     },
   },

@@ -1,58 +1,80 @@
 <script setup lang="ts">
-import type { NavigationMenuItem } from "@nuxt/ui";
+import type { NavigationMenuItem, TabsItem } from "@nuxt/ui";
+import { getChamberConfig } from "@/lib/chamber";
 
 const route = useRoute();
-const { chamber, otherChamber, otherChamberUrl } = useChamber();
+const {
+  chamberId,
+  otherChamber,
+  otherChamberUrl,
+  isCongreso,
+  isLegislative,
+} = useChamber();
 
-const navItems = computed<NavigationMenuItem[]>(() => {
+const legislative = computed(() =>
+  isLegislative.value ? getChamberConfig(chamberId.value) : null,
+);
+
+const tabItems = computed<TabsItem[]>(() => {
+  const c = legislative.value;
+  if (!c) return [];
+  return [
+    { label: "Inicio", value: "/" },
+    { label: "Votaciones", value: "/actas" },
+    { label: c.membersLabel, value: c.membersPath },
+    { label: c.groupsLabel, value: c.groupsPath },
+  ];
+});
+
+const sidebarItems = computed<NavigationMenuItem[]>(() => {
+  if (isCongreso.value || !legislative.value) {
+    return [
+      {
+        label: "Inicio",
+        icon: "i-lucide-house",
+        to: "/",
+        active: true,
+      },
+    ];
+  }
+
+  const c = legislative.value;
   const path = route.path;
   const groupsActive =
-    path.startsWith(chamber.value.groupsPath) ||
+    path.startsWith(c.groupsPath) ||
     path.includes("/bloques") ||
     path.includes("/partidos");
   const membersActive =
     !groupsActive &&
-    (path.startsWith(chamber.value.membersPath) ||
+    (path.startsWith(c.membersPath) ||
       path.startsWith("/diputados") ||
       path.startsWith("/senadores"));
 
   return [
     {
       label: "Inicio",
+      icon: "i-lucide-house",
       to: "/",
       active: path === "/",
     },
     {
       label: "Votaciones",
+      icon: "i-lucide-file-text",
       to: "/actas",
       active: path.startsWith("/actas"),
     },
     {
-      label: chamber.value.membersLabel,
-      to: chamber.value.membersPath,
+      label: c.membersLabel,
+      icon: "i-lucide-users",
+      to: c.membersPath,
       active: membersActive,
     },
     {
-      label: chamber.value.groupsLabel,
-      to: chamber.value.groupsPath,
+      label: c.groupsLabel,
+      icon: "i-lucide-shapes",
+      to: c.groupsPath,
       active: groupsActive,
     },
-  ];
-});
-
-const sidebarItems = computed<NavigationMenuItem[]>(() => {
-  const icons = [
-    "i-lucide-house",
-    "i-lucide-file-text",
-    "i-lucide-users",
-    "i-lucide-shapes",
-  ] as const;
-
-  return [
-    ...navItems.value.map((item, index) => ({
-      ...item,
-      icon: icons[index],
-    })),
     {
       label: otherChamber.value.membersLabel,
       icon: "i-lucide-external-link",
@@ -61,6 +83,33 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
       external: true,
     },
   ];
+});
+
+const activeTab = computed({
+  get() {
+    const c = legislative.value;
+    if (!c) return "/";
+    const path = route.path;
+    if (path.startsWith("/actas")) return "/actas";
+    if (
+      path.startsWith(c.groupsPath) ||
+      path.includes("/bloques") ||
+      path.includes("/partidos")
+    ) {
+      return c.groupsPath;
+    }
+    if (
+      path.startsWith(c.membersPath) ||
+      path.startsWith("/diputados") ||
+      path.startsWith("/senadores")
+    ) {
+      return c.membersPath;
+    }
+    return "/";
+  },
+  set(value: string | number) {
+    navigateTo(String(value));
+  },
 });
 </script>
 
@@ -74,10 +123,10 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
     :ui="{ root: '!hidden' }"
   >
     <template #header>
-      <AppBrand />
+      <AppBrand :logo="!isCongreso" />
     </template>
 
-    <div class="px-2 pb-2">
+    <div v-if="isLegislative" class="px-2 pb-2">
       <UDashboardSearchButton label="Buscar" class="w-full" />
     </div>
 
@@ -98,51 +147,60 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
     }"
   >
     <template #leading>
-      <AppBrand />
+      <AppBrand :logo="!isCongreso" />
     </template>
 
     <!-- Slot default = center: oculto en mobile (lg:flex) -->
-    <nav class="h-full flex justify-end" aria-label="Navegación principal">
-      <UNavigationMenu
-        :items="navItems"
+    <nav
+      v-if="isLegislative"
+      class="h-full flex justify-end"
+      aria-label="Navegación principal"
+    >
+      <UTabs
+        v-model="activeTab"
+        :items="tabItems"
         variant="link"
-        color="neutral"
-        highlight
+        size="sm"
+        :content="false"
+        activation-mode="manual"
         :ui="{
-          root: 'h-full w-auto gap-0 [&>div]:h-full',
-          list: 'h-full w-auto gap-0',
-          item: 'h-full py-0',
-          link: 'h-full rounded-none px-3 sm:px-4 text-sm whitespace-nowrap after:!bottom-0 after:!inset-x-3 after:h-0.5 after:!rounded-none',
+          root: 'h-full w-auto',
+          list: 'h-full w-auto p-0 gap-0 border-0 mb-0',
+          trigger:
+            'h-full rounded-none px-3 sm:px-4 text-sm whitespace-nowrap',
+          indicator: 'bottom-0 h-0.5 rounded-none',
         }"
         class="h-full"
       />
     </nav>
 
     <template #right>
-      <UDashboardSearchButton
-        class="hidden sm:inline-flex"
-        size="sm"
-        label="Buscar"
-      />
-      <UDashboardSearchButton
-        class="sm:hidden"
-        size="sm"
-        collapsed
-        aria-label="Buscar"
-      />
-      <UButton
-        :to="otherChamberUrl"
-        target="_blank"
-        external
-        color="neutral"
-        variant="ghost"
-        size="sm"
-        trailing-icon="i-lucide-external-link"
-        class="hidden sm:inline-flex"
-        :aria-label="`Abrir ${otherChamber.membersLabel} en una pestaña nueva`"
-      >
-        {{ otherChamber.membersLabel }}
-      </UButton>
+      <template v-if="isLegislative">
+        <UDashboardSearchButton
+          class="hidden sm:inline-flex"
+          size="sm"
+          label="Buscar"
+        />
+        <UDashboardSearchButton
+          class="sm:hidden"
+          size="sm"
+          collapsed
+          aria-label="Buscar"
+        />
+        <UButton
+          :to="otherChamberUrl"
+          target="_blank"
+          external
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          trailing-icon="i-lucide-external-link"
+          class="hidden sm:inline-flex"
+          :aria-label="`Abrir ${otherChamber.membersLabel} en una pestaña nueva`"
+        >
+          {{ otherChamber.membersLabel }}
+        </UButton>
+      </template>
       <ColorModeToggle />
     </template>
   </UDashboardNavbar>

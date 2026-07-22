@@ -1,9 +1,10 @@
+/** Cámaras legislativas (datos /actas /miembros). */
 export type ChamberId = "diputados" | "senadores";
 
-export type ChamberConfig = {
-  id: ChamberId;
-  /** Subdomain label: diputados | senadores */
-  slug: ChamberId;
+/** Sitios servidos por Host: cámaras + landing Congreso. */
+export type SiteId = ChamberId | "congreso";
+
+type SiteBase = {
   siteHost: string;
   siteUrl: string;
   siteName: string;
@@ -11,19 +12,31 @@ export type ChamberConfig = {
   keywords: string;
   /** Nav brand text before .argentinadatos.com */
   brand: string;
-  /** Logo en /public (navbar + home), modo claro. */
+  /** Logo en /public (navbar + home), modo claro. Vacío = solo texto. */
   logoSrc: string;
   /** Logo para dark mode. */
   logoSrcDark: string;
+  githubUrl: string;
+};
+
+export type ChamberConfig = SiteBase & {
+  id: ChamberId;
+  slug: ChamberId;
   membersLabel: string;
   membersPath: string;
   groupsLabel: string;
   groupsPath: string;
   officialUrl: string;
   officialLabel: string;
-  githubUrl: string;
   bodyName: string;
 };
+
+export type CongresoConfig = SiteBase & {
+  id: "congreso";
+  slug: "congreso";
+};
+
+export type SiteConfig = ChamberConfig | CongresoConfig;
 
 export const CHAMBERS: Record<ChamberId, ChamberConfig> = {
   diputados: {
@@ -72,23 +85,65 @@ export const CHAMBERS: Record<ChamberId, ChamberConfig> = {
   },
 };
 
-/** Local + prod host patterns. Prefer explicit chamber markers in hostname. */
-export function resolveChamberFromHost(
+export const CONGRESO: CongresoConfig = {
+  id: "congreso",
+  slug: "congreso",
+  siteHost: "congreso.argentinadatos.com",
+  siteUrl: "https://congreso.argentinadatos.com",
+  siteName: "Cómo votan en el Congreso",
+  siteDescription:
+    "Elegí Cámara de Diputados o Senado y mirá cómo votan en el Congreso de la Nación Argentina.",
+  keywords:
+    "congreso, diputados, senadores, votaciones, actas, argentina, cámara",
+  brand: "congreso",
+  logoSrc: "",
+  logoSrcDark: "",
+  githubUrl: "https://github.com/enzonotario/senadores",
+};
+
+export const SITES: Record<SiteId, SiteConfig> = {
+  ...CHAMBERS,
+  congreso: CONGRESO,
+};
+
+export function isChamberId(id: SiteId): id is ChamberId {
+  return id === "diputados" || id === "senadores";
+}
+
+/** Local + prod host patterns. Prefer explicit site markers in hostname. */
+export function resolveSiteFromHost(
   hostname: string,
-  fallback: ChamberId = "senadores",
-): ChamberId {
+  fallback: SiteId = "senadores",
+): SiteId {
   const host = String(hostname || "")
     .toLowerCase()
     .split(":")[0];
 
   if (host.includes("diputados")) return "diputados";
   if (host.includes("senadores")) return "senadores";
+  if (host.includes("congreso")) return "congreso";
 
   return fallback;
 }
 
+/**
+ * Cámara legislativa desde Host.
+ * En host congreso (o desconocido) usa `fallback` de cámara.
+ */
+export function resolveChamberFromHost(
+  hostname: string,
+  fallback: ChamberId = "senadores",
+): ChamberId {
+  const site = resolveSiteFromHost(hostname, fallback);
+  return isChamberId(site) ? site : fallback;
+}
+
 export function getChamberConfig(id: ChamberId): ChamberConfig {
   return CHAMBERS[id];
+}
+
+export function getSiteConfig(id: SiteId): SiteConfig {
+  return SITES[id];
 }
 
 export function otherChamberId(id: ChamberId): ChamberId {
@@ -96,27 +151,36 @@ export function otherChamberId(id: ChamberId): ChamberId {
 }
 
 /**
- * Hostname de la otra cámara, preservando el entorno local
+ * Hostname de otro sitio, preservando el entorno local
  * (p.ej. diputados.localhost.test → senadores.localhost.test).
  */
+export function swapSiteHostname(hostname: string, to: SiteId): string {
+  const host = String(hostname || "")
+    .toLowerCase()
+    .split(":")[0];
+
+  const markers: SiteId[] = ["diputados", "senadores", "congreso"];
+  for (const from of markers) {
+    if (from === to) continue;
+    if (host.includes(from)) {
+      return host.replace(from, to);
+    }
+  }
+  if (host.includes(to)) return host;
+  return SITES[to].siteHost;
+}
+
+/** @deprecated Prefer swapSiteHostname */
 export function swapChamberHostname(
   hostname: string,
   to: ChamberId,
 ): string {
-  const host = String(hostname || "")
-    .toLowerCase()
-    .split(":")[0];
-  const from = otherChamberId(to);
-  if (host.includes(from)) {
-    return host.replace(from, to);
-  }
-  if (host.includes(to)) return host;
-  return CHAMBERS[to].siteHost;
+  return swapSiteHostname(hostname, to);
 }
 
-/** URL absoluta a la otra cámara (misma ruta opcional). */
-export function buildChamberAbsoluteUrl(
-  to: ChamberId,
+/** URL absoluta a un sitio (misma ruta opcional). */
+export function buildSiteAbsoluteUrl(
+  to: SiteId,
   opts: {
     hostname: string;
     protocol?: string;
@@ -124,7 +188,7 @@ export function buildChamberAbsoluteUrl(
     path?: string;
   },
 ): string {
-  const host = swapChamberHostname(opts.hostname, to);
+  const host = swapSiteHostname(opts.hostname, to);
   const protocol = opts.protocol || "https:";
   const isLocal =
     host.includes("localhost") ||
@@ -139,9 +203,23 @@ export function buildChamberAbsoluteUrl(
   return `${protocol}//${host}${port}${normalizedPath}`;
 }
 
+/** URL absoluta a la otra cámara (misma ruta opcional). */
+export function buildChamberAbsoluteUrl(
+  to: ChamberId,
+  opts: {
+    hostname: string;
+    protocol?: string;
+    port?: string;
+    path?: string;
+  },
+): string {
+  return buildSiteAbsoluteUrl(to, opts);
+}
+
 /**
  * Redirect wrong-chamber member routes to the active chamber.
  * Shared routes like /actas stay as-is (data differs by chamber).
+ * No-op for congreso (middleware manda todo a /).
  */
 export function rewritePathForChamber(
   path: string,

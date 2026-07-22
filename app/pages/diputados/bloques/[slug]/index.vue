@@ -88,7 +88,9 @@ const displayed = computed<Diputado[]>(() => {
   return mostrarActivos.value ? bloque.value.activos : bloque.value.inactivos;
 });
 
-const { sorting } = useTableSorting("apellido", false, { syncQuery: false });
+const { sorting } = useTableSorting("nombreCompleto", false, {
+  syncQuery: false,
+});
 
 const tableColumns = [
   {

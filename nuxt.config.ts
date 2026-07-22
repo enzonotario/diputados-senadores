@@ -258,7 +258,7 @@ export default defineNuxtConfig({
         { name: "twitter:creator", content: "@enzonotario_" },
       ],
       link: [
-        { rel: "icon", type: "image/png", href: "/favicon.ico" },
+        { rel: "icon", href: "/favicon.ico" },
         { rel: "preconnect", href: "https://api.argentinadatos.com" },
         { rel: "dns-prefetch", href: "https://api.argentinadatos.com" },
         { rel: "preconnect", href: "https://www.googletagmanager.com" },

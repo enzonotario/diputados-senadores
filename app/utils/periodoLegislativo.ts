@@ -96,9 +96,7 @@ function isLeapYear(y: number) {
 }
 
 /** Período fake para Senado a partir de la fecha del acta. */
-export function fakeSenadoPeriodoKey(
-  fecha: string | null | undefined,
-): string {
+export function fakeSenadoPeriodoKey(fecha: string | null | undefined): string {
   const y = legislativeYearStartFromFecha(fecha);
   return y == null ? SIN_PERIODO_KEY : String(y);
 }
@@ -134,10 +132,7 @@ export function buildPeriodosCatalog(
   actas: ActaPeriodoRow[],
   chamber: "diputados" | "senadores",
 ): PeriodosCatalog {
-  const map = new Map<
-    string,
-    { min: string; max: string; count: number }
-  >();
+  const map = new Map<string, { min: string; max: string; count: number }>();
 
   for (const a of actas || []) {
     const key = resolveActaPeriodoKey(a, chamber);
@@ -210,9 +205,7 @@ export function pickDefaultPeriodoKey(periods: PeriodoInfo[]): string {
   }
 
   const today = toIsoDateAr(new Date().toISOString()) || "";
-  const current = known.find(
-    (p) => p.minFecha <= today && today <= p.maxFecha,
-  );
+  const current = known.find((p) => p.minFecha <= today && today <= p.maxFecha);
   if (current) return current.key;
 
   return [...known].sort((a, b) => b.maxFecha.localeCompare(a.maxFecha))[0]!
@@ -225,6 +218,21 @@ export function findPeriodo(
 ): PeriodoInfo | null {
   if (!catalog || !key) return null;
   return catalog.periods.find((p) => p.key === key) || null;
+}
+
+/**
+ * Últimos N períodos conocidos del catálogo (ya ordenado de más reciente a más viejo).
+ * Excluye `sin`.
+ */
+export function recentPeriodoKeys(
+  catalog: PeriodosCatalog | null | undefined,
+  limit: number,
+): string[] {
+  if (!catalog || limit <= 0) return [];
+  return catalog.periods
+    .filter((p) => p.key !== SIN_PERIODO_KEY)
+    .slice(0, limit)
+    .map((p) => p.key);
 }
 
 /** Normaliza query/`periodo=` a lista de claves (sin `todos`). */
@@ -406,9 +414,7 @@ function voteInPeriodoRanges(
 }
 
 /** Filtra votos de afinidad por rango(s) de fechas del/los período(s). */
-export function filterVotesByPeriodo<
-  T extends { fecha?: string | null },
->(
+export function filterVotesByPeriodo<T extends { fecha?: string | null }>(
   votes: T[],
   periodo: string | string[] | null | undefined,
   catalog: PeriodosCatalog | null | undefined,

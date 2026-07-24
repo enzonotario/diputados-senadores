@@ -8,16 +8,25 @@ import {
 import {
   filterActasByPeriodo,
   filterMembersByPeriodo,
+  recentPeriodoKeys,
 } from "@/utils/periodoLegislativo";
+
+/** Hemiciclo / recientes: período vigente. Charts overview: últimos N. */
+const HOME_CHART_PERIODS = 5;
 
 const { localFetch } = useLocalApi();
 const { catalog, defaultKey, pending: pendingPeriodos } = usePeriodoFilter();
 const homePeriodo = computed(() =>
   defaultKey.value ? [defaultKey.value] : [],
 );
-const homePeriodoBadgeLabels = computed(() =>
-  defaultKey.value ? [`P. ${defaultKey.value}`] : [],
+const chartPeriodoKeys = computed(() =>
+  recentPeriodoKeys(catalog.value, HOME_CHART_PERIODS),
 );
+const chartPeriodoBadgeLabels = computed(() => {
+  const n = chartPeriodoKeys.value.length;
+  if (!n) return [];
+  return n === 1 ? [`P. ${chartPeriodoKeys.value[0]}`] : [`Últimos ${n}`];
+});
 
 const { data: membersData, pending: pendingMembers } = useAsyncData(
   "diputados-home-members",
@@ -58,6 +67,14 @@ const bloqueColores = computed(() =>
 
 const actasInPeriodo = computed(() =>
   filterActasByPeriodo(actasData.value || [], homePeriodo.value, "diputados"),
+);
+
+const actasOverview = computed(() =>
+  filterActasByPeriodo(
+    actasData.value || [],
+    chartPeriodoKeys.value,
+    "diputados",
+  ),
 );
 
 useChamberSeo(() => {
@@ -141,12 +158,13 @@ const actasRecientes = computed(() => {
           </h2>
           <p class="text-sm text-muted max-w-2xl">
             Cuántas votaciones se aprueban o rechazan, y cuántos diputados
-            asisten, mes a mes.
+            asisten, mes a mes — últimos
+            {{ chartPeriodoKeys.length || HOME_CHART_PERIODS }} períodos.
           </p>
         </div>
         <ChartsActasOverviewCharts
-          :actas="actasInPeriodo"
-          :periodo-badge-labels="homePeriodoBadgeLabels"
+          :actas="actasOverview"
+          :periodo-badge-labels="chartPeriodoBadgeLabels"
         />
       </section>
 

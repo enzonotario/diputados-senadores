@@ -9,16 +9,28 @@ import {
   filterActasByPeriodo,
   filterMembersByPeriodo,
   formatPeriodoLabel,
+  recentPeriodoKeys,
 } from "@/utils/periodoLegislativo";
+
+/** Hemiciclo / recientes: período vigente. Charts overview: últimos N. */
+const HOME_CHART_PERIODS = 5;
 
 const { localFetch } = useLocalApi();
 const { catalog, defaultKey, pending: pendingPeriodos } = usePeriodoFilter();
 const homePeriodo = computed(() =>
   defaultKey.value ? [defaultKey.value] : [],
 );
-const homePeriodoBadgeLabels = computed(() =>
-  defaultKey.value ? [formatPeriodoLabel(defaultKey.value, "senadores")] : [],
+const chartPeriodoKeys = computed(() =>
+  recentPeriodoKeys(catalog.value, HOME_CHART_PERIODS),
 );
+const chartPeriodoBadgeLabels = computed(() => {
+  const n = chartPeriodoKeys.value.length;
+  if (!n) return [];
+  if (n === 1) {
+    return [formatPeriodoLabel(chartPeriodoKeys.value[0]!, "senadores")];
+  }
+  return [`Últimos ${n}`];
+});
 
 const { data: membersData, pending: pendingMembers } = useAsyncData(
   "senadores-home-members",
@@ -61,6 +73,14 @@ const partidoColores = computed(() =>
 
 const actasInPeriodo = computed(() =>
   filterActasByPeriodo(actasData.value || [], homePeriodo.value, "senadores"),
+);
+
+const actasOverview = computed(() =>
+  filterActasByPeriodo(
+    actasData.value || [],
+    chartPeriodoKeys.value,
+    "senadores",
+  ),
 );
 
 useChamberSeo(() => {
@@ -144,12 +164,13 @@ const actasRecientes = computed(() => {
           </h2>
           <p class="text-sm text-muted max-w-2xl">
             Cuántas votaciones se aprueban o rechazan, y cuántos senadores
-            asisten, mes a mes.
+            asisten, mes a mes — últimos
+            {{ chartPeriodoKeys.length || HOME_CHART_PERIODS }} períodos.
           </p>
         </div>
         <ChartsActasOverviewCharts
-          :actas="actasInPeriodo"
-          :periodo-badge-labels="homePeriodoBadgeLabels"
+          :actas="actasOverview"
+          :periodo-badge-labels="chartPeriodoBadgeLabels"
         />
       </section>
 

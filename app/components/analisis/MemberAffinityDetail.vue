@@ -387,6 +387,12 @@ function onPairSelect(_e: Event, row: { original: AffinityPair }) {
       title="Mapa de coincidencias"
       :description="`Más cerca = más coinciden. Verde: mucho (≥70%), amarillo: a veces (40–70%), rojo: poco (<40%).`"
     >
+      <template #actions>
+        <AnalisisWindowActasButton
+          :actas="actasRows"
+          :from-year="AFFINITY_FROM_DATE.slice(0, 4)"
+        />
+      </template>
       <AnalisisAffinityForceGraph
         :members="peers"
         :center-id="memberId"

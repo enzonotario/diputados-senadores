@@ -35,6 +35,12 @@ import {
   votesFromSenador,
   type AffinityGroupInput,
 } from "../../app/utils/votingAffinity";
+import {
+  buildPeriodosCatalog,
+  filterActasByPeriodo,
+  normalizePeriodoKeys,
+  type PeriodosCatalog,
+} from "../../app/utils/periodoLegislativo";
 
 export type SearchCatalogItem = {
   id: string;
@@ -357,6 +363,10 @@ export async function buildMemberHistory(
     const member = await getDiputadoConActasById(id);
     if (!member) return null;
     let rows = historyRowsFromDiputado(member.actasDiputado || []);
+    const periodoKeys = normalizePeriodoKeys(query.periodo);
+    if (periodoKeys.length) {
+      rows = filterActasByPeriodo(rows, periodoKeys, "diputados");
+    }
     if (q) {
       rows = rows.filter(
         (a) =>
@@ -382,6 +392,10 @@ export async function buildMemberHistory(
   const member = await getSenadorConActasById(id);
   if (!member) return null;
   let rows = historyRowsFromSenador(member.actasSenador || []);
+  const periodoKeys = normalizePeriodoKeys(query.periodo);
+  if (periodoKeys.length) {
+    rows = filterActasByPeriodo(rows, periodoKeys, "senadores");
+  }
   if (q) {
     rows = rows.filter(
       (a) =>
@@ -509,6 +523,16 @@ export async function buildSlimActas(chamber: ChamberId) {
       ? await getActasDiputados()
       : await getActasSenadores();
   return { chamber, actas: slimActas(actas) };
+}
+
+export async function buildPeriodos(
+  chamber: ChamberId,
+): Promise<PeriodosCatalog & { chamber: ChamberId }> {
+  const actas =
+    chamber === "diputados"
+      ? await getActasDiputados()
+      : await getActasSenadores();
+  return { chamber, ...buildPeriodosCatalog(actas, chamber) };
 }
 
 export async function buildMembersList(chamber: ChamberId) {

@@ -130,6 +130,7 @@ export default defineNuxtConfig({
       "SankeyChart",
       "GraphChart",
       "MapChart",
+      "CustomChart",
     ],
     components: [
       "GridComponent",

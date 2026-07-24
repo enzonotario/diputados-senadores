@@ -24,6 +24,7 @@ type GroupDetailResponse = {
 const route = useRoute();
 const slug = computed(() => String(route.params.slug || ""));
 const { localFetch } = useLocalApi();
+const { filterMembers, filterVotes } = usePeriodoFilter();
 
 const { data } = await useAsyncData(
   () => `partido-${slug.value}`,
@@ -37,12 +38,18 @@ const { data: peersPayload, pending: peersPending } = useAffinityPeers(
   "senadores-affinity-peers",
 );
 
-const cohesionMembers = computed<AffinityMemberInput[]>(
-  () => partido.value?.cohesionPeers || [],
+const cohesionMembers = computed<AffinityMemberInput[]>(() =>
+  (partido.value?.cohesionPeers || []).map((m) => ({
+    ...m,
+    votes: filterVotes(m.votes || []),
+  })).filter((m) => (m.votes?.length ?? 0) > 0),
 );
 
 const allActiveMembers = computed<AffinityMemberInput[]>(() =>
-  peersToAffinityInputs(peersPayload.value?.peers),
+  peersToAffinityInputs(peersPayload.value?.peers).map((m) => ({
+    ...m,
+    votes: filterVotes(m.votes || []),
+  })).filter((m) => (m.votes?.length ?? 0) > 0),
 );
 
 const groupSlugs = computed(() => {
@@ -82,9 +89,17 @@ const integrantesVista = useLocalStorage<"lista" | "grilla">(
   "lista",
   { initOnMounted: true },
 );
+const activosInPeriodo = computed(() =>
+  filterMembers(partido.value?.activos || []),
+);
+const inactivosInPeriodo = computed(() =>
+  filterMembers(partido.value?.inactivos || []),
+);
 const displayed = computed<Senador[]>(() => {
   if (!partido.value) return [];
-  return mostrarActivos.value ? partido.value.activos : partido.value.inactivos;
+  return mostrarActivos.value
+    ? activosInPeriodo.value
+    : inactivosInPeriodo.value;
 });
 
 const { sorting } = useTableSorting("nombreCompleto", false, {
@@ -240,6 +255,8 @@ useChamberSeo(() => {
         :items="pageVistaItems"
         :center="false"
       />
+
+      <FilterPeriodo />
 
       <template v-if="pageVista === 'afinidad'">
         <ClientOnly>

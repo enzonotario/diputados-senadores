@@ -5,6 +5,7 @@ import {
   miembroVotosOverTime,
   firstIndexOnOrAfter,
   lastIndexOnOrBefore,
+  chartActasToMemberRows,
 } from "@/utils/chartSeries";
 import {
   mandatoRangesForChamber,
@@ -16,6 +17,7 @@ import {
   useChartPalette,
 } from "@/composables/useChartPalette";
 import { getVotoTipoConfig, VOTO_TIPO_ORDER } from "@/utils/votoTipo";
+import { formatPeriodoLabel } from "@/utils/periodoLegislativo";
 
 const props = defineProps<{
   actas: ActaChartRow[];
@@ -23,9 +25,16 @@ const props = defineProps<{
   /** Historial de cargos (para agrupar / marcar mandatos). */
   career?: CareerCargo[];
   chamber?: CareerChamber;
+  /**
+   * Si true, los actas ya vienen filtrados a un período legislativo:
+   * no forzar agrupación por mandato ni pintar bandas de mandato completas.
+   */
+  periodScoped?: boolean;
 }>();
 
 const palette = useChartPalette();
+
+const actasRows = computed(() => chartActasToMemberRows(props.actas || []));
 
 const mandatos = computed(() =>
   props.chamber
@@ -33,7 +42,9 @@ const mandatos = computed(() =>
     : [],
 );
 
-const hasMandatos = computed(() => mandatos.value.length >= 2);
+const hasMandatos = computed(
+  () => !props.periodScoped && mandatos.value.length >= 2,
+);
 
 const groupBy = ref<VotosTimeGroupBy>("mes");
 const groupByItems = computed(() => {
@@ -45,7 +56,7 @@ const groupByItems = computed(() => {
   if (hasMandatos.value) {
     items.push({ label: "Mandato", value: "mandato" });
   }
-  if (hasPeriodoData.value) {
+  if (periodoKeysPresentes.value.length >= 2) {
     items.push({ label: "Período legislativo", value: "periodo" });
   }
   return items;
@@ -53,29 +64,72 @@ const groupByItems = computed(() => {
 
 const series = computed(() => miembroPresentismoSeries(props.actas || []));
 const votosOverTime = computed(() =>
-  miembroVotosOverTime(props.actas || [], groupBy.value, mandatos.value),
+  miembroVotosOverTime(
+    props.actas || [],
+    groupBy.value,
+    props.periodScoped ? [] : mandatos.value,
+  ),
 );
 
 const hasSeries = computed(() => series.value.dates.length > 1);
 const hasVotosOverTime = computed(() => votosOverTime.value.keys.length > 0);
 
-const hasPeriodoData = computed(() =>
-  (props.actas || []).some((a) => String(a.periodo || "").trim()),
-);
+const periodoKeysPresentes = computed(() => {
+  const keys = new Set<string>();
+  for (const a of props.actas || []) {
+    const key = String(a.periodo || "").trim();
+    if (key) keys.add(key);
+  }
+  return [...keys];
+});
 
-/** Preferir Mandato cuando hay ≥2 periodos de cargo. */
+const hasPeriodoData = computed(() => periodoKeysPresentes.value.length > 0);
+
+const presentismoDescription = computed(() => {
+  const base = props.memberLabel
+    ? `Cómo fue cambiando la asistencia de ${props.memberLabel}.`
+    : "Cómo fue cambiando la asistencia.";
+  if (bandMode.value === "mandato") {
+    return `${base} Las bandas marcan cada mandato.`;
+  }
+  if (presentismoBands.value.length > 1) {
+    return `${base} Las bandas marcan cada período legislativo.`;
+  }
+  if (presentismoBands.value.length === 1) {
+    return `${base} Solo votaciones de ${presentismoBands.value[0]!.label}.`;
+  }
+  return base;
+});
+
+const votosDescription = computed(() => {
+  const base =
+    "Cuántos votos a favor, en contra, abstenciones o ausencias hubo en cada tramo.";
+  return votosBands.value.length
+    ? `${base} Las bandas marcan cada período legislativo.`
+    : base;
+});
+
+/** Preferir Mandato cuando hay ≥2 periodos de cargo (salvo vista ya filtrada). */
 watch(
-  hasMandatos,
-  (ok) => {
+  [hasMandatos, () => props.periodScoped],
+  ([ok, scoped]) => {
+    if (scoped) {
+      groupBy.value = "mes";
+      return;
+    }
     if (ok && groupBy.value === "mes") groupBy.value = "mandato";
   },
   { immediate: true },
 );
 
-watch([hasPeriodoData, hasMandatos], () => {
+watch([hasPeriodoData, hasMandatos, () => props.periodScoped], () => {
   const allowed = new Set(groupByItems.value.map((i) => i.value));
   if (!allowed.has(groupBy.value)) {
-    groupBy.value = hasMandatos.value ? "mandato" : "mes";
+    groupBy.value = props.periodScoped
+      ? "mes"
+      : hasMandatos.value
+        ? "mandato"
+        : "mes";
   }
 });
 
@@ -85,6 +139,47 @@ const MANDATO_BAND_A_DARK = "rgba(45,212,191,0.18)";
 const MANDATO_BAND_B_DARK = "rgba(148,163,184,0.16)";
 const MANDATO_LINE_LIGHT = "#0f766e";
 const MANDATO_LINE_DARK = "#5eead4";
+
+type BandSpan = { label: string; from: number; to: number; tint: string };
+
+function bandTints() {
+  const dark = palette.value.isDark;
+  return [
+    dark ? MANDATO_BAND_A_DARK : MANDATO_BAND_A_LIGHT,
+    dark ? MANDATO_BAND_B_DARK : MANDATO_BAND_B_LIGHT,
+  ] as const;
+}
+
+/** “P. 144” / “2025–2026” según cámara. */
+function shortPeriodoBandLabel(key: string): string {
+  if (!key) return "Sin período";
+  const label = formatPeriodoLabel(
+    key,
+    props.chamber === "senadores" ? "senadores" : "diputados",
+  );
+  return label.replace(/^per[ií]odo\s+/i, "P. ");
+}
+
+/** Tramos consecutivos con la misma clave de período (eje categórico). */
+function periodoSpansFromKeys(keys: string[]): BandSpan[] {
+  if (!keys.length) return [];
+  const [tintA, tintB] = bandTints();
+  const spans: BandSpan[] = [];
+  let start = 0;
+  for (let i = 1; i <= keys.length; i++) {
+    if (i < keys.length && keys[i] === keys[start]) continue;
+    spans.push({
+      label: shortPeriodoBandLabel(keys[start] || ""),
+      from: start,
+      to: i - 1,
+      tint: spans.length % 2 === 0 ? tintA : tintB,
+    });
+    start = i;
+  }
+  // Un solo período: alcanza la etiqueta, teñir todo el gráfico ensucia.
+  if (spans.length === 1) spans[0]!.tint = "rgba(0,0,0,0)";
+  return spans;
+}
 
 function visibleMandatoSpans(dates: string[]) {
   if (!dates.length || !hasMandatos.value) return [];
@@ -126,37 +221,56 @@ function visibleMandatoSpans(dates: string[]) {
   return spans;
 }
 
-const mandatoMarkLine = computed(() => {
-  const s = series.value;
-  const spans = visibleMandatoSpans(s.dates);
+/**
+ * Qué dimensión pintan las bandas: mandato cuando hay varios (vista completa),
+ * si no, el período legislativo (también con el filtro aplicado).
+ */
+const bandMode = computed<"mandato" | "periodo" | "none">(() => {
+  if (hasMandatos.value) return "mandato";
+  if (hasPeriodoData.value) return "periodo";
+  return "none";
+});
+
+const presentismoBands = computed<BandSpan[]>(() => {
+  if (bandMode.value === "mandato") {
+    return visibleMandatoSpans(series.value.dates);
+  }
+  if (bandMode.value === "periodo") {
+    return periodoSpansFromKeys(series.value.periodos);
+  }
+  return [];
+});
+
+/** Bandas de período en el chart de votos (solo agrupaciones temporales). */
+const votosBands = computed<BandSpan[]>(() => {
+  if (groupBy.value === "periodo" || groupBy.value === "mandato") return [];
+  const spans = periodoSpansFromKeys(votosOverTime.value.periodos);
+  return spans.length >= 2 ? spans : [];
+});
+
+function bandMarkLine(spans: BandSpan[]) {
   if (spans.length < 2) return undefined;
   const dark = palette.value.isDark;
-  const line = dark ? MANDATO_LINE_DARK : MANDATO_LINE_LIGHT;
 
-  // Solo divisores verticales; el nombre del mandato va en markArea.
-  const data = spans.slice(1).map((span) => ({
-    xAxis: span.from,
-    label: { show: false },
-  }));
-  if (!data.length) return undefined;
-
+  // Solo divisores verticales; el nombre va en markArea.
   return {
     symbol: ["none", "none"],
     animation: false,
     label: { show: false },
     lineStyle: {
-      color: line,
+      color: dark ? MANDATO_LINE_DARK : MANDATO_LINE_LIGHT,
       type: "solid" as const,
       width: 2.5,
       opacity: 1,
     },
-    data,
+    data: spans.slice(1).map((span) => ({
+      xAxis: span.from,
+      label: { show: false },
+    })),
   };
-});
+}
 
-const mandatoMarkArea = computed(() => {
-  const s = series.value;
-  const spans = visibleMandatoSpans(s.dates);
+function bandMarkArea(spans: BandSpan[]) {
   if (!spans.length) return undefined;
   const dark = palette.value.isDark;
   const labelBg = dark ? "rgba(17,24,39,0.88)" : "rgba(255,255,255,0.9)";
@@ -184,15 +298,15 @@ const mandatoMarkArea = computed(() => {
       { xAxis: span.to },
     ]),
   };
-});
+}
 
 const presentismoOption = computed(() => {
   if (!hasSeries.value) return null;
   const p = palette.value;
   const s = series.value;
   const chrome = baseChartChrome(p);
-  const markLine = mandatoMarkLine.value;
-  const markArea = mandatoMarkArea.value;
+  const markLine = bandMarkLine(presentismoBands.value);
+  const markArea = bandMarkArea(presentismoBands.value);
 
   return {
     ...chrome,
@@ -300,7 +414,12 @@ const votosOption = computed(() => {
     tooltip: {
       ...chrome.tooltip,
       formatter: (params: any) => {
-        const list = Array.isArray(params) ? params : [params];
+        const raw = Array.isArray(params) ? params : [params];
+        const list = raw.filter(
+          (item: any) =>
+            item.componentType !== "markLine" &&
+            item.componentType !== "markArea",
+        );
         const title = list[0]?.axisValueLabel || "";
         const total = list.reduce(
           (s: number, item: any) => s + (Number(item.value) || 0),
@@ -342,6 +461,8 @@ const votosOption = computed(() => {
         data: data.afirmativo,
         itemStyle: { color: p.afirmativo },
         emphasis: { focus: "series" },
+        // Sin divisores: el índice cae en el centro de la barra y la cortaría.
+        markArea: bandMarkArea(votosBands.value),
       },
       {
         name: getVotoTipoConfig("negativo").label,
@@ -383,12 +504,15 @@ const votosOption = computed(() => {
     <ChartsChartCard
       v-if="presentismoOption"
       title="Asistencia a lo largo del tiempo"
-      :description="
-        memberLabel
-          ? `Cómo fue cambiando la asistencia de ${memberLabel}.${hasMandatos ? ' Las bandas marcan cada mandato.' : ''}`
-          : `Cómo fue cambiando la asistencia.${hasMandatos ? ' Las bandas marcan cada mandato.' : ''}`
-      "
+      :description="presentismoDescription"
     >
+      <template #actions>
+        <AnalisisWindowActasButton
+          :actas="actasRows"
+          title="Votaciones del gráfico"
+          description="Todas las votaciones usadas para calcular la asistencia."
+        />
+      </template>
       <ChartsAppChart
         :option="presentismoOption"
         height="22rem"
@@ -399,8 +523,15 @@ const votosOption = computed(() => {
     <ChartsChartCard
       v-if="votosOption"
       title="Sus votos en el tiempo"
-      description="Cuántos votos a favor, en contra, abstenciones o ausencias hubo en cada período."
+      :description="votosDescription"
     >
+      <template #actions>
+        <AnalisisWindowActasButton
+          :actas="actasRows"
+          title="Votaciones del gráfico"
+          description="Todas las votaciones usadas en este gráfico."
+        />
+      </template>
       <div class="space-y-3">
         <SegmentedTabs
           v-model="groupBy"

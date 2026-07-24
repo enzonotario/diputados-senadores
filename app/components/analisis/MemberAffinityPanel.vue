@@ -2,6 +2,7 @@
 import {
   AFFINITY_FROM_DATE,
   formatAffinityPct,
+  memberActasInWindow,
   memberDissent,
   topAlliesAndOpponents,
   type AffinityMemberInput,
@@ -107,6 +108,32 @@ const hasAffinity = computed(
     affinity.value.allies.length > 0 || affinity.value.opponents.length > 0,
 );
 
+const actasMetaById = computed(() => {
+  const map = new Map<
+    string,
+    { id: string; titulo?: string | null; resultado?: string | null }
+  >();
+  for (const a of props.actas || []) {
+    if (a?.id) map.set(String(a.id), a);
+  }
+  return map;
+});
+
+const windowActasRows = computed(() => {
+  const self = props.peers.find((p) => p.id === props.memberId);
+  if (!self) return [];
+  return memberActasInWindow(self.votes || [], AFFINITY_FROM_DATE).map(
+    (row) => {
+      const meta = actasMetaById.value.get(row.id);
+      return {
+        ...row,
+        titulo: meta?.titulo || row.id,
+        resultado: meta?.resultado || null,
+      };
+    },
+  );
+});
+
 const dissentOption = computed(() => {
   const series = periodSeries.value;
   if (!series.length) return null;
@@ -207,8 +234,24 @@ function pairMeta(pair: AffinityPair) {
       v-if="hasAffinity"
       title="Con quién vota parecido"
       :description="`Con quién más coincide y con quién menos (votaciones desde ${AFFINITY_FROM_DATE.slice(0, 4)}). Solo cuentan cuando los dos votaron.`"
-      :more-to="detailTo"
     >
+      <template v-if="windowActasRows.length || detailTo" #actions>
+        <AnalisisWindowActasButton
+          v-if="windowActasRows.length"
+          :actas="windowActasRows"
+          :from-year="AFFINITY_FROM_DATE.slice(0, 4)"
+        />
+        <UButton
+          v-if="detailTo"
+          :to="detailTo"
+          size="sm"
+          color="neutral"
+          variant="ghost"
+          trailing-icon="i-lucide-arrow-right"
+        >
+          Ver más
+        </UButton>
+      </template>
       <ClientOnly>
         <div class="grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
           <div class="space-y-2">

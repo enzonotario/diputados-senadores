@@ -7,6 +7,7 @@ import {
 
 /** Acta mínima para series temporales (diputados o senadores). */
 export type ActaChartRow = {
+  id?: string | null;
   fecha?: string | null;
   resultado?: string | null;
   titulo?: string | null;
@@ -21,6 +22,30 @@ export type ActaChartRow = {
   tipoVotoSenador?: string | null;
   votoSenador?: { tipoVoto?: string | null } | null;
 };
+
+/** Filas para el modal «Ver actas» de charts de miembro. */
+export type MemberChartActaRow = {
+  id: string;
+  fecha: string;
+  voto: string;
+  titulo: string;
+  resultado: string | null;
+};
+
+export function chartActasToMemberRows(
+  actas: ActaChartRow[],
+): MemberChartActaRow[] {
+  return actas
+    .filter((a) => a?.id && a.fecha)
+    .map((a) => ({
+      id: String(a.id),
+      fecha: String(a.fecha),
+      voto: memberVotoTipo(a),
+      titulo: String(a.titulo || a.id),
+      resultado: a.resultado ? String(a.resultado) : null,
+    }))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
 
 export type VotosTimeGroupBy =
   | "mes"
@@ -116,6 +141,9 @@ function periodoKeyFromActa(a: ActaChartRow): string {
 
 function formatPeriodoKey(key: string): string {
   if (key === "sin-periodo") return "Sin período";
+  // Senadores: la clave es el año de inicio del período ordinario.
+  const y = Number(key);
+  if (/^\d{4}$/.test(key) && y > 1900) return `${y}–${y + 1}`;
   return `Período ${key}`;
 }
 
@@ -292,6 +320,7 @@ export function miembroPresentismoSeries(actas: ActaChartRow[]) {
     labels,
     cumulative,
     rolling,
+    periodos: sorted.map((a) => String(a.periodo || "").trim()),
     titulos: sorted.map((a) => a.titulo || ""),
   };
 }
@@ -326,6 +355,7 @@ export function miembroVotosOverTime(
   mandatos: MandatoRange[] = [],
 ) {
   const map = new Map<string, VotoBucket>();
+  const periodosPorBucket = new Map<string, Map<string, number>>();
 
   for (const a of actas) {
     const key = bucketKeyForActa(a, groupBy, mandatos);
@@ -338,17 +368,39 @@ export function miembroVotosOverTime(
       bucket.ausente += 1;
     }
     map.set(key, bucket);
+
+    const periodo = String(a.periodo || "").trim();
+    if (periodo) {
+      const counts = periodosPorBucket.get(key) || new Map<string, number>();
+      counts.set(periodo, (counts.get(periodo) || 0) + 1);
+      periodosPorBucket.set(key, counts);
+    }
   }
 
   const keys = sortBucketKeys([...map.keys()], groupBy);
   return {
     keys,
     labels: keys.map((k) => formatBucketKey(k, groupBy, mandatos)),
+    /** Período legislativo dominante de cada bucket (para bandas). */
+    periodos: keys.map((k) => dominantKey(periodosPorBucket.get(k))),
     afirmativo: keys.map((k) => map.get(k)!.afirmativo),
     negativo: keys.map((k) => map.get(k)!.negativo),
     abstencion: keys.map((k) => map.get(k)!.abstencion),
     ausente: keys.map((k) => map.get(k)!.ausente),
   };
+}
+
+function dominantKey(counts?: Map<string, number>): string {
+  if (!counts?.size) return "";
+  let best = "";
+  let bestN = -1;
+  for (const [key, n] of counts) {
+    if (n > bestN) {
+      best = key;
+      bestN = n;
+    }
+  }
+  return best;
 }
 
 /** Índice en `dates` (ISO) más cercano a `targetMs` (≥ target si hay empate). */

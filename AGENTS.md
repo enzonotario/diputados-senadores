@@ -174,13 +174,17 @@ Diputados tiene lista local en `diputados-data.ts`.
 
 **Regla:** páginas/composables del cliente consumen `/api/*` (Host → cámara). No importar `getActas` / `get*ConActas` en código que corra en el browser.
 
-## Convenciones de código
+## Período legislativo (`?periodo=`)
 
-- SFC: `<script>` → `<template>` → `<style>` (ESLint).
-- `any` permitido (`no-explicit-any` off).
-- Formato: Prettier vía ESLint.
-- Prefijos de componentes por dominio (`Diputado*`, `Senador*`, `Acta*`).
-- Auto-imports de `utils/`: evitar exports con el **mismo nombre** en dos archivos (rompe el auto-import). Helpers compartidos → un solo módulo (ej. `presentismo.ts`).
+Filtro global vía query param (multi, coma-separado; default = período vigente):
+
+- **Diputados:** `acta.periodo` de la API (p. ej. `144`).
+- **Senadores:** la API no manda período → se deriva por fecha (ordinario mar–feb; clave = año de inicio, label `2025–2026`).
+- Vacío / clear en el select = todos los períodos. `sin` = sin período conocido.
+
+UI: `FilterPeriodo` (`USelectMenu` multi + búsqueda) + chart temporal clickeable (`ChartsPeriodosTimelineChart`).
+Catálogo: `GET /api/periodos`. Utils: `app/utils/periodoLegislativo.ts` + `usePeriodoFilter()`.
+
 
 ## Smoke rápido
 

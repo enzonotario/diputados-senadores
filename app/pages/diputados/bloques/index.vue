@@ -3,11 +3,13 @@ import { useRouteQuery } from "@vueuse/router";
 import { sortableHeader } from "@/utils/sortableHeader";
 import type { AffinityGroupInput } from "@/utils/votingAffinity";
 import type { Diputado } from "@/lib/types-diputados";
+import { getBloqueColores } from "@/lib/diputados-data";
 import {
   getUniqueValues,
-  isDiputadoActivo,
 } from "@/lib/utils";
 import { groupDiputadosBy } from "@/utils/groupDiputadosBy";
+import { bloqueSlug } from "@/utils/bloque";
+import { averagePresentismo } from "@/utils/presentismo";
 import { useMultiQuery } from "@/composables/useMultiQuery";
 
 type BloqueRow = {
@@ -24,6 +26,8 @@ type AffinityIndexResponse = {
 };
 
 const { localFetch } = useLocalApi();
+const route = useRoute();
+const { filterMembers, filterVotes } = usePeriodoFilter();
 const vista = useRouteQuery("vista", "lista");
 const provinciaFilter = useMultiQuery("provincia");
 
@@ -31,18 +35,6 @@ const vistaItems = [
   { label: "Lista", value: "lista" },
   { label: "Por provincias", value: "provincias" },
 ];
-
-const { data: bloques, pending: pendingBloques } = useAsyncData(
-  "bloques-index",
-  async () => {
-    const res = await localFetch<AffinityIndexResponse>(
-      "/api/groups/affinity-index",
-      { query: { rowsOnly: "1" } },
-    );
-    return res.rows || [];
-  },
-  { lazy: true },
-);
 
 const { data: affinityGroups, pending: pendingAffinity } = useAsyncData(
   "bloques-affinity-groups",
@@ -55,14 +47,58 @@ const { data: affinityGroups, pending: pendingAffinity } = useAsyncData(
   { server: false, lazy: true },
 );
 
-const { data: members, pending: pendingMembers } = useAsyncData(
+const { data: allMembers, pending: pendingMembers } = useAsyncData(
   "bloques-index-members",
   async () => {
     const res = await localFetch<{ members: Diputado[] }>("/api/members");
-    return (res.members || []).filter(isDiputadoActivo);
+    return res.members || [];
   },
   { lazy: true },
 );
+
+const inPeriodoMembers = computed(() =>
+  filterMembers(allMembers.value || []),
+);
+
+const bloques = computed<BloqueRow[]>(() => {
+  const byBloque = new Map<string, Diputado[]>();
+  for (const d of inPeriodoMembers.value) {
+    const nombre = d.bloque?.trim();
+    if (!nombre) continue;
+    const list = byBloque.get(nombre);
+    if (list) list.push(d);
+    else byBloque.set(nombre, [d]);
+  }
+  const colores = getBloqueColores([...byBloque.keys()]);
+  return [...byBloque.entries()]
+    .map(([nombre, list]) => ({
+      nombre,
+      slug: bloqueSlug(nombre),
+      color: colores[nombre] ?? "#6b7280",
+      activos: list.length,
+      presentismo: averagePresentismo(list) ?? 0,
+    }))
+    .sort(
+      (a, b) =>
+        b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
+    );
+});
+
+const filteredAffinityGroups = computed<AffinityGroupInput[]>(() =>
+  (affinityGroups.value || [])
+    .map((g) => ({
+      ...g,
+      members: g.members
+        .map((m) => ({
+          ...m,
+          votes: filterVotes(m.votes || []),
+        }))
+        .filter((m) => (m.votes?.length ?? 0) > 0),
+    }))
+    .filter((g) => g.members.length > 0),
+);
+
+const pendingBloques = pendingMembers;
 
 const { sorting } = useTableSorting("activos", true);
 
@@ -91,11 +127,15 @@ const tableColumns = [
 ];
 
 function onRowSelect(_e: Event, row: { original: BloqueRow }) {
-  navigateTo(`/diputados/bloques/${row.original.slug}`);
+  const periodo = String(route.query.periodo || "").trim();
+  navigateTo({
+    path: `/diputados/bloques/${row.original.slug}`,
+    query: periodo ? { periodo } : undefined,
+  });
 }
 
 const categories = computed(() =>
-  (bloques.value || []).map((b) => ({
+  bloques.value.map((b) => ({
     key: b.nombre,
     label: b.nombre,
     color: b.color,
@@ -103,18 +143,18 @@ const categories = computed(() =>
 );
 
 const compositionMembers = computed(() =>
-  (members.value || []).map((d) => ({
+  inPeriodoMembers.value.map((d) => ({
     provincia: d.provincia,
     category: d.bloque,
   })),
 );
 
 const provincias = computed(() =>
-  getUniqueValues(members.value || [], "provincia"),
+  getUniqueValues(inPeriodoMembers.value, "provincia"),
 );
 
 const membersForTable = computed(() => {
-  const list = members.value || [];
+  const list = inPeriodoMembers.value;
   if (!provinciaFilter.value.length) return list;
   const set = new Set(provinciaFilter.value);
   return list.filter((d) => set.has(d.provincia));
@@ -137,10 +177,12 @@ useChamberSeo({
     <div class="space-y-2">
       <h1 class="text-3xl font-bold tracking-tight">Bloques</h1>
       <p class="text-muted max-w-2xl">
-        {{ (bloques || []).length }} bloques con diputados activos. La asistencia
+        {{ bloques.length }} bloques con diputados en el período. La asistencia
         es el promedio de cuánto asiste cada integrante a las votaciones.
       </p>
     </div>
+
+    <FilterPeriodo />
 
     <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
 
@@ -150,7 +192,7 @@ useChamberSeo({
       <DataTableCard v-else>
         <UTable
           v-model:sorting="sorting"
-          :data="bloques || []"
+          :data="bloques"
           :columns="tableColumns"
           :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
           empty="No se encontraron bloques con diputados activos."
@@ -200,9 +242,9 @@ useChamberSeo({
       <ClientOnly>
         <AppDataSkeleton v-if="pendingAffinity" variant="affinity" />
         <AnalisisInterGroupAffinityHeatmap
-          v-else-if="(affinityGroups || []).length >= 2"
+          v-else-if="filteredAffinityGroups.length >= 2"
           group-label="bloque"
-          :groups="affinityGroups || []"
+          :groups="filteredAffinityGroups"
           group-base-path="/diputados/bloques"
         />
         <template #fallback>
@@ -231,7 +273,7 @@ useChamberSeo({
           group-by="provincia"
           :groups="groupsByProvincia"
           show-presentismo
-          empty-message="No hay diputados activos para mostrar."
+          empty-message="No hay diputados en el período para mostrar."
         />
       </div>
     </template>

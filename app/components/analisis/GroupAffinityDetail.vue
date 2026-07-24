@@ -404,7 +404,6 @@ function onGroupSelect(_e: Event, row: { original: InterGroupPair }) {
         >
           <template #actions>
             <AnalisisQuorumActasButton
-              v-if="!interGroup.length"
               :actas="quorumRows"
               :group-label="groupLabel"
             />
@@ -481,6 +480,12 @@ function onGroupSelect(_e: Event, row: { original: InterGroupPair }) {
         title="Coincidencias dentro del grupo"
         :description="`Quién coincide con quién entre los ${members.length} integrantes de ${groupName}.`"
       >
+        <template #actions>
+          <AnalisisQuorumActasButton
+            :actas="quorumRows"
+            :group-label="groupLabel"
+          />
+        </template>
         <ClientOnly>
           <div class="overflow-x-auto -mx-1 px-1">
             <div :style="{ minWidth: heatmapMinWidth }">

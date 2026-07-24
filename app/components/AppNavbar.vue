@@ -108,7 +108,9 @@ const activeTab = computed({
     return "/";
   },
   set(value: string | number) {
-    navigateTo(String(value));
+    const path = String(value);
+    const periodo = String(route.query.periodo || "").trim();
+    navigateTo(periodo ? { path, query: { periodo } } : path);
   },
 });
 </script>

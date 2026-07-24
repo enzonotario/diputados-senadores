@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { getDiputadosPorBloques } from "@/lib/diputados-data";
+import type { Diputado } from "@/lib/types-diputados";
+import { getBloqueColores } from "@/lib/diputados-data";
 import {
   encodeOgHemiciclo,
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
 
 const { localFetch } = useLocalApi();
+const { filterActas: filterByPeriodo, filterMembers } = usePeriodoFilter();
 
-const { data: bloquesData, pending: pendingBloques } = useAsyncData(
-  "diputados-por-bloques",
-  () => getDiputadosPorBloques(),
+const { data: membersData, pending: pendingMembers } = useAsyncData(
+  "diputados-home-members",
+  async () => {
+    const res = await localFetch<{ members: Diputado[] }>("/api/members");
+    return res.members || [];
+  },
   { lazy: true },
 );
 
@@ -22,14 +27,32 @@ const { data: actasData, pending: pendingActas } = useAsyncData(
   { lazy: true },
 );
 
-const pendingHome = computed(() => pendingBloques.value || pendingActas.value);
+const pendingHome = computed(
+  () => pendingMembers.value || pendingActas.value,
+);
 
-const diputados = computed(() => bloquesData.value?.diputados || []);
-const bloqueColores = computed(() => bloquesData.value?.bloqueColores || {});
+const diputadosInPeriodo = computed(() =>
+  filterMembers(membersData.value || []),
+);
+const bloqueColores = computed(() =>
+  getBloqueColores(
+    [
+      ...new Set(
+        diputadosInPeriodo.value
+          .map((d) => d.bloque)
+          .filter(Boolean) as string[],
+      ),
+    ],
+  ),
+);
+
+const actasInPeriodo = computed(() =>
+  filterByPeriodo(actasData.value || []),
+);
 
 useChamberSeo(() => {
   const groups = groupsForOgHemiciclo(
-    diputados.value.map((d) => ({ group: d.bloque })),
+    diputadosInPeriodo.value.map((d) => ({ group: d.bloque })),
     bloqueColores.value,
   );
   return {
@@ -45,7 +68,7 @@ useChamberSeo(() => {
 });
 
 const actasRecientes = computed(() => {
-  const actas = [...(actasData.value || [])];
+  const actas = [...actasInPeriodo.value];
   actas.sort(
     (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
   );
@@ -84,10 +107,14 @@ const actasRecientes = computed(() => {
     <AppDataSkeleton v-if="pendingHome" variant="home" />
 
     <template v-else>
+      <div class="flex justify-center mb-8">
+        <FilterPeriodo />
+      </div>
+
       <section>
         <ClientOnly>
           <DiputadosChart
-            :diputados="diputados"
+            :diputados="diputadosInPeriodo"
             :bloque-colores="bloqueColores"
           />
           <template #fallback>
@@ -103,12 +130,15 @@ const actasRecientes = computed(() => {
 
       <section class="space-y-4">
         <div class="space-y-1">
-          <h2 class="text-2xl font-bold tracking-tight">Cómo viene votando la Cámara</h2>
+          <h2 class="text-2xl font-bold tracking-tight">
+            Cómo viene votando la Cámara
+          </h2>
           <p class="text-sm text-muted max-w-2xl">
-            Cuántas votaciones se aprueban o rechazan, y cuántos diputados asisten, mes a mes.
+            Cuántas votaciones se aprueban o rechazan, y cuántos diputados
+            asisten, mes a mes.
           </p>
         </div>
-        <ChartsActasOverviewCharts :actas="actasData || []" :from-year="2021" />
+        <ChartsActasOverviewCharts :actas="actasInPeriodo" />
       </section>
 
       <USeparator class="my-20" />

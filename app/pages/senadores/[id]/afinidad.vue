@@ -24,6 +24,7 @@ type MemberProfileResponse = {
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 const { localFetch } = useLocalApi();
+const { filterActas: filterByPeriodo, filterVotes } = usePeriodoFilter();
 
 const { data, pending } = await useAsyncData(
   () => `senador-afinidad-${id.value}`,
@@ -55,16 +56,22 @@ const affinityPeers = computed<AffinityMemberInput[]>(() => {
         name: current.nombreCompleto || current.nombre,
         group: current.partido,
         foto: current.foto,
-        votes: memberActasInWindow(
-          chartActas.value.map((a) => ({
-            id: a.id,
-            fecha: String(a.fecha || ""),
-            voto: a.tipoVotoSenador,
-          })),
+        votes: filterVotes(
+          memberActasInWindow(
+            chartActas.value.map((a) => ({
+              id: a.id,
+              fecha: String(a.fecha || ""),
+              voto: a.tipoVotoSenador,
+            })),
+          ),
         ),
       }
     : null;
-  return peersToAffinityInputs(peersPayload.value?.peers, { ensure });
+  const base = peersToAffinityInputs(peersPayload.value?.peers, { ensure });
+  return base.map((p) => ({
+    ...p,
+    votes: filterVotes(p.votes || []),
+  }));
 });
 
 const affinityGroupPeers = computed(() => {
@@ -83,13 +90,15 @@ const groupColors = computed(() => {
 });
 
 const actas = computed(() =>
-  chartActas.value.map((a) => ({
-    id: String(a.id),
-    titulo: a.titulo,
-    resultado: a.resultado,
-    fecha: a.fecha,
-    voto: a.tipoVotoSenador,
-  })),
+  filterByPeriodo(
+    chartActas.value.map((a) => ({
+      id: String(a.id),
+      titulo: a.titulo,
+      resultado: a.resultado,
+      fecha: a.fecha,
+      voto: a.tipoVotoSenador,
+    })),
+  ),
 );
 
 const memberName = computed(
@@ -130,6 +139,7 @@ useChamberSeo(() => {
     </UCard>
 
     <ClientOnly v-else>
+      <FilterPeriodo class="mb-6" />
       <AppDataSkeleton v-if="peersPending" variant="affinity" />
       <AnalisisMemberAffinityDetail
         v-else

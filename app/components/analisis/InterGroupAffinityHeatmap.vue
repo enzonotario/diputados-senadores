@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   AFFINITY_FROM_DATE,
+  groupActasWithQuorum,
   interGroupAffinityMatrix,
   type AffinityGroupInput,
 } from "@/utils/votingAffinity";
@@ -27,6 +28,31 @@ const heatmap = computed(() => {
     minCompared: 20,
     minGroupVoters: 1,
   });
+});
+
+/** Unión de actas con quorum de algún grupo (para «Ver actas»). */
+const actasRows = computed(() => {
+  const byId = new Map<
+    string,
+    { id: string; fecha: string; titulo: string; resultado: string | null }
+  >();
+  for (const g of props.groups) {
+    for (const row of groupActasWithQuorum(g.members, {
+      fromDate: AFFINITY_FROM_DATE,
+      minGroupVoters: 1,
+    })) {
+      if (byId.has(row.id)) continue;
+      byId.set(row.id, {
+        id: row.id,
+        fecha: row.fecha,
+        titulo: row.id,
+        resultado: null,
+      });
+    }
+  }
+  return Array.from(byId.values()).sort((a, b) =>
+    b.fecha.localeCompare(a.fecha),
+  );
 });
 
 const heatmapOption = computed(() => {
@@ -142,6 +168,15 @@ const heatmapHeight = computed(() => {
     :title="`Qué tan parecido votan los ${groupLabel}s`"
     :description="`Cuánto coincide el voto más común de cada ${groupLabel} (desde ${AFFINITY_FROM_DATE.slice(0, 4)}).`"
   >
+    <template #actions>
+      <AnalisisWindowActasButton
+        :actas="actasRows"
+        :show-voto="false"
+        :from-year="AFFINITY_FROM_DATE.slice(0, 4)"
+        title="Votaciones del gráfico"
+        description="Votaciones donde algún grupo tuvo voto mayoritario (usadas en el mapa)."
+      />
+    </template>
     <ClientOnly>
       <ChartsAppChart
         :option="heatmapOption"

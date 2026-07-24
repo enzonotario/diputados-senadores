@@ -11,6 +11,10 @@ import {
 } from "./matchSenadorNombre";
 import { averagePresentismo } from "../utils/presentismo";
 import { normalizeResultado, normalizeVotoTipo } from "../utils/votoTipo";
+import {
+  fakeSenadoPeriodoKey,
+  SIN_PERIODO_KEY,
+} from "../utils/periodoLegislativo";
 
 function slug(value: string) {
   return slugify(value || "", { lower: true, strict: true, trim: true });
@@ -102,13 +106,22 @@ function mapSenador(raw: any): Senador {
 }
 
 function mapActa(raw: any): Acta {
+  const fecha = raw.fecha || "";
+  // La API del Senado no envía período legislativo; se deriva por fecha
+  // (período ordinario mar–feb). Ver `fakeSenadoPeriodoKey`.
+  const periodoRaw = String(raw.periodo || "").trim();
+  const derived = fakeSenadoPeriodoKey(fecha);
+  const periodo =
+    periodoRaw ||
+    (derived !== SIN_PERIODO_KEY ? derived : undefined);
+
   return {
     id: String(raw.actaId ?? raw.id),
     titulo: raw.titulo || "",
     proyecto: raw.proyecto || "",
     descripcion: raw.descripcion || "",
     quorumTipo: raw.quorumTipo || "",
-    fecha: raw.fecha || "",
+    fecha,
     numeroActa: raw.acta != null ? String(raw.acta) : "",
     mayoria: raw.mayoria || "",
     miembros: raw.miembros ?? 0,
@@ -120,6 +133,7 @@ function mapActa(raw: any): Acta {
     amn: raw.amn ?? 0,
     resultado: normalizeResultado(raw.resultado),
     observaciones: raw.observaciones || [],
+    periodo,
     votos: (raw.votos || []).map(
       (v: any): Voto => ({
         senador: v.nombre || "",

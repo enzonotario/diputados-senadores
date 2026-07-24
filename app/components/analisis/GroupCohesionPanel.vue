@@ -3,6 +3,7 @@ import {
   AFFINITY_FROM_DATE,
   affinityRateClass,
   formatAffinityPct,
+  groupActasWithQuorum,
   groupCohesion,
   type AffinityMemberInput,
 } from "@/utils/votingAffinity";
@@ -29,10 +30,16 @@ const props = withDefaults(
     heatmapMax?: number;
     /** Ruta a la página dedicada de afinidad. */
     detailTo?: string;
+    /** Metadatos de actas (título/resultado) para «Ver actas». */
+    actasMeta?: Record<
+      string,
+      { id: string; titulo?: string | null; resultado?: string | null }
+    >;
   }>(),
   {
     heatmapMax: 24,
     detailTo: undefined,
+    actasMeta: () => ({}),
   },
 );
 
@@ -50,6 +57,20 @@ const cohesion = computed(() => {
 
 const alignmentRows = computed(() =>
   (cohesion.value?.memberAlignment || []).slice(0, 12),
+);
+
+const quorumRows = computed(() =>
+  groupActasWithQuorum(props.members, {
+    fromDate: AFFINITY_FROM_DATE,
+    minGroupVoters: 2,
+  }).map((row) => {
+    const meta = props.actasMeta?.[row.id];
+    return {
+      ...row,
+      titulo: meta?.titulo || row.id,
+      resultado: meta?.resultado || null,
+    };
+  }),
 );
 
 const heatmapMembers = computed(() =>
@@ -233,8 +254,24 @@ function memberTo(id: string) {
       <ChartsChartCard
         title="Qué tan unidos votan"
         :description="`En promedio, cuánto coinciden entre sí los integrantes del ${groupLabel} (votaciones desde ${AFFINITY_FROM_DATE.slice(0, 4)}).`"
-        :more-to="detailTo"
       >
+        <template v-if="quorumRows.length || detailTo" #actions>
+          <AnalisisQuorumActasButton
+            v-if="quorumRows.length"
+            :actas="quorumRows"
+            :group-label="groupLabel"
+          />
+          <UButton
+            v-if="detailTo"
+            :to="detailTo"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            trailing-icon="i-lucide-arrow-right"
+          >
+            Ver más
+          </UButton>
+        </template>
         <ClientOnly>
           <div class="space-y-3">
             <div>
@@ -311,6 +348,12 @@ function memberTo(id: string) {
           : `Tabla de coincidencias entre integrantes de ${groupName}.`
       "
     >
+      <template #actions>
+        <AnalisisQuorumActasButton
+          :actas="quorumRows"
+          :group-label="groupLabel"
+        />
+      </template>
       <ClientOnly>
         <div class="overflow-x-auto -mx-1 px-1">
           <div :style="{ minWidth: heatmapMinWidth }">

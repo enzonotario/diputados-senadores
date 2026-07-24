@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import { getSenadoresPorPartidos } from "@/lib/senadores-data";
+import type { Senador } from "@/lib/types";
+import { getPartidoColores } from "@/lib/senadores-data";
 import {
   encodeOgHemiciclo,
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
 
 const { localFetch } = useLocalApi();
+const { filterActas: filterByPeriodo, filterMembers } = usePeriodoFilter();
 
-const { data: partidosData, pending: pendingPartidos } = useAsyncData(
-  "senadores-por-partidos",
-  () => getSenadoresPorPartidos(),
+const { data: membersData, pending: pendingMembers } = useAsyncData(
+  "senadores-home-members",
+  async () => {
+    const res = await localFetch<{ members: Senador[] }>("/api/members");
+    return res.members || [];
+  },
   { lazy: true },
 );
 
 const { data: actasData, pending: pendingActas } = useAsyncData(
-  "actas",
+  "senadores-actas-home",
   async () => {
     const res = await localFetch<{ actas: any[] }>("/api/actas");
     return res.actas || [];
@@ -22,14 +27,32 @@ const { data: actasData, pending: pendingActas } = useAsyncData(
   { lazy: true },
 );
 
-const pendingHome = computed(() => pendingPartidos.value || pendingActas.value);
+const pendingHome = computed(
+  () => pendingMembers.value || pendingActas.value,
+);
 
-const senadores = computed(() => partidosData.value?.senadores || []);
-const partidoColores = computed(() => partidosData.value?.partidoColores || {});
+const senadoresInPeriodo = computed(() =>
+  filterMembers(membersData.value || []),
+);
+const partidoColores = computed(() =>
+  getPartidoColores(
+    [
+      ...new Set(
+        senadoresInPeriodo.value
+          .map((s) => s.partido)
+          .filter(Boolean) as string[],
+      ),
+    ],
+  ),
+);
+
+const actasInPeriodo = computed(() =>
+  filterByPeriodo(actasData.value || []),
+);
 
 useChamberSeo(() => {
   const groups = groupsForOgHemiciclo(
-    senadores.value.map((s) => ({ group: s.partido })),
+    senadoresInPeriodo.value.map((s) => ({ group: s.partido })),
     partidoColores.value,
   );
   return {
@@ -45,7 +68,7 @@ useChamberSeo(() => {
 });
 
 const actasRecientes = computed(() => {
-  const actas = [...(actasData.value || [])];
+  const actas = [...actasInPeriodo.value];
   actas.sort(
     (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
   );
@@ -84,10 +107,14 @@ const actasRecientes = computed(() => {
     <AppDataSkeleton v-if="pendingHome" variant="home" />
 
     <template v-else>
+      <div class="flex justify-center mb-8">
+        <FilterPeriodo />
+      </div>
+
       <section>
         <ClientOnly>
           <SenadoresChart
-            :senadores="senadores"
+            :senadores="senadoresInPeriodo"
             :partido-colores="partidoColores"
           />
           <template #fallback>
@@ -103,12 +130,15 @@ const actasRecientes = computed(() => {
 
       <section class="space-y-4">
         <div class="space-y-1">
-          <h2 class="text-2xl font-bold tracking-tight">Cómo viene votando el Senado</h2>
+          <h2 class="text-2xl font-bold tracking-tight">
+            Cómo viene votando el Senado
+          </h2>
           <p class="text-sm text-muted max-w-2xl">
-            Cuántas votaciones se aprueban o rechazan, y cuántos senadores asisten, mes a mes.
+            Cuántas votaciones se aprueban o rechazan, y cuántos senadores
+            asisten, mes a mes.
           </p>
         </div>
-        <ChartsActasOverviewCharts :actas="actasData || []" />
+        <ChartsActasOverviewCharts :actas="actasInPeriodo" />
       </section>
 
       <USeparator class="my-20" />

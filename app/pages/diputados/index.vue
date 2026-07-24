@@ -23,6 +23,7 @@ const provinciaFilter = useMultiQuery("provincia");
 const bloqueFilter = useMultiQuery("bloque");
 const generoFilter = useMultiQuery("genero");
 const searchQuery = useRouteQuery("q", "");
+const { filterMembers, isVigente } = usePeriodoFilter();
 
 const vistaItems = [
   { label: "Lista", value: "lista" },
@@ -49,6 +50,8 @@ const { data, pending } = useAsyncData(
 );
 const diputados = computed(() => (data.value as any as Diputado[]) || []);
 
+const inPeriodo = computed(() => filterMembers(diputados.value));
+
 const filters = computed<FilterConfig>(() => ({
   ...(provinciaFilter.value.length ? { provincia: provinciaFilter.value } : {}),
   ...(bloqueFilter.value.length ? { bloque: bloqueFilter.value } : {}),
@@ -62,19 +65,25 @@ const filtersForMap = computed<FilterConfig>(() => {
 });
 
 const filtered = computed(() =>
-  filterDiputados(diputados.value, filters.value),
+  filterDiputados(inPeriodo.value, filters.value),
 );
 const activos = computed(() => filtered.value.filter(isDiputadoActivo));
 const inactivos = computed(() =>
   filtered.value.filter((d) => !isDiputadoActivo(d)),
 );
 
-const displayed = computed(() =>
-  mostrarActivos.value ? activos.value : inactivos.value,
-);
+/** Fuera del período vigente: mostrar todos los del período (sin split activo). */
+const displayed = computed(() => {
+  if (!isVigente.value) return filtered.value;
+  return mostrarActivos.value ? activos.value : inactivos.value;
+});
 
 const displayedForMap = computed(() => {
-  const base = filterDiputados(diputados.value, filtersForMap.value);
+  const base = filterDiputados(
+    filterMembers(diputados.value),
+    filtersForMap.value,
+  );
+  if (!isVigente.value) return base;
   return mostrarActivos.value
     ? base.filter(isDiputadoActivo)
     : base.filter((d) => !isDiputadoActivo(d));
@@ -219,7 +228,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           @click="clearFilters"
         />
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         <FilterSelect
           v-model="provinciaFilter"
           label="Provincia"
@@ -239,6 +248,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           :items="generoItems"
         />
       </div>
+      <FilterPeriodo />
     </div>
 
     <div
@@ -251,6 +261,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
         class="sm:flex-1"
       />
       <USwitch
+        v-if="isVigente"
         v-model="mostrarActivos"
         :label="
           mostrarActivos

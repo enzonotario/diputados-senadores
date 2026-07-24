@@ -32,6 +32,18 @@ const filteredActas = computed(() => {
 
 const hasData = computed(() => filteredActas.value.length > 0);
 
+const actasRows = computed(() =>
+  filteredActas.value
+    .filter((a) => a?.id && a.fecha)
+    .map((a) => ({
+      id: String(a.id),
+      fecha: String(a.fecha),
+      titulo: String(a.titulo || a.id),
+      resultado: a.resultado ? String(a.resultado) : null,
+    }))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha)),
+);
+
 const resultadosOption = computed(() => {
   const p = palette.value;
   const data = actasResultadosByMonth(filteredActas.value);
@@ -190,6 +202,15 @@ const presentismoOption = computed(() => {
       title="Resultados de las votaciones en el tiempo"
       description="Cuántas votaciones por mes se aprobaron, rechazaron u otros."
     >
+      <template #actions>
+        <AnalisisWindowActasButton
+          :actas="actasRows"
+          :show-voto="false"
+          :from-year="fromYear != null ? String(fromYear) : undefined"
+          title="Votaciones del gráfico"
+          description="Votaciones incluidas en este gráfico de resultados."
+        />
+      </template>
       <ChartsAppChart
         :option="resultadosOption"
         height="22rem"
@@ -202,6 +223,15 @@ const presentismoOption = computed(() => {
       title="Asistencia de la cámara"
       description="En promedio, qué porcentaje asiste a votar cada mes."
     >
+      <template #actions>
+        <AnalisisWindowActasButton
+          :actas="actasRows"
+          :show-voto="false"
+          :from-year="fromYear != null ? String(fromYear) : undefined"
+          title="Votaciones del gráfico"
+          description="Votaciones incluidas en este gráfico de asistencia."
+        />
+      </template>
       <ChartsAppChart
         :option="presentismoOption"
         height="22rem"

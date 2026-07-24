@@ -6,10 +6,13 @@ withDefaults(
     filtersClass?: string;
     /** Si false, no aplica overflow-x-auto (p. ej. sticky vertical en el contenido) */
     scrollable?: boolean;
+    /** Mostrar badge(s) del período junto al título. */
+    showPeriodoBadge?: boolean;
   }>(),
   {
     filtersClass: "px-4 sm:px-6 pt-4 pb-3",
     scrollable: true,
+    showPeriodoBadge: true,
   },
 );
 </script>
@@ -29,7 +32,10 @@ withDefaults(
     <!-- Always provide #header when needed; v-if on named slots breaks SSR hydration -->
     <template v-if="title || $slots.header" #header>
       <slot name="header">
-        <h2 class="text-lg font-semibold">{{ title }}</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="text-lg font-semibold">{{ title }}</h2>
+          <PeriodoScopeBadges v-if="title && showPeriodoBadge" size="sm" />
+        </div>
       </slot>
     </template>
 

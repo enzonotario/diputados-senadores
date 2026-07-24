@@ -3,8 +3,11 @@ import { useRouteQuery } from "@vueuse/router";
 import { sortableHeader } from "@/utils/sortableHeader";
 import type { AffinityGroupInput } from "@/utils/votingAffinity";
 import type { Senador } from "@/lib/types";
-import { getUniqueValues, isSenadorActivo } from "@/lib/utils";
+import { getPartidoColores } from "@/lib/senadores-data";
+import { getUniqueValues } from "@/lib/utils";
 import { groupSenadoresBy } from "@/utils/groupSenadoresBy";
+import { partidoSlug } from "@/utils/partido";
+import { averagePresentismo } from "@/utils/presentismo";
 import { useMultiQuery } from "@/composables/useMultiQuery";
 
 type PartidoRow = {
@@ -21,6 +24,8 @@ type AffinityIndexResponse = {
 };
 
 const { localFetch } = useLocalApi();
+const route = useRoute();
+const { filterMembers, filterVotes } = usePeriodoFilter();
 const vista = useRouteQuery("vista", "lista");
 const provinciaFilter = useMultiQuery("provincia");
 
@@ -28,18 +33,6 @@ const vistaItems = [
   { label: "Lista", value: "lista" },
   { label: "Por provincias", value: "provincias" },
 ];
-
-const { data: partidos, pending: pendingPartidos } = useAsyncData(
-  "partidos-index",
-  async () => {
-    const res = await localFetch<AffinityIndexResponse>(
-      "/api/groups/affinity-index",
-      { query: { rowsOnly: "1" } },
-    );
-    return res.rows || [];
-  },
-  { lazy: true },
-);
 
 const { data: affinityGroups, pending: pendingAffinity } = useAsyncData(
   "partidos-affinity-groups",
@@ -52,14 +45,58 @@ const { data: affinityGroups, pending: pendingAffinity } = useAsyncData(
   { server: false, lazy: true },
 );
 
-const { data: members, pending: pendingMembers } = useAsyncData(
+const { data: allMembers, pending: pendingMembers } = useAsyncData(
   "partidos-index-members",
   async () => {
     const res = await localFetch<{ members: Senador[] }>("/api/members");
-    return (res.members || []).filter(isSenadorActivo);
+    return res.members || [];
   },
   { lazy: true },
 );
+
+const inPeriodoMembers = computed(() =>
+  filterMembers(allMembers.value || []),
+);
+
+const partidos = computed<PartidoRow[]>(() => {
+  const byPartido = new Map<string, Senador[]>();
+  for (const s of inPeriodoMembers.value) {
+    const nombre = s.partido?.trim();
+    if (!nombre) continue;
+    const list = byPartido.get(nombre);
+    if (list) list.push(s);
+    else byPartido.set(nombre, [s]);
+  }
+  const colores = getPartidoColores([...byPartido.keys()]);
+  return [...byPartido.entries()]
+    .map(([nombre, list]) => ({
+      nombre,
+      slug: partidoSlug(nombre),
+      color: colores[nombre] ?? "#6b7280",
+      activos: list.length,
+      presentismo: averagePresentismo(list) ?? 0,
+    }))
+    .sort(
+      (a, b) =>
+        b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
+    );
+});
+
+const filteredAffinityGroups = computed<AffinityGroupInput[]>(() =>
+  (affinityGroups.value || [])
+    .map((g) => ({
+      ...g,
+      members: g.members
+        .map((m) => ({
+          ...m,
+          votes: filterVotes(m.votes || []),
+        }))
+        .filter((m) => (m.votes?.length ?? 0) > 0),
+    }))
+    .filter((g) => g.members.length > 0),
+);
+
+const pendingPartidos = pendingMembers;
 
 const { sorting } = useTableSorting("activos", true);
 
@@ -88,11 +125,15 @@ const tableColumns = [
 ];
 
 function onRowSelect(_e: Event, row: { original: PartidoRow }) {
-  navigateTo(`/senadores/partidos/${row.original.slug}`);
+  const periodo = String(route.query.periodo || "").trim();
+  navigateTo({
+    path: `/senadores/partidos/${row.original.slug}`,
+    query: periodo ? { periodo } : undefined,
+  });
 }
 
 const categories = computed(() =>
-  (partidos.value || []).map((p) => ({
+  partidos.value.map((p) => ({
     key: p.nombre,
     label: p.nombre,
     color: p.color,
@@ -100,18 +141,18 @@ const categories = computed(() =>
 );
 
 const compositionMembers = computed(() =>
-  (members.value || []).map((s) => ({
+  inPeriodoMembers.value.map((s) => ({
     provincia: s.provincia,
     category: s.partido,
   })),
 );
 
 const provincias = computed(() =>
-  getUniqueValues(members.value || [], "provincia"),
+  getUniqueValues(inPeriodoMembers.value, "provincia"),
 );
 
 const membersForTable = computed(() => {
-  const list = members.value || [];
+  const list = inPeriodoMembers.value;
   if (!provinciaFilter.value.length) return list;
   const set = new Set(provinciaFilter.value);
   return list.filter((s) => set.has(s.provincia));
@@ -134,11 +175,13 @@ useChamberSeo({
     <div class="space-y-2">
       <h1 class="text-3xl font-bold tracking-tight">Partidos</h1>
       <p class="text-muted max-w-2xl">
-        {{ (partidos || []).length }} partidos con senadores activos. La
+        {{ partidos.length }} partidos con senadores en el período. La
         asistencia es el promedio de cuánto asiste cada integrante a las
         votaciones.
       </p>
     </div>
+
+    <FilterPeriodo />
 
     <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
 
@@ -148,7 +191,7 @@ useChamberSeo({
       <DataTableCard v-else>
         <UTable
           v-model:sorting="sorting"
-          :data="partidos || []"
+          :data="partidos"
           :columns="tableColumns"
           :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
           empty="No se encontraron partidos con senadores activos."
@@ -204,9 +247,9 @@ useChamberSeo({
       <ClientOnly>
         <AppDataSkeleton v-if="pendingAffinity" variant="affinity" />
         <AnalisisInterGroupAffinityHeatmap
-          v-else-if="(affinityGroups || []).length >= 2"
+          v-else-if="filteredAffinityGroups.length >= 2"
           group-label="partido"
-          :groups="affinityGroups || []"
+          :groups="filteredAffinityGroups"
           group-base-path="/senadores/partidos"
         />
         <template #fallback>
@@ -235,7 +278,7 @@ useChamberSeo({
           group-by="provincia"
           :groups="groupsByProvincia"
           show-presentismo
-          empty-message="No hay senadores activos para mostrar."
+          empty-message="No hay senadores en el período para mostrar."
         />
       </div>
     </template>

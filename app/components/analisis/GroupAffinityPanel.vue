@@ -2,6 +2,7 @@
 import {
   AFFINITY_FROM_DATE,
   formatAffinityPct,
+  groupActasWithQuorum,
   topInterGroupAffinities,
   type AffinityMemberInput,
   type InterGroupPair,
@@ -20,11 +21,16 @@ const props = withDefaults(
     topN?: number;
     /** Ruta a la página dedicada de afinidad. */
     detailTo?: string;
+    actasMeta?: Record<
+      string,
+      { id: string; titulo?: string | null; resultado?: string | null }
+    >;
   }>(),
   {
     groupSlugs: () => ({}),
     topN: 8,
     detailTo: undefined,
+    actasMeta: () => ({}),
   },
 );
 
@@ -40,6 +46,24 @@ const affinity = computed(() =>
         { id: name, slug },
       ]),
     ),
+  }),
+);
+
+const groupMembers = computed(() =>
+  props.allMembers.filter((m) => m.group === props.groupName),
+);
+
+const quorumRows = computed(() =>
+  groupActasWithQuorum(groupMembers.value, {
+    fromDate: AFFINITY_FROM_DATE,
+    minGroupVoters: 1,
+  }).map((row) => {
+    const meta = props.actasMeta?.[row.id];
+    return {
+      ...row,
+      titulo: meta?.titulo || row.id,
+      resultado: meta?.resultado || null,
+    };
   }),
 );
 
@@ -64,8 +88,24 @@ function pairMeta(pair: InterGroupPair) {
     v-if="hasData"
     :title="`Con qué otros ${groupLabel}s coinciden`"
     :description="`Cuánto coincide el voto más común de ${groupName} con el de otros ${groupLabel}s (votaciones desde ${AFFINITY_FROM_DATE.slice(0, 4)}).`"
-    :more-to="detailTo"
   >
+    <template v-if="quorumRows.length || detailTo" #actions>
+      <AnalisisQuorumActasButton
+        v-if="quorumRows.length"
+        :actas="quorumRows"
+        :group-label="groupLabel"
+      />
+      <UButton
+        v-if="detailTo"
+        :to="detailTo"
+        size="sm"
+        color="neutral"
+        variant="ghost"
+        trailing-icon="i-lucide-arrow-right"
+      >
+        Ver más
+      </UButton>
+    </template>
     <ClientOnly>
       <div class="grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
         <div class="space-y-2">

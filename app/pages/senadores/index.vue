@@ -22,6 +22,7 @@ const tab = useRouteQuery("tab", "activos");
 const provinciaFilter = useMultiQuery("provincia");
 const partidoFilter = useMultiQuery("partido");
 const searchQuery = useRouteQuery("q", "");
+const { filterMembers, isVigente } = usePeriodoFilter();
 
 const vistaItems = [
   { label: "Lista", value: "lista" },
@@ -48,6 +49,8 @@ const { data, pending } = useAsyncData(
 );
 const senadores = computed(() => (data.value as any as Senador[]) || []);
 
+const inPeriodo = computed(() => filterMembers(senadores.value));
+
 const filters = computed<FilterConfig>(() => ({
   ...(provinciaFilter.value.length ? { provincia: provinciaFilter.value } : {}),
   ...(partidoFilter.value.length ? { partido: partidoFilter.value } : {}),
@@ -60,19 +63,24 @@ const filtersForMap = computed<FilterConfig>(() => {
 });
 
 const filtered = computed(() =>
-  filterSenadores(senadores.value, filters.value),
+  filterSenadores(inPeriodo.value, filters.value),
 );
 const activos = computed(() => filtered.value.filter(isSenadorActivo));
 const inactivos = computed(() =>
   filtered.value.filter((d) => !isSenadorActivo(d)),
 );
 
-const displayed = computed(() =>
-  mostrarActivos.value ? activos.value : inactivos.value,
-);
+const displayed = computed(() => {
+  if (!isVigente.value) return filtered.value;
+  return mostrarActivos.value ? activos.value : inactivos.value;
+});
 
 const displayedForMap = computed(() => {
-  const base = filterSenadores(senadores.value, filtersForMap.value);
+  const base = filterSenadores(
+    filterMembers(senadores.value),
+    filtersForMap.value,
+  );
+  if (!isVigente.value) return base;
   return mostrarActivos.value
     ? base.filter(isSenadorActivo)
     : base.filter((d) => !isSenadorActivo(d));
@@ -225,6 +233,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           :items="partidoItems"
         />
       </div>
+      <FilterPeriodo />
     </div>
 
     <div
@@ -237,6 +246,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
         class="sm:flex-1"
       />
       <USwitch
+        v-if="isVigente"
         v-model="mostrarActivos"
         :label="
           mostrarActivos

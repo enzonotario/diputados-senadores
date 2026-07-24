@@ -2,7 +2,7 @@
 import { useRouteQuery } from "@vueuse/router";
 import type { Acta, FilterConfig } from "@/lib/types";
 import {
-  filterActas,
+  filterActas as applyActaFilters,
   formatDate,
   getUniqueValues,
   getYearsFromActas,
@@ -18,6 +18,7 @@ useChamberSeo({
   og: { kind: "list", eyebrow: "actas", badge: "Votaciones" },
 });
 
+const { filterActas: filterByPeriodo } = usePeriodoFilter();
 const { sorting } = useTableSorting("fecha", true);
 const vista = useRouteQuery("vista", "lista");
 const resultado = useMultiQuery("resultado");
@@ -26,6 +27,7 @@ const searchQuery = useRouteQuery("q", "");
 const vistaItems = [
   { label: "Lista", value: "lista" },
   { label: "Por año", value: "anios" },
+  { label: "Por período", value: "periodos" },
 ];
 
 const { localFetch } = useLocalApi();
@@ -39,8 +41,9 @@ const { data, pending } = useAsyncData(
   { lazy: true },
 );
 const actas = computed(() => (data.value as any as Acta[]) || []);
+const actasInPeriodo = computed(() => filterByPeriodo(actas.value));
 
-const years = computed(() => getYearsFromActas(actas.value));
+const years = computed(() => getYearsFromActas(actasInPeriodo.value));
 const year = useRouteQuery("year", years.value[0] || "todos");
 
 const filters = computed<FilterConfig>(() => ({
@@ -54,10 +57,17 @@ const filters = computed<FilterConfig>(() => ({
   ...(searchQuery.value ? { titulo: searchQuery.value } : {}),
 }));
 
-const displayed = computed(() => filterActas(actas.value, filters.value));
+const displayed = computed(() =>
+  applyActaFilters(actasInPeriodo.value, filters.value),
+);
 const groupsByAño = computed(() => groupActasBy(displayed.value, "año"));
+const groupsByPeriodo = computed(() =>
+  groupActasBy(displayed.value, "periodo"),
+);
 
-const resultados = computed(() => getUniqueValues(actas.value, "resultado"));
+const resultados = computed(() =>
+  getUniqueValues(actasInPeriodo.value, "resultado"),
+);
 const resultadoItems = computed(() =>
   resultados.value.map((r) => ({ label: r, value: r })),
 );
@@ -121,6 +131,8 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
       variant="link"
     />
 
+    <FilterPeriodo />
+
     <div
       class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3"
     >
@@ -180,6 +192,12 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
       <ActasGroupedBoard
         v-else-if="vista === 'anios'"
         :groups="groupsByAño"
+        :empty-message="emptyMessage"
+      />
+
+      <ActasGroupedBoard
+        v-else-if="vista === 'periodos'"
+        :groups="groupsByPeriodo"
         :empty-message="emptyMessage"
       />
     </template>

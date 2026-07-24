@@ -7,11 +7,14 @@ withDefaults(
     moreTo?: string;
     /** Mostrar badge(s) del período seleccionado junto al título. */
     showPeriodoBadge?: boolean;
+    /** Labels fijos para una vista que no sigue el filtro global. */
+    periodoBadgeLabels?: string[];
   }>(),
   {
     description: undefined,
     moreTo: undefined,
     showPeriodoBadge: true,
+    periodoBadgeLabels: undefined,
   },
 );
 </script>
@@ -22,7 +25,11 @@ withDefaults(
       <div class="min-w-0 space-y-1">
         <div class="flex flex-wrap items-center gap-2">
           <h3 class="text-base font-semibold text-highlighted">{{ title }}</h3>
-          <PeriodoScopeBadges v-if="showPeriodoBadge" size="xs" />
+          <PeriodoScopeBadges
+            v-if="showPeriodoBadge"
+            :labels="periodoBadgeLabels"
+            size="xs"
+          />
         </div>
         <p v-if="description" class="text-sm text-muted">{{ description }}</p>
       </div>

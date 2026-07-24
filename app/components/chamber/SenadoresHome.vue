@@ -5,9 +5,20 @@ import {
   encodeOgHemiciclo,
   groupsForOgHemiciclo,
 } from "@/lib/hemiciclo-layout";
+import {
+  filterActasByPeriodo,
+  filterMembersByPeriodo,
+  formatPeriodoLabel,
+} from "@/utils/periodoLegislativo";
 
 const { localFetch } = useLocalApi();
-const { filterActas: filterByPeriodo, filterMembers } = usePeriodoFilter();
+const { catalog, defaultKey, pending: pendingPeriodos } = usePeriodoFilter();
+const homePeriodo = computed(() =>
+  defaultKey.value ? [defaultKey.value] : [],
+);
+const homePeriodoBadgeLabels = computed(() =>
+  defaultKey.value ? [formatPeriodoLabel(defaultKey.value, "senadores")] : [],
+);
 
 const { data: membersData, pending: pendingMembers } = useAsyncData(
   "senadores-home-members",
@@ -28,26 +39,28 @@ const { data: actasData, pending: pendingActas } = useAsyncData(
 );
 
 const pendingHome = computed(
-  () => pendingMembers.value || pendingActas.value,
+  () => pendingMembers.value || pendingActas.value || pendingPeriodos.value,
 );
 
 const senadoresInPeriodo = computed(() =>
-  filterMembers(membersData.value || []),
+  filterMembersByPeriodo(
+    membersData.value || [],
+    homePeriodo.value,
+    catalog.value,
+  ),
 );
 const partidoColores = computed(() =>
-  getPartidoColores(
-    [
-      ...new Set(
-        senadoresInPeriodo.value
-          .map((s) => s.partido)
-          .filter(Boolean) as string[],
-      ),
-    ],
-  ),
+  getPartidoColores([
+    ...new Set(
+      senadoresInPeriodo.value
+        .map((s) => s.partido)
+        .filter(Boolean) as string[],
+    ),
+  ]),
 );
 
 const actasInPeriodo = computed(() =>
-  filterByPeriodo(actasData.value || []),
+  filterActasByPeriodo(actasData.value || [], homePeriodo.value, "senadores"),
 );
 
 useChamberSeo(() => {
@@ -107,10 +120,6 @@ const actasRecientes = computed(() => {
     <AppDataSkeleton v-if="pendingHome" variant="home" />
 
     <template v-else>
-      <div class="flex justify-center mb-8">
-        <FilterPeriodo />
-      </div>
-
       <section>
         <ClientOnly>
           <SenadoresChart
@@ -138,7 +147,10 @@ const actasRecientes = computed(() => {
             asisten, mes a mes.
           </p>
         </div>
-        <ChartsActasOverviewCharts :actas="actasInPeriodo" />
+        <ChartsActasOverviewCharts
+          :actas="actasInPeriodo"
+          :periodo-badge-labels="homePeriodoBadgeLabels"
+        />
       </section>
 
       <USeparator class="my-20" />

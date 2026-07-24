@@ -4,16 +4,22 @@ import {
   actasPresentismoByMonth,
   actasResultadosByMonth,
 } from "@/utils/chartSeries";
-import { baseChartChrome, useChartPalette } from "@/composables/useChartPalette";
+import {
+  baseChartChrome,
+  useChartPalette,
+} from "@/composables/useChartPalette";
 
 const props = withDefaults(
   defineProps<{
     actas: ActaChartRow[];
     /** Si se define, solo se grafican actas desde ese año (inclusive). */
     fromYear?: number | null;
+    /** Badge fijo cuando la vista no sigue el filtro global. */
+    periodoBadgeLabels?: string[];
   }>(),
   {
     fromYear: null,
+    periodoBadgeLabels: undefined,
   },
 );
 
@@ -173,7 +179,12 @@ const presentismoOption = computed(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: p.isDark ? "rgba(45,212,191,0.35)" : "rgba(13,148,136,0.28)" },
+              {
+                offset: 0,
+                color: p.isDark
+                  ? "rgba(45,212,191,0.35)"
+                  : "rgba(13,148,136,0.28)",
+              },
               { offset: 1, color: "rgba(13,148,136,0)" },
             ],
           },
@@ -201,6 +212,7 @@ const presentismoOption = computed(() => {
       v-if="resultadosOption"
       title="Resultados de las votaciones en el tiempo"
       description="Cuántas votaciones por mes se aprobaron, rechazaron u otros."
+      :periodo-badge-labels="periodoBadgeLabels"
     >
       <template #actions>
         <AnalisisWindowActasButton
@@ -222,6 +234,7 @@ const presentismoOption = computed(() => {
       v-if="presentismoOption"
       title="Asistencia de la cámara"
       description="En promedio, qué porcentaje asiste a votar cada mes."
+      :periodo-badge-labels="periodoBadgeLabels"
     >
       <template #actions>
         <AnalisisWindowActasButton

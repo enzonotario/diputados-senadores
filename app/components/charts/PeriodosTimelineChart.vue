@@ -9,7 +9,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  toggle: [key: string];
+  select: [key: string];
 }>();
 
 const palette = useChartPalette();
@@ -85,10 +85,14 @@ const option = computed(() => {
       textStyle: { color: p.text, fontSize: 12 },
       formatter: (params: any) => {
         const d = params?.data || {};
-        const on = noneScoped || selected.has(String(d.key));
         const range =
           d.minFecha && d.maxFecha ? `${d.minFecha} → ${d.maxFecha}` : "";
-        return `<div class="text-xs"><div class="font-medium mb-0.5">${d.label || params?.name || ""}</div><div>${d.value ?? 0} votaciones</div>${range ? `<div class="opacity-80">${range}</div>` : ""}<div class="mt-1 opacity-70">${on ? "Clic para quitar" : "Clic para filtrar"}</div></div>`;
+        const onlyThis =
+          !noneScoped && selected.size === 1 && selected.has(String(d.key));
+        const hint = onlyThis
+          ? "Período activo"
+          : "Clic para filtrar solo este período";
+        return `<div class="text-xs"><div class="font-medium mb-0.5">${d.label || params?.name || ""}</div><div>${d.value ?? 0} votaciones</div>${range ? `<div class="opacity-80">${range}</div>` : ""}<div class="mt-1 opacity-70">${hint}</div></div>`;
       },
     },
     xAxis: {
@@ -143,7 +147,7 @@ const option = computed(() => {
 function onClick(params: any) {
   const key = params?.data?.key;
   if (!key) return;
-  emit("toggle", String(key));
+  emit("select", String(key));
 }
 </script>
 
@@ -151,7 +155,7 @@ function onClick(params: any) {
   <ChartsChartCard
     v-if="option"
     title="Períodos en el tiempo"
-    description="Clic en una barra para sumar o quitar ese período del filtro."
+    description="Clic en una barra para filtrar solo ese período. Para varios, usá el select."
     :show-periodo-badge="false"
   >
     <ChartsAppChart

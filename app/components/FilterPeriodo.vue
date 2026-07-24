@@ -24,13 +24,13 @@ const props = withDefaults(
 );
 
 const { isLegislative } = useChamber();
-const {
-  selectItems,
-  periodos,
-  pending,
-  periods,
-  togglePeriodo,
-} = usePeriodoFilter();
+const { selectItems, periodos, pending, periods, setPeriodos } =
+  usePeriodoFilter();
+
+/** Clic en el chart: solo ese período (multi queda en el Select). */
+function selectPeriodoFromChart(key: string) {
+  setPeriodos([key]);
+}
 
 const displayLabel = computed(() => {
   if (!periodos.value?.length) return "Todos los períodos";
@@ -48,9 +48,7 @@ const timelinePeriodsResolved = computed<PeriodoInfo[]>(() => {
   return periods.value.filter((p) => allow.has(p.key));
 });
 
-const showScopeHeading = computed(
-  () => props.showHeading && !props.compact,
-);
+const showScopeHeading = computed(() => props.showHeading && !props.compact);
 </script>
 
 <template>
@@ -69,7 +67,9 @@ const showScopeHeading = computed(
     <UFormField
       label="Período"
       orientation="vertical"
-      :class="showTimeline || showScopeHeading ? 'w-full sm:max-w-md' : 'w-full'"
+      :class="
+        showTimeline || showScopeHeading ? 'w-full sm:max-w-md' : 'w-full'
+      "
     >
       <ClientOnly>
         <USelectMenu
@@ -102,7 +102,7 @@ const showScopeHeading = computed(
       v-if="showTimeline && timelinePeriodsResolved.length"
       :periods="timelinePeriodsResolved"
       :selected="periodos"
-      @toggle="togglePeriodo"
+      @select="selectPeriodoFromChart"
     />
   </div>
 </template>

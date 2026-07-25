@@ -45,9 +45,9 @@ const { isLegislative } = useChamber();
 const { selectItems, periodos, pending, periods, setPeriodos } =
   usePeriodoFilter();
 
-/** Clic en el chart: solo ese período (multi queda en el Select). */
-function selectPeriodoFromChart(key: string) {
-  setPeriodos([key]);
+/** Clic en el chart: keys ya resueltas (uno / toggle / rango). */
+function selectPeriodoFromChart(keys: string[]) {
+  setPeriodos(keys);
 }
 
 const displayLabel = computed(() => {

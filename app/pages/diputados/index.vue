@@ -251,6 +251,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
       <FilterPeriodo
         :timeline-members="diputados"
         members-label="diputados"
+        timeline-mode="members"
       />
     </div>
 

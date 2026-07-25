@@ -9,6 +9,7 @@
  */
 
 import { foldNombre } from "../lib/matchSenadorNombre";
+import { formatDate } from "../lib/utils";
 import { provinciaKey } from "./provinciaKey";
 
 export type CareerChamber = "diputados" | "senadores";
@@ -388,7 +389,7 @@ export function shouldShowCareer(
 export type MandatoRange = {
   /** Clave estable (inicio ISO). */
   key: string;
-  /** Etiqueta corta: "2001–2005". */
+  /** Rango visible en formato argentino. */
   label: string;
   inicio: string;
   fin: string | null;
@@ -397,15 +398,10 @@ export type MandatoRange = {
   finMs: number;
 };
 
-function yearLabel(iso: string | null | undefined): string {
-  const y = String(iso || "").slice(0, 4);
-  return /^\d{4}$/.test(y) ? y : "—";
-}
-
 export function formatMandatoLabel(inicio: string, fin: string | null): string {
-  const a = yearLabel(inicio);
-  const b = fin ? yearLabel(fin) : "hoy";
-  return `${a}–${b}`;
+  const a = formatDate(inicio, "—");
+  const b = fin ? formatDate(fin, "—") : "hoy";
+  return `${a} – ${b}`;
 }
 
 /** Mandatos de la cámara del perfil (para bucketing de sus votos). */

@@ -11,6 +11,7 @@ import {
   type PeriodosCatalog,
 } from "@/utils/periodoLegislativo";
 import { useMultiQuery } from "@/composables/useMultiQuery";
+import { formatDateRange as formatArgentinaDateRange } from "@/lib/utils";
 
 type PeriodosApi = PeriodosCatalog & { chamber?: string };
 
@@ -353,20 +354,6 @@ function formatPeriodoRange(
   minFecha: string | null | undefined,
   maxFecha: string | null | undefined,
 ): string | null {
-  const min = String(minFecha || "").slice(0, 10);
-  const max = String(maxFecha || "").slice(0, 10);
-  if (!min && !max) return null;
-  const fmt = (iso: string) => {
-    if (!iso) return "—";
-    const d = new Date(`${iso}T12:00:00`);
-    if (Number.isNaN(d.getTime())) return iso;
-    return new Intl.DateTimeFormat("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      timeZone: "America/Argentina/Buenos_Aires",
-    }).format(d);
-  };
-  if (min && max) return `${fmt(min)} – ${fmt(max)}`;
-  return fmt(min || max);
+  if (!minFecha && !maxFecha) return null;
+  return formatArgentinaDateRange(minFecha, maxFecha);
 }

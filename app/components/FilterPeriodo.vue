@@ -26,6 +26,8 @@ const props = withDefaults(
     }> | null;
     /** Sustantivo del conteo de miembros: "diputados" | "senadores". */
     membersLabel?: string;
+    /** Métrica primaria del timeline. Explícita para mantener SSR/hidratación. */
+    timelineMode?: "actas" | "members";
   }>(),
   {
     showTimeline: true,
@@ -35,6 +37,7 @@ const props = withDefaults(
     timelinePeriods: null,
     timelineMembers: null,
     membersLabel: "integrantes",
+    timelineMode: "actas",
   },
 );
 
@@ -64,8 +67,8 @@ const timelinePeriodsResolved = computed<PeriodoInfo[]>(() => {
         const allow = new Set(props.timelineKeys);
         return periods.value.filter((p) => allow.has(p.key));
       })();
-  if (props.timelineMembers != null) {
-    return periodosWithMemberCounts(base, props.timelineMembers, {
+  if (props.timelineMode === "members") {
+    return periodosWithMemberCounts(base, props.timelineMembers || [], {
       countNoun: props.membersLabel,
       secondaryNoun: "votaciones",
     });
@@ -127,7 +130,7 @@ const showScopeHeading = computed(() => props.showHeading && !props.compact);
       v-if="showTimeline && timelinePeriodsResolved.length"
       :periods="timelinePeriodsResolved"
       :selected="periodos"
-      :members-metric="timelineMembers != null"
+      :members-metric="timelineMode === 'members'"
       @select="selectPeriodoFromChart"
     />
   </div>

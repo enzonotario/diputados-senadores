@@ -1,4 +1,5 @@
 import { normalizeResultado, normalizeVotoTipo } from "@/utils/votoTipo";
+import { formatDate } from "@/lib/utils";
 import {
   formatMandatoKey,
   mandatoKeyFromFecha,
@@ -68,21 +69,6 @@ const EMPTY_VOTO_BUCKET = (): VotoBucket => ({
   ausente: 0,
 });
 
-const MONTHS_SHORT = [
-  "ene",
-  "feb",
-  "mar",
-  "abr",
-  "may",
-  "jun",
-  "jul",
-  "ago",
-  "sep",
-  "oct",
-  "nov",
-  "dic",
-];
-
 export function monthKeyFromFecha(fecha?: string | null): string | null {
   if (!fecha) return null;
   const d = new Date(fecha);
@@ -96,7 +82,7 @@ export function formatMonthKey(key: string): string {
   const [y, m] = key.split("-");
   const idx = Number(m) - 1;
   if (!y || idx < 0 || idx > 11) return key;
-  return `${MONTHS_SHORT[idx]} ${y}`;
+  return `01/${String(idx + 1).padStart(2, "0")}/${y}`;
 }
 
 function sortedMonthKeys(keys: Iterable<string>): string[] {
@@ -115,7 +101,12 @@ export function trimestreKeyFromFecha(fecha?: string | null): string | null {
 export function formatTrimestreKey(key: string): string {
   const match = /^(\d{4})-T([1-4])$/.exec(key);
   if (!match) return key;
-  return `T${match[2]} ${match[1]}`;
+  const year = Number(match[1]);
+  const quarter = Number(match[2]);
+  const startMonth = (quarter - 1) * 3 + 1;
+  const endMonth = startMonth + 2;
+  const endDay = new Date(year, endMonth, 0).getDate();
+  return `01/${String(startMonth).padStart(2, "0")}/${year} – ${String(endDay).padStart(2, "0")}/${String(endMonth).padStart(2, "0")}/${year}`;
 }
 
 /** Cuatrimestre (ene–abr / may–ago / sep–dic): 2024-C1 … 2024-C3 */
@@ -130,8 +121,12 @@ export function cuatrimestreKeyFromFecha(fecha?: string | null): string | null {
 export function formatCuatrimestreKey(key: string): string {
   const match = /^(\d{4})-C([1-3])$/.exec(key);
   if (!match) return key;
-  const ranges = ["ene–abr", "may–ago", "sep–dic"];
-  return `${ranges[Number(match[2]) - 1]} ${match[1]}`;
+  const year = Number(match[1]);
+  const period = Number(match[2]);
+  const startMonth = (period - 1) * 4 + 1;
+  const endMonth = startMonth + 3;
+  const endDay = new Date(year, endMonth, 0).getDate();
+  return `01/${String(startMonth).padStart(2, "0")}/${year} – ${String(endDay).padStart(2, "0")}/${String(endMonth).padStart(2, "0")}/${year}`;
 }
 
 function periodoKeyFromActa(a: ActaChartRow): string {
@@ -353,17 +348,8 @@ export function miembroPresentismoSeries(actas: ActaChartRow[]) {
     window.push(isPresent);
     if (window.length > 20) window.shift();
 
-    const d = new Date(a.fecha!);
     dates.push(a.fecha!);
-    labels.push(
-      Number.isNaN(d.getTime())
-        ? String(a.fecha)
-        : d.toLocaleDateString("es-AR", {
-            day: "2-digit",
-            month: "short",
-            year: "2-digit",
-          }),
-    );
+    labels.push(formatDate(a.fecha, String(a.fecha || "")));
     cumulative.push(Math.round((present / total) * 1000) / 10);
     const rollSum = window.reduce((s, n) => s + n, 0);
     rolling.push(Math.round((rollSum / window.length) * 1000) / 10);

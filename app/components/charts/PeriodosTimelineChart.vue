@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useChartPalette } from "@/composables/useChartPalette";
+import { formatDateRange } from "@/lib/utils";
 import type { PeriodoInfo } from "@/utils/periodoLegislativo";
 import { SIN_PERIODO_KEY } from "@/utils/periodoLegislativo";
 
@@ -99,7 +100,9 @@ const option = computed(() => {
       formatter: (params: any) => {
         const d = params?.data || {};
         const range =
-          d.minFecha && d.maxFecha ? `${d.minFecha} → ${d.maxFecha}` : "";
+          d.minFecha || d.maxFecha
+            ? formatDateRange(d.minFecha, d.maxFecha, "")
+            : "";
         const onlyThis =
           !noneScoped && selected.size === 1 && selected.has(String(d.key));
         const hint = onlyThis

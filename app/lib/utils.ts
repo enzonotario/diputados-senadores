@@ -10,15 +10,51 @@ import type {
   Diputado,
 } from "./types-diputados";
 
-export function formatDate(dateString: string): string {
-  if (!dateString) return "N/A";
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(date);
+const ARGENTINA_DATE_FORMATTER = new Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: "America/Argentina/Buenos_Aires",
+});
+
+/** Fecha visible en toda la UI: `dd/MM/yyyy` (calendario argentino). */
+export function formatDate(
+  dateString: string | null | undefined,
+  fallback = "N/A",
+): string {
+  const raw = String(dateString || "").trim();
+  if (!raw) return fallback;
+
+  // Una fecha civil sin zona no debe correrse al día anterior al parsearla UTC.
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+  if (iso) {
+    const rest = iso[4] || "";
+    const hasUtcOrOffset = /[Zz]|[+-]\d{2}:?\d{2}\s*$/.test(rest);
+    if (!hasUtcOrOffset || /[+-]0?3:?00\s*$/.test(rest)) {
+      return `${iso[3]}/${iso[2]}/${iso[1]}`;
+    }
+  }
+
+  // Evita reinterpretar una fecha que ya está en formato argentino.
+  const ar = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ar) {
+    return `${ar[1]!.padStart(2, "0")}/${ar[2]!.padStart(2, "0")}/${ar[3]}`;
+  }
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return ARGENTINA_DATE_FORMATTER.format(date);
+}
+
+export function formatDateRange(
+  from: string | null | undefined,
+  to: string | null | undefined,
+  fallback = "—",
+): string {
+  if (!from && !to) return fallback;
+  const start = formatDate(from, fallback);
+  const end = formatDate(to, fallback);
+  return from && to ? `${start} – ${end}` : start === fallback ? end : start;
 }
 
 export function isSenadorActivo(senador: Senador): boolean {

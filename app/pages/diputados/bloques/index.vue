@@ -176,6 +176,7 @@ useChamberSeo({
     <FilterPeriodo
       :timeline-members="allMembers || []"
       members-label="diputados"
+      timeline-mode="members"
     />
 
     <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />

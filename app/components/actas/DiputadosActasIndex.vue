@@ -5,10 +5,8 @@ import {
   filterActas as applyActaFilters,
   formatDate,
   getUniqueValues,
-  getYearsFromActas,
 } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
-import { groupActasBy } from "@/utils/groupActasBy";
 import { voteMarginSortValue } from "@/utils/voteMargin";
 
 useChamberSeo({
@@ -20,15 +18,13 @@ useChamberSeo({
 
 const { filterActas: filterByPeriodo } = usePeriodoFilter();
 const { sorting } = useTableSorting("fecha", true);
-const vista = useRouteQuery("vista", "lista");
 const resultado = useMultiQuery("resultado");
 const searchQuery = useRouteQuery("q", "");
 
-const vistaItems = [
-  { label: "Lista", value: "lista" },
-  { label: "Por año", value: "anios" },
-  { label: "Por período", value: "periodos" },
-];
+/** Cómo mostrar el listado: tabla (default) o grilla de cards. */
+const layout = useLocalStorage<"tabla" | "grid">("actas-layout", "tabla", {
+  initOnMounted: true,
+});
 
 const { localFetch } = useLocalApi();
 
@@ -43,27 +39,13 @@ const { data, pending } = useAsyncData(
 const actas = computed(() => (data.value as any as Acta[]) || []);
 const actasInPeriodo = computed(() => filterByPeriodo(actas.value));
 
-const years = computed(() => getYearsFromActas(actasInPeriodo.value));
-const year = useRouteQuery("year", years.value[0] || "todos");
-
 const filters = computed<FilterConfig>(() => ({
-  // En vistas agrupadas no filtramos por año para poder ver todos los grupos
-  ...(vista.value === "lista" && year.value && year.value !== "todos"
-    ? {
-        fechaStart: `${year.value}-01-01`,
-        fechaEnd: `${year.value}-12-31`,
-      }
-    : {}),
   ...(resultado.value.length ? { resultado: resultado.value } : {}),
   ...(searchQuery.value ? { titulo: searchQuery.value } : {}),
 }));
 
 const displayed = computed(() =>
   applyActaFilters(actasInPeriodo.value, filters.value),
-);
-const groupsByAño = computed(() => groupActasBy(displayed.value, "año"));
-const groupsByPeriodo = computed(() =>
-  groupActasBy(displayed.value, "periodo"),
 );
 
 const resultados = computed(() =>
@@ -112,18 +94,6 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
   <div class="page-container space-y-6">
     <h1 class="text-3xl font-bold">Todas las votaciones</h1>
 
-    <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
-
-    <SegmentedTabs
-      v-if="vista === 'lista'"
-      v-model="year"
-      :items="[
-        { label: 'Todos los años', value: 'todos' },
-        ...years.slice(0, 8).map((y) => ({ label: y, value: y })),
-      ]"
-      variant="link"
-    />
-
     <FilterPeriodo />
 
     <div
@@ -142,6 +112,27 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
         :items="resultadoItems"
         class="w-full sm:w-56"
       />
+      <ClientOnly>
+        <UFieldGroup size="md" class="shrink-0 self-end">
+          <UButton
+            color="neutral"
+            :variant="layout === 'tabla' ? 'solid' : 'outline'"
+            icon="i-lucide-table"
+            label="Tabla"
+            @click="layout = 'tabla'"
+          />
+          <UButton
+            color="neutral"
+            :variant="layout === 'grid' ? 'solid' : 'outline'"
+            icon="i-lucide-layout-grid"
+            label="Grid"
+            @click="layout = 'grid'"
+          />
+        </UFieldGroup>
+        <template #fallback>
+          <div class="h-9 w-40 animate-pulse rounded-md bg-elevated" />
+        </template>
+      </ClientOnly>
     </div>
 
     <AppDataSkeleton v-if="pending" variant="list" />
@@ -149,7 +140,7 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
     <template v-else>
       <ChartsActasOverviewCharts :actas="displayed" />
 
-      <DataTableCard v-if="vista === 'lista'">
+      <DataTableCard v-if="layout === 'tabla'">
         <UTable
           v-model:sorting="sorting"
           :data="displayed"
@@ -182,17 +173,21 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
         </UTable>
       </DataTableCard>
 
-      <ActasGroupedBoard
-        v-else-if="vista === 'anios'"
-        :groups="groupsByAño"
-        :empty-message="emptyMessage"
-      />
-
-      <ActasGroupedBoard
-        v-else-if="vista === 'periodos'"
-        :groups="groupsByPeriodo"
-        :empty-message="emptyMessage"
-      />
+      <template v-else>
+        <div
+          v-if="displayed.length"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <ActaVotingCard
+            v-for="acta in displayed"
+            :key="acta.id"
+            :acta="acta"
+          />
+        </div>
+        <UCard v-else>
+          <p class="text-sm text-toned">{{ emptyMessage }}</p>
+        </UCard>
+      </template>
     </template>
   </div>
 </template>

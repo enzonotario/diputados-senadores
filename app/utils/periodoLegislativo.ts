@@ -18,7 +18,17 @@ export type PeriodoInfo = {
   minFecha: string;
   /** ISO date (YYYY-MM-DD) inclusive */
   maxFecha: string;
+  /**
+   * Métrica primaria del timeline (largo de barra).
+   * Por defecto = cantidad de actas/votaciones del catálogo.
+   * En listados de miembros se reemplaza por integrantes del período.
+   */
   count: number;
+  /** Sustantivo del `count` (tooltip/aria). Default implícito: "votaciones". */
+  countNoun?: string;
+  /** Dimensión secundaria (p. ej. votaciones cuando `count` = integrantes). */
+  secondaryCount?: number;
+  secondaryNoun?: string;
 };
 
 export type PeriodosCatalog = {
@@ -488,4 +498,49 @@ export function filterAffinityPeersByPeriodo<
       voteMatchesFilter(toIsoDateAr(v.fecha), filter),
     ),
   }));
+}
+
+type MemberPeriodoLike = {
+  periodoMandato?: DateRange | null;
+  ceseFecha?: string | null;
+  periodoReal?: DateRange | null;
+  periodoLegal?: DateRange | null;
+};
+
+/**
+ * Reescribe el timeline: barra = integrantes que solapan el período;
+ * las actas originales quedan como `secondaryCount`.
+ */
+export function periodosWithMemberCounts<T extends MemberPeriodoLike>(
+  periods: PeriodoInfo[],
+  members: T[],
+  opts?: { countNoun?: string; secondaryNoun?: string },
+): PeriodoInfo[] {
+  const countNoun = opts?.countNoun || "integrantes";
+  const secondaryNoun = opts?.secondaryNoun || "votaciones";
+  const known = periods.filter((p) => p.key !== SIN_PERIODO_KEY);
+
+  return periods.map((p) => {
+    const actasCount = p.count;
+    let membersCount = 0;
+    if (p.key === SIN_PERIODO_KEY) {
+      membersCount = members.filter(
+        (m) =>
+          !known.some((k) =>
+            memberOverlapsDateRange(m, k.minFecha, k.maxFecha),
+          ),
+      ).length;
+    } else {
+      membersCount = members.filter((m) =>
+        memberOverlapsDateRange(m, p.minFecha, p.maxFecha),
+      ).length;
+    }
+    return {
+      ...p,
+      count: membersCount,
+      countNoun,
+      secondaryCount: actasCount,
+      secondaryNoun,
+    };
+  });
 }

@@ -173,7 +173,10 @@ useChamberSeo({
       </p>
     </div>
 
-    <FilterPeriodo />
+    <FilterPeriodo
+      :timeline-members="allMembers || []"
+      members-label="diputados"
+    />
 
     <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
 

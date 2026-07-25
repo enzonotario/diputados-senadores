@@ -6,6 +6,8 @@ import { SIN_PERIODO_KEY } from "@/utils/periodoLegislativo";
 const props = defineProps<{
   periods: PeriodoInfo[];
   selected: string[];
+  /** Timeline de listados: barra = integrantes, tooltip incluye votaciones. */
+  membersMetric?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -30,10 +32,18 @@ const timelineRows = computed(() => {
 const selectedSet = computed(() => new Set(props.selected || []));
 const allSelected = computed(() => !(props.selected?.length > 0));
 
+const usesMembersMetric = computed(() => props.membersMetric);
+
 const chartHeight = computed(() => {
   const n = timelineRows.value.length;
   return `${Math.min(360, Math.max(140, 28 + n * 26))}px`;
 });
+
+const chartDescription = computed(() =>
+  usesMembersMetric.value
+    ? "La barra es la cantidad de integrantes del período; las votaciones van en el tooltip. Clic para filtrar."
+    : "Clic en una barra para filtrar solo ese período. Para varios, usá el select.",
+);
 
 const option = computed(() => {
   const p = palette.value;
@@ -53,6 +63,9 @@ const option = computed(() => {
       label: row.label,
       minFecha: row.minFecha,
       maxFecha: row.maxFecha,
+      countNoun: row.countNoun || "votaciones",
+      secondaryCount: row.secondaryCount,
+      secondaryNoun: row.secondaryNoun || "votaciones",
       itemStyle: {
         color: isOn
           ? p.isDark
@@ -92,7 +105,12 @@ const option = computed(() => {
         const hint = onlyThis
           ? "Período activo"
           : "Clic para filtrar solo este período";
-        return `<div class="text-xs"><div class="font-medium mb-0.5">${d.label || params?.name || ""}</div><div>${d.value ?? 0} votaciones</div>${range ? `<div class="opacity-80">${range}</div>` : ""}<div class="mt-1 opacity-70">${hint}</div></div>`;
+        const primary = `<div>${d.value ?? 0} ${d.countNoun || "votaciones"}</div>`;
+        const secondary =
+          d.secondaryCount != null
+            ? `<div class="opacity-80">${d.secondaryCount} ${d.secondaryNoun || "votaciones"}</div>`
+            : "";
+        return `<div class="text-xs"><div class="font-medium mb-0.5">${d.label || params?.name || ""}</div>${primary}${secondary}${range ? `<div class="opacity-80">${range}</div>` : ""}<div class="mt-1 opacity-70">${hint}</div></div>`;
       },
     },
     xAxis: {
@@ -155,7 +173,7 @@ function onClick(params: any) {
   <ChartsChartCard
     v-if="option"
     title="Períodos en el tiempo"
-    description="Clic en una barra para filtrar solo ese período. Para varios, usá el select."
+    :description="chartDescription"
     :show-periodo-badge="false"
   >
     <ChartsAppChart

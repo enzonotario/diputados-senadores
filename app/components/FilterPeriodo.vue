@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PeriodoInfo } from "@/utils/periodoLegislativo";
+import { periodosWithMemberCounts } from "@/utils/periodoLegislativo";
 
 const props = withDefaults(
   defineProps<{
@@ -13,6 +14,18 @@ const props = withDefaults(
     timelineKeys?: string[] | null;
     /** Override de filas del timeline (p. ej. conteos del miembro). */
     timelinePeriods?: PeriodoInfo[] | null;
+    /**
+     * Si se pasa, el timeline usa cantidad de integrantes por período
+     * (las votaciones quedan como dimensión secundaria).
+     */
+    timelineMembers?: Array<{
+      periodoMandato?: { inicio?: string | null; fin?: string | null } | null;
+      ceseFecha?: string | null;
+      periodoReal?: { inicio?: string | null; fin?: string | null } | null;
+      periodoLegal?: { inicio?: string | null; fin?: string | null } | null;
+    }> | null;
+    /** Sustantivo del conteo de miembros: "diputados" | "senadores". */
+    membersLabel?: string;
   }>(),
   {
     showTimeline: true,
@@ -20,6 +33,8 @@ const props = withDefaults(
     showHeading: true,
     timelineKeys: null,
     timelinePeriods: null,
+    timelineMembers: null,
+    membersLabel: "integrantes",
   },
 );
 
@@ -43,9 +58,19 @@ const displayLabel = computed(() => {
 
 const timelinePeriodsResolved = computed<PeriodoInfo[]>(() => {
   if (props.timelinePeriods != null) return props.timelinePeriods;
-  if (!props.timelineKeys?.length) return periods.value;
-  const allow = new Set(props.timelineKeys);
-  return periods.value.filter((p) => allow.has(p.key));
+  const base = !props.timelineKeys?.length
+    ? periods.value
+    : (() => {
+        const allow = new Set(props.timelineKeys);
+        return periods.value.filter((p) => allow.has(p.key));
+      })();
+  if (props.timelineMembers != null) {
+    return periodosWithMemberCounts(base, props.timelineMembers, {
+      countNoun: props.membersLabel,
+      secondaryNoun: "votaciones",
+    });
+  }
+  return base;
 });
 
 const showScopeHeading = computed(() => props.showHeading && !props.compact);
@@ -102,6 +127,7 @@ const showScopeHeading = computed(() => props.showHeading && !props.compact);
       v-if="showTimeline && timelinePeriodsResolved.length"
       :periods="timelinePeriodsResolved"
       :selected="periodos"
+      :members-metric="timelineMembers != null"
       @select="selectPeriodoFromChart"
     />
   </div>

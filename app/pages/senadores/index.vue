@@ -233,7 +233,10 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           :items="partidoItems"
         />
       </div>
-      <FilterPeriodo />
+      <FilterPeriodo
+        :timeline-members="senadores"
+        members-label="senadores"
+      />
     </div>
 
     <div

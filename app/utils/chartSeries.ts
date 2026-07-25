@@ -272,6 +272,60 @@ function memberVotoTipo(a: ActaChartRow): string {
   );
 }
 
+export type MemberVoteStats = {
+  totalVotaciones: number;
+  votosAfirmativos: number;
+  votosNegativos: number;
+  abstenciones: number;
+  ausencias: number;
+  presentismo: number;
+};
+
+/** Stats del miembro a partir de actas ya filtradas (p. ej. por período). */
+export function memberVoteStatsFromActas(
+  actas: ActaChartRow[],
+): MemberVoteStats {
+  let totalVotaciones = 0;
+  let votosAfirmativos = 0;
+  let votosNegativos = 0;
+  let abstenciones = 0;
+  let ausencias = 0;
+
+  for (const a of actas || []) {
+    totalVotaciones++;
+    switch (memberVotoTipo(a)) {
+      case "afirmativo":
+        votosAfirmativos++;
+        break;
+      case "negativo":
+        votosNegativos++;
+        break;
+      case "abstencion":
+        abstenciones++;
+        break;
+      case "ausente":
+        ausencias++;
+        break;
+      default:
+        break;
+    }
+  }
+
+  const presentismo =
+    totalVotaciones > 0
+      ? ((totalVotaciones - ausencias) / totalVotaciones) * 100
+      : 0;
+
+  return {
+    totalVotaciones,
+    votosAfirmativos,
+    votosNegativos,
+    abstenciones,
+    ausencias,
+    presentismo: Math.round(presentismo * 10) / 10,
+  };
+}
+
 /**
  * Presentismo acumulado del miembro a lo largo de sus actas
  * (orden cronológico).

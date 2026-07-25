@@ -12,6 +12,7 @@ import {
 } from "@/utils/votingAffinity";
 import { filterActasByPeriodo } from "@/utils/periodoLegislativo";
 import type { PeriodoInfo } from "@/utils/periodoLegislativo";
+import { memberVoteStatsFromActas } from "@/utils/chartSeries";
 
 type HistoryRow = {
   id: string;
@@ -57,7 +58,6 @@ const route = useRoute();
 const id = computed(() => String(route.params.id));
 const { localFetch } = useLocalApi();
 const {
-  filterVotes,
   periodos,
   isTodos,
   periods,
@@ -76,6 +76,9 @@ const senador = computed(() => data.value?.member || null);
 const chartActas = computed(() => data.value?.chartActas || []);
 const chartActasFiltered = computed(() =>
   filterActasByPeriodo(chartActas.value, periodos.value, "senadores"),
+);
+const periodStats = computed(() =>
+  memberVoteStatsFromActas(chartActasFiltered.value),
 );
 const periodScoped = computed(() => !isTodos.value);
 const memberTimelinePeriods = computed<PeriodoInfo[]>(() => {
@@ -139,30 +142,32 @@ const { data: peersPayload, pending: peersPending } = useAffinityPeers(
   "senadores-affinity-peers",
 );
 
-const affinityPeers = computed<AffinityMemberInput[]>(() => {
-  const current = senador.value;
-  const ensure: AffinityMemberInput | null = current
-    ? {
-        id: current.id,
-        name: current.nombreCompleto || current.nombre,
-        group: current.partido,
-        foto: current.foto,
-        votes: filterVotes(
-          memberActasInWindow(
+const { peers: affinityPeers } = usePeriodFilteredPeers({
+  getSource: () => {
+    const current = senador.value;
+    const ensure: AffinityMemberInput | null = current
+      ? {
+          id: current.id,
+          name: current.nombreCompleto || current.nombre,
+          group: current.partido,
+          foto: current.foto,
+          votes: memberActasInWindow(
             chartActas.value.map((a) => ({
               id: a.id,
               fecha: String(a.fecha || ""),
               voto: a.tipoVotoSenador,
             })),
           ),
-        ),
-      }
-    : null;
-  const base = peersToAffinityInputs(peersPayload.value?.peers, { ensure });
-  return base.map((p) => ({
-    ...p,
-    votes: filterVotes(p.votes || []),
-  }));
+        }
+      : null;
+    return peersToAffinityInputs(peersPayload.value?.peers, { ensure });
+  },
+  deps: () => [
+    peersPayload.value,
+    senador.value?.id,
+    senador.value?.partido,
+    chartActas.value,
+  ],
 });
 
 const affinityGroupPeers = computed(() => {
@@ -395,89 +400,13 @@ const profileSections = computed<ProfileFactSection[]>(() => {
             :cargos="career"
             chamber="senadores"
           />
-
-          <div v-if="senador.estadisticas" class="grid grid-cols-1 gap-4">
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div
-                class="rounded-lg border border-teal-300! p-3 bg-teal-50 dark:border-teal-700! dark:bg-teal-950"
-              >
-                <div
-                  class="text-3xl font-bold text-teal-600 dark:text-teal-400"
-                >
-                  {{ senador.estadisticas.votosAfirmativos }}
-                </div>
-                <div class="text-sm text-gray-600 dark:text-gray-300">
-                  A favor
-                </div>
-              </div>
-              <div
-                class="rounded-lg border border-red-300! p-3 bg-red-50 dark:border-red-700! dark:bg-red-950"
-              >
-                <div class="text-3xl font-bold text-red-600 dark:text-red-400">
-                  {{ senador.estadisticas.votosNegativos }}
-                </div>
-                <div class="text-sm text-gray-600 dark:text-gray-300">
-                  En contra
-                </div>
-              </div>
-              <div
-                class="rounded-lg border border-blue-300! p-3 bg-blue-50 dark:border-blue-700! dark:bg-blue-950"
-              >
-                <div
-                  class="text-3xl font-bold text-blue-600 dark:text-blue-400"
-                >
-                  {{ senador.estadisticas.abstenciones }}
-                </div>
-                <div class="text-sm text-gray-600 dark:text-gray-300">
-                  Abstenciones
-                </div>
-              </div>
-            </div>
-
-            <div class="grid sm:grid-cols-2 gap-4">
-              <div class="rounded-lg border p-3">
-                <div class="text-sm text-gray-600 dark:text-gray-300">
-                  Total Votaciones
-                </div>
-                <div class="text-2xl font-bold">
-                  {{ senador.estadisticas.totalVotaciones }}
-                </div>
-              </div>
-              <div
-                class="rounded-lg border border-gray-300! p-3 bg-gray-50 dark:border-gray-600! dark:bg-gray-950"
-              >
-                <div class="text-sm text-gray-600 dark:text-gray-300">
-                  Ausencias
-                </div>
-                <div
-                  class="text-2xl font-bold text-gray-700 dark:text-gray-200"
-                >
-                  {{ senador.estadisticas.ausencias }}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between mb-2">
-                <span class="text-sm font-medium">Asistencia</span>
-                <span class="text-sm font-medium"
-                  >{{ senador.estadisticas.presentismo }}%</span
-                >
-              </div>
-              <UProgress
-                :model-value="senador.estadisticas.presentismo"
-                size="sm"
-                color="neutral"
-              />
-            </div>
-          </div>
         </div>
       </div>
     </UCard>
 
     <div class="flex flex-col gap-3">
       <p class="text-sm text-muted">
-        Charts e historial según el período legislativo seleccionado
+        Resumen, charts e historial según el período legislativo seleccionado
         <template v-if="periodScoped">
           ({{ chartActasFiltered.length }}
           {{
@@ -488,6 +417,7 @@ const profileSections = computed<ProfileFactSection[]>(() => {
         <template v-else>.</template>
       </p>
       <FilterPeriodo :timeline-periods="memberTimelinePeriods" />
+      <MemberVoteStatsCards :stats="periodStats" />
     </div>
 
     <ChartsMemberVotingCharts

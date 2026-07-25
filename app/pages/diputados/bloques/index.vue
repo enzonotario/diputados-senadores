@@ -27,7 +27,7 @@ type AffinityIndexResponse = {
 
 const { localFetch } = useLocalApi();
 const route = useRoute();
-const { filterMembers, filterVotes } = usePeriodoFilter();
+const { filterMembers } = usePeriodoFilter();
 const vista = useRouteQuery("vista", "lista");
 const provinciaFilter = useMultiQuery("provincia");
 
@@ -84,19 +84,10 @@ const bloques = computed<BloqueRow[]>(() => {
     );
 });
 
-const filteredAffinityGroups = computed<AffinityGroupInput[]>(() =>
-  (affinityGroups.value || [])
-    .map((g) => ({
-      ...g,
-      members: g.members
-        .map((m) => ({
-          ...m,
-          votes: filterVotes(m.votes || []),
-        }))
-        .filter((m) => (m.votes?.length ?? 0) > 0),
-    }))
-    .filter((g) => g.members.length > 0),
-);
+const { groups: filteredAffinityGroups } = usePeriodFilteredAffinityGroups({
+  getSource: () => affinityGroups.value || [],
+  deps: () => affinityGroups.value,
+});
 
 const pendingBloques = pendingMembers;
 

@@ -31,7 +31,7 @@ type MemberProfileResponse = {
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 const { localFetch } = useLocalApi();
-const { filterActas: filterByPeriodo, filterVotes } = usePeriodoFilter();
+const { filterActas: filterByPeriodo } = usePeriodoFilter();
 
 const { data, pending } = await useAsyncData(
   () => `diputado-afinidad-${id.value}`,
@@ -48,33 +48,35 @@ const { data: peersPayload, pending: peersPending } = useAffinityPeers(
   "diputados-affinity-peers",
 );
 
-const affinityPeers = computed<AffinityMemberInput[]>(() => {
-  const current = diputado.value;
-  const ensure: AffinityMemberInput | null = current
-    ? {
-        id: current.id,
-        name:
-          current.nombreCompleto ||
-          `${current.apellido}, ${current.nombre}` ||
-          `${current.nombre} ${current.apellido}`,
-        group: current.bloque,
-        foto: current.foto,
-        votes: filterVotes(
-          memberActasInWindow(
+const { peers: affinityPeers } = usePeriodFilteredPeers({
+  getSource: () => {
+    const current = diputado.value;
+    const ensure: AffinityMemberInput | null = current
+      ? {
+          id: current.id,
+          name:
+            current.nombreCompleto ||
+            `${current.apellido}, ${current.nombre}` ||
+            `${current.nombre} ${current.apellido}`,
+          group: current.bloque,
+          foto: current.foto,
+          votes: memberActasInWindow(
             chartActas.value.map((a) => ({
               id: a.id,
               fecha: String(a.fecha || ""),
               voto: a.tipoVotoDiputado,
             })),
           ),
-        ),
-      }
-    : null;
-  const base = peersToAffinityInputs(peersPayload.value?.peers, { ensure });
-  return base.map((p) => ({
-    ...p,
-    votes: filterVotes(p.votes || []),
-  }));
+        }
+      : null;
+    return peersToAffinityInputs(peersPayload.value?.peers, { ensure });
+  },
+  deps: () => [
+    peersPayload.value,
+    diputado.value?.id,
+    diputado.value?.bloque,
+    chartActas.value,
+  ],
 });
 
 const affinityGroupPeers = computed(() => {

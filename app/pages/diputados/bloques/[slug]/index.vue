@@ -24,7 +24,7 @@ type GroupDetailResponse = {
 const route = useRoute();
 const slug = computed(() => String(route.params.slug || ""));
 const { localFetch } = useLocalApi();
-const { filterMembers, filterVotes } = usePeriodoFilter();
+const { filterMembers } = usePeriodoFilter();
 
 const { data } = await useAsyncData(
   () => `bloque-${slug.value}`,
@@ -38,18 +38,22 @@ const { data: peersPayload, pending: peersPending } = useAffinityPeers(
   "diputados-affinity-peers",
 );
 
-const cohesionMembers = computed<AffinityMemberInput[]>(() =>
-  (bloque.value?.cohesionPeers || []).map((m) => ({
-    ...m,
-    votes: filterVotes(m.votes || []),
-  })).filter((m) => (m.votes?.length ?? 0) > 0),
+const { peers: allActiveMembersRaw } = usePeriodFilteredPeers({
+  getSource: () => peersToAffinityInputs(peersPayload.value?.peers),
+  deps: () => peersPayload.value,
+});
+
+const { peers: cohesionMembersRaw } = usePeriodFilteredPeers({
+  getSource: () => bloque.value?.cohesionPeers || [],
+  deps: () => bloque.value?.cohesionPeers,
+});
+
+const cohesionMembers = computed(() =>
+  cohesionMembersRaw.value.filter((m) => (m.votes?.length ?? 0) > 0),
 );
 
-const allActiveMembers = computed<AffinityMemberInput[]>(() =>
-  peersToAffinityInputs(peersPayload.value?.peers).map((m) => ({
-    ...m,
-    votes: filterVotes(m.votes || []),
-  })).filter((m) => (m.votes?.length ?? 0) > 0),
+const allActiveMembers = computed(() =>
+  allActiveMembersRaw.value.filter((m) => (m.votes?.length ?? 0) > 0),
 );
 
 const groupSlugs = computed(() => {

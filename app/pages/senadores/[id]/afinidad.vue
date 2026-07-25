@@ -24,7 +24,7 @@ type MemberProfileResponse = {
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 const { localFetch } = useLocalApi();
-const { filterActas: filterByPeriodo, filterVotes } = usePeriodoFilter();
+const { filterActas: filterByPeriodo } = usePeriodoFilter();
 
 const { data, pending } = await useAsyncData(
   () => `senador-afinidad-${id.value}`,
@@ -48,30 +48,32 @@ const { data: peersPayload, pending: peersPending } = useAffinityPeers(
   "senadores-affinity-peers",
 );
 
-const affinityPeers = computed<AffinityMemberInput[]>(() => {
-  const current = senador.value;
-  const ensure: AffinityMemberInput | null = current
-    ? {
-        id: current.id,
-        name: current.nombreCompleto || current.nombre,
-        group: current.partido,
-        foto: current.foto,
-        votes: filterVotes(
-          memberActasInWindow(
+const { peers: affinityPeers } = usePeriodFilteredPeers({
+  getSource: () => {
+    const current = senador.value;
+    const ensure: AffinityMemberInput | null = current
+      ? {
+          id: current.id,
+          name: current.nombreCompleto || current.nombre,
+          group: current.partido,
+          foto: current.foto,
+          votes: memberActasInWindow(
             chartActas.value.map((a) => ({
               id: a.id,
               fecha: String(a.fecha || ""),
               voto: a.tipoVotoSenador,
             })),
           ),
-        ),
-      }
-    : null;
-  const base = peersToAffinityInputs(peersPayload.value?.peers, { ensure });
-  return base.map((p) => ({
-    ...p,
-    votes: filterVotes(p.votes || []),
-  }));
+        }
+      : null;
+    return peersToAffinityInputs(peersPayload.value?.peers, { ensure });
+  },
+  deps: () => [
+    peersPayload.value,
+    senador.value?.id,
+    senador.value?.partido,
+    chartActas.value,
+  ],
 });
 
 const affinityGroupPeers = computed(() => {

@@ -1,5 +1,6 @@
 import {
   filterActasByPeriodo,
+  filterAffinityPeersByPeriodo,
   filterMembersByPeriodo,
   filterVotesByPeriodo,
   findPeriodo,
@@ -185,6 +186,12 @@ export function usePeriodoFilter() {
     return filterVotesByPeriodo(votes, periodos.value, catalog.value);
   }
 
+  function filterPeers<
+    T extends { votes?: Array<{ fecha?: string | null }> | null },
+  >(peers: T[]): T[] {
+    return filterAffinityPeersByPeriodo(peers, periodos.value, catalog.value);
+  }
+
   const selectItems = computed(() =>
     periods.value.map((p) => {
       const range = formatPeriodoRange(p.minFecha, p.maxFecha);
@@ -329,6 +336,7 @@ export function usePeriodoFilter() {
     filterActas,
     filterMembers,
     filterVotes,
+    filterPeers,
   };
 }
 

@@ -37,6 +37,14 @@ function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
+/** Un solo formatter: crear Intl por fecha congelaba al filtrar miles de votos. */
+const AR_DATE_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Argentina/Buenos_Aires",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 /** Fecha civil en Argentina a partir de un ISO/date string. */
 export function datePartsAr(fecha: string | null | undefined): {
   y: number;
@@ -45,15 +53,23 @@ export function datePartsAr(fecha: string | null | undefined): {
 } | null {
   const raw = String(fecha || "").trim();
   if (!raw) return null;
+
+  // Fast path: YYYY-MM-DD… sin Z/UTC (la mayoría de actas HCDN).
+  const prefix = raw.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+  if (prefix) {
+    const rest = prefix[4] || "";
+    const hasUtcOrOffset = /[Zz]|[+-]\d{2}:?\d{2}\s*$/.test(rest);
+    if (!hasUtcOrOffset || /[+-]0?3:?00\s*$/.test(rest)) {
+      const y = Number(prefix[1]);
+      const m = Number(prefix[2]);
+      const d = Number(prefix[3]);
+      if (y && m && d) return { y, m, d };
+    }
+  }
+
   const t = new Date(raw);
   if (Number.isNaN(t.getTime())) return null;
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const parts = fmt.formatToParts(t);
+  const parts = AR_DATE_FMT.formatToParts(t);
   const y = Number(parts.find((p) => p.type === "year")?.value);
   const m = Number(parts.find((p) => p.type === "month")?.value);
   const d = Number(parts.find((p) => p.type === "day")?.value);
@@ -394,21 +410,44 @@ export function filterMembersByPeriodo<
   return members.filter((m) => memberMatchesPeriodo(m, periodo, catalog));
 }
 
-function voteInPeriodoRanges(
-  iso: string,
+type VotePeriodoFilter = {
+  ranges: Array<{ min: string; max: string }>;
+  includeSin: boolean;
+  knownRanges: Array<{ min: string; max: string }>;
+};
+
+function buildVotePeriodoFilter(
   keys: string[],
   catalog: PeriodosCatalog,
-): boolean {
+): VotePeriodoFilter {
+  const ranges: Array<{ min: string; max: string }> = [];
+  let includeSin = false;
   for (const key of keys) {
     if (key === SIN_PERIODO_KEY) {
-      const known = catalog.periods.filter((p) => p.key !== SIN_PERIODO_KEY);
-      if (!known.some((p) => p.minFecha <= iso && iso <= p.maxFecha)) {
-        return true;
-      }
+      includeSin = true;
       continue;
     }
     const info = findPeriodo(catalog, key);
-    if (info && info.minFecha <= iso && iso <= info.maxFecha) return true;
+    if (info?.minFecha && info.maxFecha) {
+      ranges.push({ min: info.minFecha, max: info.maxFecha });
+    }
+  }
+  const knownRanges = catalog.periods
+    .filter((p) => p.key !== SIN_PERIODO_KEY && p.minFecha && p.maxFecha)
+    .map((p) => ({ min: p.minFecha, max: p.maxFecha }));
+  return { ranges, includeSin, knownRanges };
+}
+
+function voteMatchesFilter(
+  iso: string | null,
+  filter: VotePeriodoFilter,
+): boolean {
+  if (!iso) return filter.includeSin;
+  for (const r of filter.ranges) {
+    if (r.min <= iso && iso <= r.max) return true;
+  }
+  if (filter.includeSin) {
+    return !filter.knownRanges.some((r) => r.min <= iso && iso <= r.max);
   }
   return false;
 }
@@ -422,9 +461,31 @@ export function filterVotesByPeriodo<T extends { fecha?: string | null }>(
   if (isTodosPeriodoSelection(periodo)) return votes;
   if (!catalog) return votes;
   const keys = normalizePeriodoKeys(periodo);
-  return votes.filter((v) => {
-    const iso = toIsoDateAr(v.fecha);
-    if (!iso) return keys.includes(SIN_PERIODO_KEY);
-    return voteInPeriodoRanges(iso, keys, catalog);
-  });
+  if (!keys.length) return votes;
+  const filter = buildVotePeriodoFilter(keys, catalog);
+  if (!filter.ranges.length && !filter.includeSin) return [];
+  return votes.filter((v) => voteMatchesFilter(toIsoDateAr(v.fecha), filter));
+}
+
+/** Filtra muchos miembros con votos (peers de afinidad) de una sola pasada. */
+export function filterAffinityPeersByPeriodo<
+  T extends { votes?: Array<{ fecha?: string | null }> | null },
+>(
+  peers: T[],
+  periodo: string | string[] | null | undefined,
+  catalog: PeriodosCatalog | null | undefined,
+): T[] {
+  if (isTodosPeriodoSelection(periodo) || !catalog) return peers;
+  const keys = normalizePeriodoKeys(periodo);
+  if (!keys.length) return peers;
+  const filter = buildVotePeriodoFilter(keys, catalog);
+  if (!filter.ranges.length && !filter.includeSin) {
+    return peers.map((p) => ({ ...p, votes: [] }));
+  }
+  return peers.map((p) => ({
+    ...p,
+    votes: (p.votes || []).filter((v) =>
+      voteMatchesFilter(toIsoDateAr(v.fecha), filter),
+    ),
+  }));
 }

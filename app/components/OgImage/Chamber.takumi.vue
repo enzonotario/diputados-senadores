@@ -33,7 +33,7 @@ const props = withDefaults(
     hemiciclo?: string;
   }>(),
   {
-    title: "Argentina Datos",
+    title: "ArgentinaDatos.com",
     description: "",
     brand: "senadores",
     logoSrc: "",

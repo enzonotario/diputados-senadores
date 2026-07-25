@@ -165,14 +165,14 @@ const sourceItems = computed<NavigationMenuItem[]>(() => {
     <template #left>
       <p class="text-xs text-muted text-center md:text-left">
         <template v-if="isCongreso || !legislative">
-          Datos públicos del Congreso · Publicados por
+          Datos públicos del Congreso · Procesados por
           <a
             href="https://argentinadatos.com/"
             target="_blank"
             rel="noopener noreferrer"
             class="underline-offset-2 hover:underline text-toned"
           >
-            Argentina Datos
+            ArgentinaDatos.com
           </a>
         </template>
         <template v-else>
@@ -185,14 +185,14 @@ const sourceItems = computed<NavigationMenuItem[]>(() => {
           >
             {{ legislative.officialLabel }}
           </a>
-          · Publicados por
+          · Procesados por
           <a
             href="https://argentinadatos.com/"
             target="_blank"
             rel="noopener noreferrer"
             class="underline-offset-2 hover:underline text-toned"
           >
-            Argentina Datos
+            ArgentinaDatos.com
           </a>
         </template>
       </p>

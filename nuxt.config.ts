@@ -256,9 +256,8 @@ export default defineNuxtConfig({
       },
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
-      // Título/description por cámara: plugins/chamber-seo.ts + useChamberSeo.
       meta: [
-        { name: "author", content: "Argentina Datos" },
+        { name: "author", content: "Enzo Notario" },
         { name: "format-detection", content: "telephone=no" },
         { name: "theme-color", content: "#000000" },
         { name: "msapplication-TileColor", content: "#000000" },

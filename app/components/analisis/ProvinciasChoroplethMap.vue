@@ -38,10 +38,10 @@ const props = withDefaults(
     catalog: () => [],
     selected: () => [],
     membersLabel: "integrantes",
-    height: "28rem",
+    height: "min(70vh, 36rem)",
     title: "Por provincia",
     description:
-      "El área del círculo es proporcional a la cantidad. Clic para filtrar.",
+      "El área del círculo es proporcional a la cantidad. Clic en una provincia para ver sus legisladores.",
   },
 );
 
@@ -313,8 +313,7 @@ function syncChart(full: boolean) {
         ...buildChrome(),
         geo: {
           map: ARGENTINA_PROVINCIAS_MAP,
-          roam: true,
-          scaleLimit: { min: 0.8, max: 8 },
+          roam: false,
           boundingCoords: DEFAULT_BOUNDS,
           layoutCenter: ["50%", "50%"],
           layoutSize: "100%",
@@ -351,7 +350,7 @@ function syncChart(full: boolean) {
     return;
   }
 
-  // No tocar zoom/center/boundingCoords → se conserva el roam del usuario.
+  // Zoom fijo (roam: false): solo parchear data/estilo.
   chart.setOption(
     {
       ...buildChrome(),

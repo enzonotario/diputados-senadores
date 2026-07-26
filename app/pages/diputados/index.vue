@@ -92,12 +92,19 @@ const displayedForMap = computed(() => {
 const groupsByBloque = computed(() =>
   groupDiputadosBy(displayed.value, "bloque"),
 );
-const groupsByProvincia = computed(() =>
-  groupDiputadosBy(displayed.value, "provincia"),
-);
 const groupsByProvinciaMap = computed(() =>
   groupDiputadosBy(displayedForMap.value, "provincia"),
 );
+
+const selectedProvinciaTitle = computed(() => {
+  if (provinciaFilter.value.length === 1) {
+    return `Diputados de ${provinciaFilter.value[0]}`;
+  }
+  if (provinciaFilter.value.length > 1) {
+    return `Diputados (${provinciaFilter.value.length} provincias)`;
+  }
+  return "";
+});
 
 const bloqueColores = computed(() =>
   getBloqueColores(groupsByBloque.value.map((g) => g.key)),
@@ -206,6 +213,8 @@ const tableColumns = [
   },
 ];
 
+const provinciaTableColumns = tableColumns.filter((col) => col.id !== "provincia");
+
 function onRowSelect(_e: Event, row: { original: Diputado }) {
   navigateTo(`/diputados/${row.original.id}`);
 }
@@ -228,8 +237,12 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           @click="clearFilters"
         />
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+        :class="vista === 'provincias' ? 'lg:grid-cols-2' : undefined"
+      >
         <FilterSelect
+          v-if="vista !== 'provincias'"
           v-model="provinciaFilter"
           label="Provincia"
           placeholder="Todas las provincias"
@@ -371,27 +384,114 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
 
       <div
         v-else-if="vista === 'provincias'"
-        class="flex flex-col gap-6"
+        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6"
       >
-        <AnalisisProvinciasChoroplethMap
-          :data="
-            groupsByProvinciaMap.map((g) => ({
-              name: g.key,
-              value: g.diputados.length,
-              label: g.label,
-            }))
-          "
-          :catalog="provincias"
-          :selected="provinciaFilter"
-          members-label="diputados"
-          @select="(name) => (provinciaFilter = name ? [name] : [])"
-        />
-        <DiputadosGroupedTable
-          group-by="provincia"
-          :groups="groupsByProvincia"
-          show-presentismo
-          :empty-message="emptyMessage"
-        />
+        <div
+          class="w-full sm:w-[min(42%,28rem)] sm:shrink-0 sm:sticky sm:top-[calc(var(--ui-header-height)+1rem)] sm:self-start"
+        >
+          <AnalisisProvinciasChoroplethMap
+            :data="
+              groupsByProvinciaMap.map((g) => ({
+                name: g.key,
+                value: g.diputados.length,
+                label: g.label,
+              }))
+            "
+            :catalog="provincias"
+            :selected="provinciaFilter"
+            members-label="diputados"
+            @select="(name) => (provinciaFilter = name ? [name] : [])"
+          />
+        </div>
+
+        <div class="min-w-0 flex-1">
+          <UCard
+            v-if="!provinciaFilter.length"
+            :ui="{ body: 'flex min-h-[28rem] items-center justify-center' }"
+          >
+            <UEmpty
+              icon="i-lucide-map-pinned"
+              title="Seleccioná una provincia"
+              description="Hacé clic en una provincia del mapa para ver sus diputados."
+              variant="naked"
+            />
+          </UCard>
+          <DataTableCard v-else :title="selectedProvinciaTitle">
+            <UTable
+              v-model:sorting="sorting"
+              :data="displayed"
+              :columns="provinciaTableColumns"
+              :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
+              :empty="emptyMessage"
+              :on-select="onRowSelect"
+            >
+              <template #foto-cell="{ row }">
+                <DiputadoTableAvatar
+                  :src="(row.original as Diputado).foto"
+                  :alt="(row.original as Diputado).nombreCompleto"
+                />
+              </template>
+              <template #nombreCompleto-cell="{ row }">
+                <NuxtLink
+                  :to="`/diputados/${(row.original as Diputado).id}`"
+                  class="hover:underline"
+                  @click.stop
+                >
+                  {{ (row.original as Diputado).nombreCompleto }}
+                </NuxtLink>
+              </template>
+              <template #bloque-cell="{ row }">
+                <NuxtLink
+                  v-if="bloquePath((row.original as Diputado).bloque)"
+                  :to="bloquePath((row.original as Diputado).bloque)!"
+                  class="inline-flex"
+                  @click.stop
+                >
+                  <UBadge
+                    variant="outline"
+                    color="neutral"
+                    class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                  >
+                    {{ (row.original as Diputado).bloque }}
+                  </UBadge>
+                </NuxtLink>
+                <UBadge
+                  v-else
+                  variant="outline"
+                  color="neutral"
+                  class="w-[max-content] max-w-32 whitespace-break-spaces"
+                >
+                  {{ (row.original as Diputado).bloque || "—" }}
+                </UBadge>
+              </template>
+              <template #inicio-cell="{ row }">
+                <span>{{
+                  formatDate((row.original as Diputado).periodoMandato?.inicio)
+                }}</span>
+              </template>
+              <template #fin-cell="{ row }">
+                <span>{{
+                  formatDate((row.original as Diputado).periodoMandato?.fin)
+                }}</span>
+              </template>
+              <template #presentismo-cell="{ row }">
+                <UBadge
+                  :color="
+                    ((row.original as Diputado).estadisticas?.presentismo || 0) >
+                    80
+                      ? 'success'
+                      : 'error'
+                  "
+                  variant="soft"
+                >
+                  {{
+                    (row.original as Diputado).estadisticas?.presentismo ?? 0
+                  }}%
+                </UBadge>
+              </template>
+            </UTable>
+          </DataTableCard>
+        </div>
       </div>
     </template>
   </div>

@@ -89,12 +89,19 @@ const displayedForMap = computed(() => {
 const groupsByPartido = computed(() =>
   groupSenadoresBy(displayed.value, "partido"),
 );
-const groupsByProvincia = computed(() =>
-  groupSenadoresBy(displayed.value, "provincia"),
-);
 const groupsByProvinciaMap = computed(() =>
   groupSenadoresBy(displayedForMap.value, "provincia"),
 );
+
+const selectedProvinciaTitle = computed(() => {
+  if (provinciaFilter.value.length === 1) {
+    return `Senadores de ${provinciaFilter.value[0]}`;
+  }
+  if (provinciaFilter.value.length > 1) {
+    return `Senadores (${provinciaFilter.value.length} provincias)`;
+  }
+  return "";
+});
 
 const partidoColores = computed(() =>
   getPartidoColores(groupsByPartido.value.map((g) => g.key)),
@@ -197,6 +204,8 @@ const tableColumns = [
   },
 ];
 
+const provinciaTableColumns = tableColumns.filter((col) => col.id !== "provincia");
+
 function onRowSelect(_e: Event, row: { original: Senador }) {
   navigateTo(`/senadores/${row.original.id}`);
 }
@@ -219,8 +228,12 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           @click="clearFilters"
         />
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 gap-3"
+        :class="vista === 'provincias' ? 'md:grid-cols-1' : undefined"
+      >
         <FilterSelect
+          v-if="vista !== 'provincias'"
           v-model="provinciaFilter"
           label="Provincia"
           placeholder="Todas las provincias"
@@ -356,27 +369,114 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
 
       <div
         v-else-if="vista === 'provincias'"
-        class="flex flex-col gap-6"
+        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6"
       >
-        <AnalisisProvinciasChoroplethMap
-          :data="
-            groupsByProvinciaMap.map((g) => ({
-              name: g.key,
-              value: g.senadores.length,
-              label: g.label,
-            }))
-          "
-          :catalog="provincias"
-          :selected="provinciaFilter"
-          members-label="senadores"
-          @select="(name) => (provinciaFilter = name ? [name] : [])"
-        />
-        <SenadoresGroupedTable
-          group-by="provincia"
-          :groups="groupsByProvincia"
-          show-presentismo
-          :empty-message="emptyMessage"
-        />
+        <div
+          class="w-full sm:w-[min(42%,28rem)] sm:shrink-0 sm:sticky sm:top-[calc(var(--ui-header-height)+1rem)] sm:self-start"
+        >
+          <AnalisisProvinciasChoroplethMap
+            :data="
+              groupsByProvinciaMap.map((g) => ({
+                name: g.key,
+                value: g.senadores.length,
+                label: g.label,
+              }))
+            "
+            :catalog="provincias"
+            :selected="provinciaFilter"
+            members-label="senadores"
+            @select="(name) => (provinciaFilter = name ? [name] : [])"
+          />
+        </div>
+
+        <div class="min-w-0 flex-1">
+          <UCard
+            v-if="!provinciaFilter.length"
+            :ui="{ body: 'flex min-h-[28rem] items-center justify-center' }"
+          >
+            <UEmpty
+              icon="i-lucide-map-pinned"
+              title="Seleccioná una provincia"
+              description="Hacé clic en una provincia del mapa para ver sus senadores."
+              variant="naked"
+            />
+          </UCard>
+          <DataTableCard v-else :title="selectedProvinciaTitle">
+            <UTable
+              v-model:sorting="sorting"
+              :data="displayed"
+              :columns="provinciaTableColumns"
+              :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
+              :empty="emptyMessage"
+              :on-select="onRowSelect"
+            >
+              <template #foto-cell="{ row }">
+                <SenadorTableAvatar
+                  :src="(row.original as Senador).foto"
+                  :alt="(row.original as Senador).nombreCompleto"
+                />
+              </template>
+              <template #nombreCompleto-cell="{ row }">
+                <NuxtLink
+                  :to="`/senadores/${(row.original as Senador).id}`"
+                  class="hover:underline"
+                  @click.stop
+                >
+                  {{ (row.original as Senador).nombreCompleto }}
+                </NuxtLink>
+              </template>
+              <template #partido-cell="{ row }">
+                <NuxtLink
+                  v-if="partidoPath((row.original as Senador).partido)"
+                  :to="partidoPath((row.original as Senador).partido)!"
+                  class="inline-flex"
+                  @click.stop
+                >
+                  <UBadge
+                    variant="outline"
+                    color="neutral"
+                    class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                  >
+                    {{ (row.original as Senador).partido }}
+                  </UBadge>
+                </NuxtLink>
+                <UBadge
+                  v-else
+                  variant="outline"
+                  color="neutral"
+                  class="w-[max-content] max-w-32 whitespace-break-spaces"
+                >
+                  {{ (row.original as Senador).partido || "—" }}
+                </UBadge>
+              </template>
+              <template #inicio-cell="{ row }">
+                <span>{{
+                  formatDate((row.original as Senador).periodoLegal?.inicio)
+                }}</span>
+              </template>
+              <template #fin-cell="{ row }">
+                <span>{{
+                  formatDate((row.original as Senador).periodoLegal?.fin)
+                }}</span>
+              </template>
+              <template #presentismo-cell="{ row }">
+                <UBadge
+                  :color="
+                    ((row.original as Senador).estadisticas?.presentismo || 0) >
+                    80
+                      ? 'success'
+                      : 'error'
+                  "
+                  variant="soft"
+                >
+                  {{
+                    (row.original as Senador).estadisticas?.presentismo ?? 0
+                  }}%
+                </UBadge>
+              </template>
+            </UTable>
+          </DataTableCard>
+        </div>
       </div>
     </template>
   </div>

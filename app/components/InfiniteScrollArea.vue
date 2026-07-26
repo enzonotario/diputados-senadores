@@ -11,7 +11,6 @@ const props = withDefaults(
   },
 );
 
-const scrollArea = useTemplateRef<{ $el: HTMLElement }>("scrollArea");
 const loadSentinel = useTemplateRef<HTMLElement>("loadSentinel");
 const loadingMore = ref(false);
 
@@ -26,6 +25,7 @@ async function loadNextPage() {
   }
 }
 
+/** Scroll de página (viewport): la tabla crece con su alto natural. */
 useIntersectionObserver(
   loadSentinel,
   ([entry]) => {
@@ -34,28 +34,21 @@ useIntersectionObserver(
     }
   },
   {
-    root: () => scrollArea.value?.$el,
-    rootMargin: "0px 0px 160px 0px",
+    rootMargin: "0px 0px 240px 0px",
   },
 );
 
-/**
- * Si una página nueva todavía no llena el viewport, continuar cargando hasta
- * que el indicador quede fuera del área visible.
- */
 watch(
   [() => props.loading, loadingMore, () => props.hasMore],
   async ([loading, loadingNext, hasMore]) => {
     if (loading || loadingNext || !hasMore) return;
     await nextTick();
 
-    const root = scrollArea.value?.$el;
     const sentinel = loadSentinel.value;
-    if (!root || !sentinel) return;
+    if (!sentinel) return;
 
-    const rootRect = root.getBoundingClientRect();
-    const sentinelRect = sentinel.getBoundingClientRect();
-    if (sentinelRect.top <= rootRect.bottom + 160) {
+    const rect = sentinel.getBoundingClientRect();
+    if (rect.top <= window.innerHeight + 240) {
       await loadNextPage();
     }
   },
@@ -64,13 +57,10 @@ watch(
 </script>
 
 <template>
-  <UScrollArea
-    ref="scrollArea"
-    shadow
-    class="max-h-[70vh]"
-    :aria-label="ariaLabel"
-  >
-    <slot />
+  <div :aria-label="ariaLabel">
+    <div class="min-w-0 overflow-x-auto">
+      <slot />
+    </div>
 
     <div
       v-if="hasMore || loading || loadingMore"
@@ -82,5 +72,5 @@ watch(
       <UIcon name="i-lucide-loader-circle" class="size-4 animate-spin" />
       <span>Cargando más resultados…</span>
     </div>
-  </UScrollArea>
+  </div>
 </template>

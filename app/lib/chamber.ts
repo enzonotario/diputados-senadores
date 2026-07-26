@@ -96,10 +96,17 @@ export const CONGRESO: CongresoConfig = {
   keywords:
     "congreso, diputados, senadores, votaciones, actas, argentina, cámara",
   brand: "congreso",
+  // Navbar: solo texto. OG / Takumi: ArgentinaDatos (ver siteOgLogoSrc).
   logoSrc: "",
   logoSrcDark: "",
   githubUrl: "https://github.com/enzonotario/diputados-senadores",
 };
+
+/** Logo para cards OG (Takumi). Congreso no usa logo de cámara en navbar. */
+export function siteOgLogoSrc(site: SiteConfig): string {
+  if (site.id === "congreso") return "/assets/argentinadatos.png";
+  return site.logoSrc;
+}
 
 export const SITES: Record<SiteId, SiteConfig> = {
   ...CHAMBERS,

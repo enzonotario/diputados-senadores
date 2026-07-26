@@ -63,6 +63,9 @@ const resolvedLogo = computed(() => {
   if (explicit) return explicit;
   const brand = (props.brand || "").toLowerCase();
   if (brand.includes("diput")) return "/assets/diputados.png";
+  if (brand.includes("congreso") || brand.includes("argentina")) {
+    return "/assets/argentinadatos.png";
+  }
   return "/assets/senado.png";
 });
 

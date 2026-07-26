@@ -1,4 +1,4 @@
-import type { ChamberId } from "@/lib/chamber";
+import { siteOgLogoSrc, type ChamberId } from "@/lib/chamber";
 import {
   encodeOgVotes,
   resolveOgAccent,
@@ -94,7 +94,7 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
     // Path relativo en /public — el island del OG lo resuelve en el mismo server.
     // No usar useRequestURL().origin: con Host senadores.localhost sin puerto
     // queda :80 y el fetch del logo falla.
-    logoSrc: computed(() => chamber.value.logoSrc),
+    logoSrc: computed(() => siteOgLogoSrc(chamber.value)),
     eyebrow: computed(
       () => seo.value.og?.eyebrow || chamber.value.brand,
     ),

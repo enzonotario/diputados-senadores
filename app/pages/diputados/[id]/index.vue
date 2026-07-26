@@ -454,51 +454,47 @@ const profileSections = computed<ProfileFactSection[]>(() => {
           </div>
         </template>
 
-        <UTable
-          v-model:sorting="sorting"
-          :data="displayedHistory"
-          :columns="tableColumns"
+        <InfiniteScrollArea
+          :has-more="hasMoreHistory"
           :loading="historyLoading"
-          :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-          empty="No se encontraron votaciones para este diputado."
-          :on-select="onRowSelect"
+          :load-more="loadMoreHistory"
+          aria-label="Historial de votaciones del diputado"
         >
-          <template #fecha-cell="{ row }">
-            <span>{{
-              formatDate((row.original as HistoryRow).fecha || "")
-            }}</span>
-          </template>
-          <template #titulo-cell="{ row }">
-            <NuxtLink
-              :to="`/actas/${(row.original as HistoryRow).id}`"
-              class="hover:underline line-clamp-5"
-              @click.stop
-            >
-              {{ (row.original as HistoryRow).titulo }}
-            </NuxtLink>
-          </template>
-          <template #resultado-cell="{ row }">
-            <ResultadoBadge
-              :resultado="(row.original as HistoryRow).resultado"
-            />
-          </template>
-          <template #voto-cell="{ row }">
-            <TipoVotoLabel
-              :tipo="(row.original as HistoryRow).tipoVoto || 'ausente'"
-            />
-          </template>
-        </UTable>
-
-        <div v-if="hasMoreHistory" class="flex justify-center pt-4">
-          <UButton
-            color="neutral"
-            variant="outline"
-            :loading="historyLoading"
-            @click="loadMoreHistory"
+          <UTable
+            v-model:sorting="sorting"
+            :data="displayedHistory"
+            :columns="tableColumns"
+            :loading="historyLoading && !displayedHistory.length"
+            :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
+            empty="No se encontraron votaciones para este diputado."
+            :on-select="onRowSelect"
           >
-            Cargar más ({{ displayedHistory.length }} / {{ historyTotal }})
-          </UButton>
-        </div>
+            <template #fecha-cell="{ row }">
+              <span>{{
+                formatDate((row.original as HistoryRow).fecha || "")
+              }}</span>
+            </template>
+            <template #titulo-cell="{ row }">
+              <NuxtLink
+                :to="`/actas/${(row.original as HistoryRow).id}`"
+                class="hover:underline line-clamp-5"
+                @click.stop
+              >
+                {{ (row.original as HistoryRow).titulo }}
+              </NuxtLink>
+            </template>
+            <template #resultado-cell="{ row }">
+              <ResultadoBadge
+                :resultado="(row.original as HistoryRow).resultado"
+              />
+            </template>
+            <template #voto-cell="{ row }">
+              <TipoVotoLabel
+                :tipo="(row.original as HistoryRow).tipoVoto || 'ausente'"
+              />
+            </template>
+          </UTable>
+        </InfiniteScrollArea>
       </DataTableCard>
     </template>
   </div>

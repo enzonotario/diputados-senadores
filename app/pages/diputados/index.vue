@@ -106,6 +106,8 @@ const selectedProvinciaTitle = computed(() => {
   return "";
 });
 
+const provinciasMembersLayout = useProvinciasMembersLayout();
+
 const bloqueColores = computed(() =>
   getBloqueColores(groupsByBloque.value.map((g) => g.key)),
 );
@@ -416,81 +418,121 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
               variant="naked"
             />
           </UCard>
-          <DataTableCard v-else :title="selectedProvinciaTitle">
-            <UTable
-              v-model:sorting="sorting"
-              :data="displayed"
-              :columns="provinciaTableColumns"
-              :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-              :empty="emptyMessage"
-              :on-select="onRowSelect"
-            >
-              <template #foto-cell="{ row }">
-                <DiputadoTableAvatar
-                  :src="(row.original as Diputado).foto"
-                  :alt="(row.original as Diputado).nombreCompleto"
-                />
-              </template>
-              <template #nombreCompleto-cell="{ row }">
-                <NuxtLink
-                  :to="`/diputados/${(row.original as Diputado).id}`"
-                  class="hover:underline"
-                  @click.stop
-                >
-                  {{ (row.original as Diputado).nombreCompleto }}
-                </NuxtLink>
-              </template>
-              <template #bloque-cell="{ row }">
-                <NuxtLink
-                  v-if="bloquePath((row.original as Diputado).bloque)"
-                  :to="bloquePath((row.original as Diputado).bloque)!"
-                  class="inline-flex"
-                  @click.stop
-                >
+          <template v-else>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h2 class="text-lg font-semibold">
+                {{ selectedProvinciaTitle }}
+              </h2>
+              <ClientOnly>
+                <UFieldGroup size="sm">
+                  <UButton
+                    color="neutral"
+                    :variant="
+                      provinciasMembersLayout === 'tabla' ? 'solid' : 'outline'
+                    "
+                    icon="i-lucide-table"
+                    label="Tabla"
+                    @click="provinciasMembersLayout = 'tabla'"
+                  />
+                  <UButton
+                    color="neutral"
+                    :variant="
+                      provinciasMembersLayout === 'grid' ? 'solid' : 'outline'
+                    "
+                    icon="i-lucide-layout-grid"
+                    label="Grid"
+                    @click="provinciasMembersLayout = 'grid'"
+                  />
+                </UFieldGroup>
+                <template #fallback>
+                  <div class="h-8 w-36 animate-pulse rounded-md bg-elevated" />
+                </template>
+              </ClientOnly>
+            </div>
+
+            <DataTableCard v-if="provinciasMembersLayout === 'tabla'">
+              <UTable
+                v-model:sorting="sorting"
+                :data="displayed"
+                :columns="provinciaTableColumns"
+                :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
+                :empty="emptyMessage"
+                :on-select="onRowSelect"
+              >
+                <template #foto-cell="{ row }">
+                  <DiputadoTableAvatar
+                    :src="(row.original as Diputado).foto"
+                    :alt="(row.original as Diputado).nombreCompleto"
+                  />
+                </template>
+                <template #nombreCompleto-cell="{ row }">
+                  <NuxtLink
+                    :to="`/diputados/${(row.original as Diputado).id}`"
+                    class="hover:underline"
+                    @click.stop
+                  >
+                    {{ (row.original as Diputado).nombreCompleto }}
+                  </NuxtLink>
+                </template>
+                <template #bloque-cell="{ row }">
+                  <NuxtLink
+                    v-if="bloquePath((row.original as Diputado).bloque)"
+                    :to="bloquePath((row.original as Diputado).bloque)!"
+                    class="inline-flex"
+                    @click.stop
+                  >
+                    <UBadge
+                      variant="outline"
+                      color="neutral"
+                      class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                    >
+                      {{ (row.original as Diputado).bloque }}
+                    </UBadge>
+                  </NuxtLink>
                   <UBadge
+                    v-else
                     variant="outline"
                     color="neutral"
-                    class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                    class="w-[max-content] max-w-32 whitespace-break-spaces"
                   >
-                    {{ (row.original as Diputado).bloque }}
+                    {{ (row.original as Diputado).bloque || "—" }}
                   </UBadge>
-                </NuxtLink>
-                <UBadge
-                  v-else
-                  variant="outline"
-                  color="neutral"
-                  class="w-[max-content] max-w-32 whitespace-break-spaces"
-                >
-                  {{ (row.original as Diputado).bloque || "—" }}
-                </UBadge>
-              </template>
-              <template #inicio-cell="{ row }">
-                <span>{{
-                  formatDate((row.original as Diputado).periodoMandato?.inicio)
-                }}</span>
-              </template>
-              <template #fin-cell="{ row }">
-                <span>{{
-                  formatDate((row.original as Diputado).periodoMandato?.fin)
-                }}</span>
-              </template>
-              <template #presentismo-cell="{ row }">
-                <UBadge
-                  :color="
-                    ((row.original as Diputado).estadisticas?.presentismo || 0) >
-                    80
-                      ? 'success'
-                      : 'error'
-                  "
-                  variant="soft"
-                >
-                  {{
-                    (row.original as Diputado).estadisticas?.presentismo ?? 0
-                  }}%
-                </UBadge>
-              </template>
-            </UTable>
-          </DataTableCard>
+                </template>
+                <template #inicio-cell="{ row }">
+                  <span>{{
+                    formatDate((row.original as Diputado).periodoMandato?.inicio)
+                  }}</span>
+                </template>
+                <template #fin-cell="{ row }">
+                  <span>{{
+                    formatDate((row.original as Diputado).periodoMandato?.fin)
+                  }}</span>
+                </template>
+                <template #presentismo-cell="{ row }">
+                  <UBadge
+                    :color="
+                      ((row.original as Diputado).estadisticas?.presentismo ||
+                        0) > 80
+                        ? 'success'
+                        : 'error'
+                    "
+                    variant="soft"
+                  >
+                    {{
+                      (row.original as Diputado).estadisticas?.presentismo ?? 0
+                    }}%
+                  </UBadge>
+                </template>
+              </UTable>
+            </DataTableCard>
+
+            <UCard v-else>
+              <DiputadoAvatarGrid
+                :diputados="displayed"
+                grid-class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 justify-items-center"
+              />
+            </UCard>
+          </template>
         </div>
       </div>
     </template>

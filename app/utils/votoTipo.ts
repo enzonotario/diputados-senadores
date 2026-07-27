@@ -92,6 +92,23 @@ export function getVotoTipoConfig(tipo?: string | null): VotoTipoConfig {
   };
 }
 
+/** Orden canónico: a favor → en contra → abstención → ausente → resto. */
+export function compareVotoTipo(
+  a?: string | null,
+  b?: string | null,
+): number {
+  const order = VOTO_TIPO_ORDER as readonly string[];
+  const ai = order.indexOf(normalizeVotoTipo(a));
+  const bi = order.indexOf(normalizeVotoTipo(b));
+  return (ai === -1 ? order.length : ai) - (bi === -1 ? order.length : bi);
+}
+
+export function sortByVotoTipo<T extends { tipoVoto?: string | null }>(
+  items: T[],
+): T[] {
+  return [...items].sort((a, b) => compareVotoTipo(a.tipoVoto, b.tipoVoto));
+}
+
 export function normalizeResultado(resultado?: string | null) {
   const raw = String(resultado || "")
     .toLowerCase()

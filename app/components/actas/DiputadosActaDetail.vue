@@ -103,9 +103,18 @@ const groupsByResultado = computed(() =>
 const groupsByBloque = computed(() =>
   groupDiputadosBy(displayed.value, "bloque"),
 );
-const groupsByProvincia = computed(() =>
-  groupDiputadosBy(displayed.value, "provincia"),
-);
+
+const provinciasMembersLayout = useProvinciasMembersLayout();
+
+const selectedProvinciaTitle = computed(() => {
+  if (provinciaFilter.value.length === 1) {
+    return `Diputados de ${provinciaFilter.value[0]}`;
+  }
+  if (provinciaFilter.value.length > 1) {
+    return `Diputados (${provinciaFilter.value.length} provincias)`;
+  }
+  return "";
+});
 
 const bloques = computed(() => getUniqueValues(diputados.value, "bloque"));
 const provincias = computed(() =>
@@ -146,13 +155,20 @@ const tableColumns = [
     },
   },
   {
+    id: "nombreCompleto",
     accessorKey: "nombreCompleto",
     header: sortableHeader("Diputado"),
   },
-  { accessorKey: "bloque", header: sortableHeader("Bloque") },
-  { accessorKey: "provincia", header: sortableHeader("Provincia") },
-  { accessorKey: "tipoVoto", header: sortableHeader("Voto") },
+  { id: "bloque", accessorKey: "bloque", header: sortableHeader("Bloque") },
+  {
+    id: "provincia",
+    accessorKey: "provincia",
+    header: sortableHeader("Provincia"),
+  },
+  { id: "tipoVoto", accessorKey: "tipoVoto", header: sortableHeader("Voto") },
 ];
+
+const provinciaTableColumns = tableColumns.filter((col) => col.id !== "provincia");
 
 function onRowSelect(_e: Event, row: { original: Diputado }) {
   navigateTo(`/diputados/${row.original.id}`);
@@ -256,6 +272,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
 
         <div
           class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+          :class="vista === 'provincias' ? 'lg:grid-cols-4' : undefined"
         >
           <div class="sm:col-span-2">
             <FilterSearch
@@ -270,6 +287,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
             :items="bloqueItems"
           />
           <FilterSelect
+            v-if="vista !== 'provincias'"
             v-model="provinciaFilter"
             label="Provincia"
             placeholder="Todas las provincias"
@@ -354,20 +372,135 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
         />
         <div
           v-else-if="vista === 'provincias'"
-          class="flex flex-col gap-6"
+          class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6"
         >
-          <AnalisisProvinciasVotoTipoGeoMap
-            :members="displayedForMap"
-            :catalog="provincias"
-            :selected="provinciaFilter"
-            members-label="diputados"
-            @select="(name) => (provinciaFilter = name ? [name] : [])"
-          />
-          <DiputadosGroupedBoard
-            show-voto-halo
-            :groups="groupsByProvincia"
-            empty-message="No hay diputados para mostrar con los filtros actuales."
-          />
+          <div
+            class="w-full sm:w-[min(42%,28rem)] sm:shrink-0 sm:sticky sm:top-[calc(var(--ui-header-height)+1rem)] sm:self-start"
+          >
+            <AnalisisProvinciasVotoTipoGeoMap
+              :members="displayedForMap"
+              :catalog="provincias"
+              :selected="provinciaFilter"
+              members-label="diputados"
+              @select="(name) => (provinciaFilter = name ? [name] : [])"
+            />
+          </div>
+
+          <div class="min-w-0 flex-1 space-y-3">
+            <UCard
+              v-if="!provinciaFilter.length"
+              :ui="{ body: 'flex min-h-[28rem] items-center justify-center' }"
+            >
+              <UEmpty
+                icon="i-lucide-map-pinned"
+                title="Seleccioná una provincia"
+                description="Hacé clic en una provincia del mapa para ver sus diputados."
+                variant="naked"
+              />
+            </UCard>
+            <template v-else>
+              <div
+                class="flex flex-wrap items-center justify-between gap-3"
+              >
+                <h2 class="text-lg font-semibold">
+                  {{ selectedProvinciaTitle }}
+                </h2>
+                <ClientOnly>
+                  <UFieldGroup size="sm">
+                    <UButton
+                      color="neutral"
+                      :variant="
+                        provinciasMembersLayout === 'tabla'
+                          ? 'solid'
+                          : 'outline'
+                      "
+                      icon="i-lucide-table"
+                      label="Tabla"
+                      @click="provinciasMembersLayout = 'tabla'"
+                    />
+                    <UButton
+                      color="neutral"
+                      :variant="
+                        provinciasMembersLayout === 'grid'
+                          ? 'solid'
+                          : 'outline'
+                      "
+                      icon="i-lucide-layout-grid"
+                      label="Grid"
+                      @click="provinciasMembersLayout = 'grid'"
+                    />
+                  </UFieldGroup>
+                  <template #fallback>
+                    <div class="h-8 w-36 animate-pulse rounded-md bg-elevated" />
+                  </template>
+                </ClientOnly>
+              </div>
+
+              <DataTableCard v-if="provinciasMembersLayout === 'tabla'">
+                <UTable
+                  v-model:sorting="sorting"
+                  :data="displayed"
+                  :columns="provinciaTableColumns"
+                  :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
+                  empty="No se encontraron votos para esta provincia."
+                  :on-select="onRowSelect"
+                >
+                  <template #foto-cell="{ row }">
+                    <DiputadoTableAvatar
+                      :src="(row.original as Diputado).foto"
+                      :alt="(row.original as Diputado).nombreCompleto"
+                    />
+                  </template>
+                  <template #nombreCompleto-cell="{ row }">
+                    <NuxtLink
+                      :to="`/diputados/${(row.original as Diputado).id}`"
+                      class="hover:underline"
+                      @click.stop
+                    >
+                      {{ (row.original as Diputado).nombreCompleto }}
+                    </NuxtLink>
+                  </template>
+                  <template #bloque-cell="{ row }">
+                    <NuxtLink
+                      v-if="bloquePath((row.original as Diputado).bloque)"
+                      :to="bloquePath((row.original as Diputado).bloque)!"
+                      class="inline-flex"
+                      @click.stop
+                    >
+                      <UBadge
+                        variant="outline"
+                        color="neutral"
+                        class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                      >
+                        {{ (row.original as Diputado).bloque }}
+                      </UBadge>
+                    </NuxtLink>
+                    <UBadge
+                      v-else
+                      variant="outline"
+                      color="neutral"
+                      class="w-[max-content] max-w-32 whitespace-break-spaces"
+                    >
+                      {{ (row.original as Diputado).bloque || "—" }}
+                    </UBadge>
+                  </template>
+                  <template #tipoVoto-cell="{ row }">
+                    <TipoVotoLabel
+                      :tipo="(row.original as Diputado).tipoVoto"
+                    />
+                  </template>
+                </UTable>
+              </DataTableCard>
+
+              <UCard v-else>
+                <DiputadoAvatarGrid
+                  :diputados="displayed"
+                  show-voto-halo
+                  grid-class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 justify-items-center"
+                />
+              </UCard>
+            </template>
+          </div>
         </div>
       </div>
     </template>

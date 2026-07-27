@@ -37,10 +37,10 @@ const props = withDefaults(
     catalog: () => [],
     selected: () => [],
     membersLabel: "integrantes",
-    height: "32rem",
+    height: "min(70vh, 36rem)",
     title: "Composición por provincia",
     description:
-      "Cada torta muestra la proporción por categoría en esa provincia. Clic para filtrar.",
+      "Cada torta muestra la proporción por categoría. Clic en una provincia para ver sus integrantes.",
   },
 );
 
@@ -169,25 +169,12 @@ const legendCategories = computed(() => {
   return list;
 });
 
-function zoomRadiusFactor(zoom: number) {
-  const base = baseGeoZoom.value || 1;
-  const z = Number.isFinite(zoom) && zoom > 0 ? zoom : base;
-  const ratio = z / base;
-  const t = Math.min(1, Math.max(0, (ratio - 1) / 1));
-  return 0.2 + 0.8 * t;
-}
-
 function pieRadius(total: number, maxTotal: number) {
-  const minR = 10;
-  const maxR = 30;
-  const base =
-    maxTotal <= 0 ? minR : minR + (maxR - minR) * Math.sqrt(total / maxTotal);
-  const factor = zoomRadiusFactor(geoZoom.value);
-  const ratio = geoZoom.value / (baseGeoZoom.value || 1);
-  const floor = 3 + 5 * factor;
-  let r = Math.max(floor, base * factor);
-  if (ratio < 1.3) r = Math.min(r, 8);
-  return r;
+  // Zoom fijo: compacto para no tapar provincias chicas (CABA / BA).
+  const minR = 5;
+  const maxR = 11;
+  if (maxTotal <= 0) return minR;
+  return minR + (maxR - minR) * Math.sqrt(total / maxTotal);
 }
 
 function readGeoZoom(): number | null {
@@ -208,32 +195,6 @@ function captureGeoZoom() {
   }
   if (Math.abs(z - geoZoom.value) < 0.02) return;
   geoZoom.value = z;
-}
-
-let roamRaf = 0;
-function onGeoRoam(params?: any) {
-  if (roamRaf) cancelAnimationFrame(roamRaf);
-  roamRaf = requestAnimationFrame(() => {
-    roamRaf = 0;
-    const prev = geoZoom.value;
-    const fromEvent =
-      typeof params?.totalZoom === "number"
-        ? params.totalZoom
-        : typeof params?.zoom === "number"
-          ? params.zoom
-          : null;
-    if (fromEvent != null && fromEvent > 0) {
-      if (!baseZoomCaptured.value) {
-        baseGeoZoom.value = fromEvent;
-        baseZoomCaptured.value = true;
-      }
-      geoZoom.value = fromEvent;
-    } else {
-      captureGeoZoom();
-    }
-    if (Math.abs(geoZoom.value - prev) < 0.02) return;
-    patchPieRadii();
-  });
 }
 
 function patchPieRadii() {
@@ -369,10 +330,11 @@ function buildOption(full: boolean) {
     },
     geo: {
       map: ARGENTINA_PROVINCIAS_MAP,
-      roam: true,
-      scaleLimit: { min: 0.8, max: 8 },
+      roam: false,
+      boundingCoords: DEFAULT_BOUNDS,
+      layoutCenter: ["50%", "50%"],
+      layoutSize: "100%",
       nameProperty: "name",
-      ...(full ? { boundingCoords: DEFAULT_BOUNDS } : {}),
       itemStyle: {
         areaColor: baseFill,
         borderColor: p.isDark ? "#0f172a" : "#ffffff",
@@ -486,7 +448,6 @@ function onChartClick(params: any) {
         role="img"
         :aria-label="title"
         @click="onChartClick"
-        @georoam="onGeoRoam"
         @finished="onChartFinished"
       />
       <template #fallback>

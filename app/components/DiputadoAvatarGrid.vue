@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Diputado } from "@/lib/types-diputados";
+import { sortByVotoTipo } from "@/utils/votoTipo";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     diputados: Diputado[];
     labelMode?: "apellido" | "nombreCompleto";
@@ -18,12 +19,19 @@ withDefaults(
       "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 justify-items-center",
   },
 );
+
+/** Con halo de voto, agrupar visualmente por tipo (a favor → … → ausente). */
+const orderedDiputados = computed(() =>
+  props.showVotoHalo
+    ? sortByVotoTipo(props.diputados)
+    : props.diputados,
+);
 </script>
 
 <template>
   <div :class="gridClass">
     <DiputadoAvatarLink
-      v-for="d in diputados"
+      v-for="d in orderedDiputados"
       :key="d.id"
       :diputado="d"
       :label-mode="labelMode"

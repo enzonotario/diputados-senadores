@@ -53,7 +53,7 @@ const categories = computed(() =>
     :members-label="membersLabel"
     :height="height"
     title="Votos por provincia"
-    description="Cada torta muestra cómo se repartieron los votos en esa provincia. Clic para filtrar."
+    description="Cada torta muestra cómo se repartieron los votos. Clic en una provincia para ver sus legisladores."
     @select="emit('select', $event)"
   />
 </template>

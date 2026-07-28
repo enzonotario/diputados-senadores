@@ -189,7 +189,7 @@ useChamberSeo({
           :data="partidos"
           :columns="tableColumns"
           :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-          empty="No se encontraron partidos con senadores activos."
+          empty="No se encontraron partidos con senadores en el período."
           :on-select="onRowSelect"
         >
           <template #color-cell="{ row }">
@@ -266,7 +266,7 @@ useChamberSeo({
           :selected="provinciaFilter"
           members-label="senadores"
           title="Partidos por provincia"
-          description="Cada torta muestra la proporción de partidos entre los senadores activos de esa provincia. Clic para filtrar."
+          description="Cada torta muestra la proporción de partidos entre los senadores del período en esa provincia. Clic para filtrar."
           @select="(name) => (provinciaFilter = name ? [name] : [])"
         />
         <SenadoresGroupedTable

@@ -190,7 +190,7 @@ useChamberSeo({
           :data="bloques"
           :columns="tableColumns"
           :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-          empty="No se encontraron bloques con diputados activos."
+          empty="No se encontraron bloques con diputados en el período."
           :on-select="onRowSelect"
         >
           <template #color-cell="{ row }">
@@ -261,7 +261,7 @@ useChamberSeo({
           :selected="provinciaFilter"
           members-label="diputados"
           title="Bloques por provincia"
-          description="Cada torta muestra la proporción de bloques entre los diputados activos de esa provincia. Clic para filtrar."
+          description="Cada torta muestra la proporción de bloques entre los diputados del período en esa provincia. Clic para filtrar."
           @select="(name) => (provinciaFilter = name ? [name] : [])"
         />
         <DiputadosGroupedTable

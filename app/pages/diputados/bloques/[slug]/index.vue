@@ -88,23 +88,19 @@ watch(
   { immediate: true },
 );
 
-const mostrarActivos = ref(true);
 const integrantesVista = useLocalStorage<"lista" | "grilla">(
   "integrantes-vista",
   "lista",
   { initOnMounted: true },
 );
-const activosInPeriodo = computed(() =>
-  filterMembers(bloque.value?.activos || []),
-);
-const inactivosInPeriodo = computed(() =>
-  filterMembers(bloque.value?.inactivos || []),
-);
+
+/** Integrantes del grupo en el período seleccionado (sin split activo/inactivo). */
 const displayed = computed<Diputado[]>(() => {
   if (!bloque.value) return [];
-  return mostrarActivos.value
-    ? activosInPeriodo.value
-    : inactivosInPeriodo.value;
+  return filterMembers([
+    ...(bloque.value.activos || []),
+    ...(bloque.value.inactivos || []),
+  ]);
 });
 
 const { sorting } = useTableSorting("nombreCompleto", false, {
@@ -158,20 +154,16 @@ useChamberSeo(() => {
       og: { kind: "afinidad", eyebrow: "afinidad", badge: name },
     };
   }
-  const n = bloque.value?.activos?.length;
+  const n = displayed.value.length;
   return {
     title: name,
-    description:
-      n != null
-        ? `Bloque ${name}: ${n} diputados activos. Integrantes, presentismo y votos en la Cámara de Diputados.`
-        : `Diputados del bloque ${name} en la Cámara de Diputados de la Nación Argentina.`,
+    description: `Bloque ${name}: ${n} ${
+      n === 1 ? "diputado" : "diputados"
+    } en el período. Integrantes, presentismo y votos en la Cámara de Diputados.`,
     og: {
       kind: "group",
       eyebrow: "bloque",
-      badge:
-        n != null
-          ? `${n} ${n === 1 ? "diputado" : "diputados"}`
-          : undefined,
+      badge: `${n} ${n === 1 ? "diputado" : "diputados"}`,
     },
   };
 });
@@ -212,18 +204,12 @@ useChamberSeo(() => {
               {{ bloque.nombre }}
             </h1>
             <p class="text-sm text-muted">
-              {{ bloque.activos.length }}
+              {{ displayed.length }}
               {{
-                bloque.activos.length === 1
-                  ? "diputado activo"
-                  : "diputados activos"
+                displayed.length === 1
+                  ? "diputado en el período"
+                  : "diputados en el período"
               }}
-              <span v-if="bloque.inactivos.length">
-                · {{ bloque.inactivos.length }}
-                {{
-                  bloque.inactivos.length === 1 ? "inactivo" : "inactivos"
-                }}
-              </span>
             </p>
             <div
               v-if="bloque.presentismo != null"
@@ -284,28 +270,22 @@ useChamberSeo(() => {
       <template v-else>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-lg font-semibold">Integrantes</h2>
-          <div class="flex flex-wrap items-center gap-3">
-            <UFieldGroup size="sm">
-              <UButton
-                color="neutral"
-                :variant="integrantesVista === 'lista' ? 'solid' : 'outline'"
-                icon="i-lucide-list"
-                aria-label="Vista lista"
-                @click="integrantesVista = 'lista'"
-              />
-              <UButton
-                color="neutral"
-                :variant="integrantesVista === 'grilla' ? 'solid' : 'outline'"
-                icon="i-lucide-layout-grid"
-                aria-label="Vista grilla"
-                @click="integrantesVista = 'grilla'"
-              />
-            </UFieldGroup>
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-toned">Solo activos</span>
-              <USwitch v-model="mostrarActivos" />
-            </div>
-          </div>
+          <UFieldGroup size="sm">
+            <UButton
+              color="neutral"
+              :variant="integrantesVista === 'lista' ? 'solid' : 'outline'"
+              icon="i-lucide-list"
+              aria-label="Vista lista"
+              @click="integrantesVista = 'lista'"
+            />
+            <UButton
+              color="neutral"
+              :variant="integrantesVista === 'grilla' ? 'solid' : 'outline'"
+              icon="i-lucide-layout-grid"
+              aria-label="Vista grilla"
+              @click="integrantesVista = 'grilla'"
+            />
+          </UFieldGroup>
         </div>
 
         <DataTableCard v-if="integrantesVista === 'lista'">

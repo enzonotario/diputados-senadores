@@ -366,6 +366,8 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           v-else-if="vista === 'bloques'"
           show-voto-halo
           show-presentismo
+          show-voto-breakdown
+          :acta-resultado="acta?.resultado"
           :groups="groupsByBloque"
           :group-to="(g) => bloquePath(g.key)"
           empty-message="No hay diputados para mostrar con los filtros actuales."

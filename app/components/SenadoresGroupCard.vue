@@ -15,12 +15,18 @@ const props = withDefaults(
     titleTo?: string | null;
     /** Mostrar presentismo promedio de los miembros */
     showPresentismo?: boolean;
+    /** Barra de % por tipo de voto (como ActaVotingCard) */
+    showVotoBreakdown?: boolean;
+    /** Resultado del acta para resaltar el segmento ganador */
+    actaResultado?: string | null;
   }>(),
   {
     kind: "default",
     showVotoHalo: false,
     titleTo: null,
     showPresentismo: false,
+    showVotoBreakdown: false,
+    actaResultado: null,
   },
 );
 
@@ -30,70 +36,91 @@ const presentismo = computed(() =>
 </script>
 
 <template>
-  <UCard class="break-inside-avoid overflow-hidden" :ui="{ body: 'p-0!' }">
-    <div
-      v-if="accentColor"
-      class="h-2"
-      :style="{ backgroundColor: accentColor }"
-    />
+  <UCard
+    class="break-inside-avoid overflow-hidden flex flex-col h-full"
+    :ui="{
+      header: 'border-0 p-2!',
+      body: 'p-0! flex flex-grow',
+    }"
+  >
+    <template #header>
+      <div
+        v-if="accentColor"
+        class="-mx-2 -mt-2 mb-2 h-2"
+        :style="{ backgroundColor: accentColor }"
+      />
 
-    <div class="space-y-4 p-4 sm:p-5">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div class="min-w-0 flex items-center gap-2.5">
-          <PartidoLogo
-            v-if="kind !== 'resultado'"
-            :partido="group.key"
-            img-class="h-8 w-auto max-w-20 object-contain shrink-0"
-          />
-          <div class="min-w-0">
-            <TipoVotoLabel v-if="kind === 'resultado'" :tipo="group.key" />
-            <NuxtLink
-              v-else-if="titleTo"
-              :to="titleTo"
-              class="text-lg font-semibold truncate block hover:underline underline-offset-2"
+      <div class="space-y-3">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="min-w-0 flex items-center gap-2.5">
+            <PartidoLogo
+              v-if="kind !== 'resultado'"
+              :partido="group.key"
+              img-class="h-8 w-auto max-w-20 object-contain shrink-0"
+            />
+            <div class="min-w-0">
+              <TipoVotoLabel v-if="kind === 'resultado'" :tipo="group.key" />
+              <NuxtLink
+                v-else-if="titleTo"
+                :to="titleTo"
+                class="text-lg font-semibold truncate block hover:underline underline-offset-2"
+              >
+                {{ group.label }}
+              </NuxtLink>
+              <h3 v-else class="text-lg font-semibold truncate">
+                {{ group.label }}
+              </h3>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <UBadge
+              v-if="presentismo != null"
+              :color="presentismo > 80 ? 'success' : 'error'"
+              variant="soft"
+              size="sm"
             >
-              {{ group.label }}
-            </NuxtLink>
-            <h3 v-else class="text-lg font-semibold truncate">
-              {{ group.label }}
-            </h3>
+              {{ presentismo }}%
+            </UBadge>
+            <UBadge variant="subtle" color="neutral">
+              {{ group.senadores.length }}
+              {{ group.senadores.length === 1 ? "senador" : "senadores" }}
+            </UBadge>
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <UBadge
-            v-if="presentismo != null"
-            :color="presentismo > 80 ? 'success' : 'error'"
-            variant="soft"
+
+        <div v-if="presentismo != null" class="space-y-1">
+          <div class="flex justify-between text-xs text-toned">
+            <span>Asistencia</span>
+            <span>{{ presentismo }}%</span>
+          </div>
+          <UProgress
+            :model-value="presentismo"
             size="sm"
-          >
-            {{ presentismo }}%
-          </UBadge>
-          <UBadge variant="subtle" color="neutral">
-            {{ group.senadores.length }}
-            {{ group.senadores.length === 1 ? "senador" : "senadores" }}
-          </UBadge>
+            :color="presentismo > 80 ? 'success' : 'error'"
+          />
         </div>
       </div>
+    </template>
 
-      <div v-if="presentismo != null" class="space-y-1">
-        <div class="flex justify-between text-xs text-toned">
-          <span>Asistencia</span>
-          <span>{{ presentismo }}%</span>
-        </div>
-        <UProgress
-          :model-value="presentismo"
-          size="sm"
-          :color="presentismo > 80 ? 'success' : 'error'"
+    <div
+      class="flex flex-col flex-1"
+      :class="showVotoBreakdown ? 'justify-end gap-3' : ''"
+    >
+      <div :class="showVotoBreakdown ? 'px-2' : 'p-4 sm:p-5'">
+        <SenadorAvatarGrid
+          v-if="group.senadores.length"
+          :senadores="group.senadores"
+          :show-voto-halo="showVotoHalo"
+          :grid-class="avatarGridClass"
         />
+        <p v-else class="text-sm text-toned">Sin senadores en este grupo.</p>
       </div>
 
-      <SenadorAvatarGrid
-        v-if="group.senadores.length"
-        :senadores="group.senadores"
-        :show-voto-halo="showVotoHalo"
-        :grid-class="avatarGridClass"
+      <GroupVotoBreakdown
+        v-if="showVotoBreakdown && group.senadores.length"
+        :members="group.senadores"
+        :resultado="actaResultado"
       />
-      <p v-else class="text-sm text-toned">Sin senadores en este grupo.</p>
     </div>
   </UCard>
 </template>

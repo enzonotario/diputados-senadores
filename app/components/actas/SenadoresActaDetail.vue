@@ -94,6 +94,13 @@ const displayed = computed(() =>
   filterSenadores(senadores.value, filters.value),
 );
 
+const groupVoteMembers = computed(() =>
+  displayed.value.map((s) => ({
+    grupo: s.partido,
+    tipoVoto: s.tipoVoto,
+  })),
+);
+
 const displayedForMap = computed(() =>
   filterSenadores(senadores.value, filtersForMap.value),
 );
@@ -365,15 +372,22 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           :groups="groupsByResultado"
           empty-message="No hay senadores para mostrar con los filtros actuales."
         />
-        <SenadoresGroupedBoard
-          v-else-if="vista === 'partidos'"
-          show-voto-halo
-          show-presentismo
-          show-voto-breakdown
-          :groups="groupsByPartido"
-          :group-to="(g) => partidoPath(g.key)"
-          empty-message="No hay senadores para mostrar con los filtros actuales."
-        />
+        <template v-else-if="vista === 'partidos'">
+          <div class="space-y-4">
+            <ChartsActaGroupVoteChart
+              :members="groupVoteMembers"
+              group-noun="partido"
+            />
+            <SenadoresGroupedBoard
+              show-voto-halo
+              show-presentismo
+              show-voto-breakdown
+              :groups="groupsByPartido"
+              :group-to="(g) => partidoPath(g.key)"
+              empty-message="No hay senadores para mostrar con los filtros actuales."
+            />
+          </div>
+        </template>
         <div
           v-else-if="vista === 'provincias'"
           class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6"

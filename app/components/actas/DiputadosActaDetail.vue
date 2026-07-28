@@ -94,6 +94,13 @@ const displayed = computed(() =>
   filterDiputados(diputados.value, filters.value),
 );
 
+const groupVoteMembers = computed(() =>
+  displayed.value.map((d) => ({
+    grupo: d.bloque,
+    tipoVoto: d.tipoVoto,
+  })),
+);
+
 const displayedForMap = computed(() =>
   filterDiputados(diputados.value, filtersForMap.value),
 );
@@ -365,15 +372,22 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           :groups="groupsByResultado"
           empty-message="No hay diputados para mostrar con los filtros actuales."
         />
-        <DiputadosGroupedBoard
-          v-else-if="vista === 'bloques'"
-          show-voto-halo
-          show-presentismo
-          show-voto-breakdown
-          :groups="groupsByBloque"
-          :group-to="(g) => bloquePath(g.key)"
-          empty-message="No hay diputados para mostrar con los filtros actuales."
-        />
+        <template v-else-if="vista === 'bloques'">
+          <div class="space-y-4">
+            <ChartsActaGroupVoteChart
+              :members="groupVoteMembers"
+              group-noun="bloque"
+            />
+            <DiputadosGroupedBoard
+              show-voto-halo
+              show-presentismo
+              show-voto-breakdown
+              :groups="groupsByBloque"
+              :group-to="(g) => bloquePath(g.key)"
+              empty-message="No hay diputados para mostrar con los filtros actuales."
+            />
+          </div>
+        </template>
         <div
           v-else-if="vista === 'provincias'"
           class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6"

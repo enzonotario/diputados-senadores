@@ -78,11 +78,27 @@ export function monthKeyFromFecha(fecha?: string | null): string | null {
   return `${y}-${m}`;
 }
 
+const MONTH_LABELS = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+] as const;
+
+/** Label de eje/tooltip para bucket mensual: `Enero 2025`. */
 export function formatMonthKey(key: string): string {
   const [y, m] = key.split("-");
   const idx = Number(m) - 1;
   if (!y || idx < 0 || idx > 11) return key;
-  return `01/${String(idx + 1).padStart(2, "0")}/${y}`;
+  return `${MONTH_LABELS[idx]} ${y}`;
 }
 
 function sortedMonthKeys(keys: Iterable<string>): string[] {

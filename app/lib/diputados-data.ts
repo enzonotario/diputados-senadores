@@ -2,24 +2,31 @@ import slugify from "slugify";
 import type { Acta, Diputado, Voto } from "./types-diputados";
 import { calcularEstadisticasDiputado, isDiputadoActivo } from "./utils";
 import { averagePresentismo } from "../utils/presentismo";
-
-const diputadosAliases = [
-  {
-    nombreCompleto: "Acevedo, Sergio",
-    aliases: ["Acevedo, Sergio Edgardo", "Acevedo, Sergio"],
-  },
-  {
-    nombreCompleto: "Moreau, Leopoldo Raul Guido",
-    aliases: ["Moreau, Leopoldo Raul Guido", "Moreau, Leopoldo"],
-  },
-  {
-    nombreCompleto: "Reyes, Roxana Nahir",
-    aliases: ["Reyes, Roxana Nahir", "Reyes, Roxana"],
-  },
-];
+import {
+  clearDiputadosAliasMapCache,
+  getDiputadosAliasMap,
+  votoCoincideConDiputado,
+} from "./matchDiputadoNombre";
 
 function slug(value: string) {
   return slugify(value || "", { lower: true, strict: true, trim: true });
+}
+
+function votoMatchDiputado(
+  votoNombre: string,
+  votoSlug: string,
+  diputado: { id: string; nombreCompleto?: string; nombreSlug?: string },
+) {
+  return votoCoincideConDiputado({
+    votoNombre,
+    votoSlug,
+    diputadoId: String(diputado.id),
+    diputadoNombre:
+      diputado.nombreCompleto ||
+      `${(diputado as Diputado).apellido || ""}, ${(diputado as Diputado).nombre || ""}`,
+    diputadoSlug: diputado.nombreSlug || slug(diputado.nombreCompleto || ""),
+    aliasMap: getDiputadosAliasMap(),
+  });
 }
 
 /** Parsea "Apellido, Nombre" típico de actas HCDN. */
@@ -74,6 +81,7 @@ export function clearDiputadosDataCache() {
   _diputados.clear();
   _actas.clear();
   _diputadosConActas.clear();
+  clearDiputadosAliasMapCache();
 }
 
 function maxByPeriod(a: any, b: any) {
@@ -150,34 +158,15 @@ export async function getDiputadosConActas(): Promise<Diputado[]> {
 
     return diputados.map((diputado) => {
       const actasDiputado = actas
-        .filter((acta) => {
-          const direct = acta.votos.some(
-            (v) => v.diputadoSlug === diputado.nombreSlug,
-          );
-          if (direct) return true;
-          return acta.votos.some((v) => {
-            const alias = diputadosAliases.find((a) =>
-              a.aliases.includes(v.diputado),
-            );
-            return Boolean(
-              alias && alias.nombreCompleto === diputado.nombreCompleto,
-            );
-          });
-        })
+        .filter((acta) =>
+          acta.votos.some((v) =>
+            votoMatchDiputado(v.diputado, (v as any).diputadoSlug, diputado),
+          ),
+        )
         .map((acta) => {
-          let votoDiputado = acta.votos.find(
-            (v) => v.diputadoSlug === diputado.nombreSlug,
+          const votoDiputado = acta.votos.find((v) =>
+            votoMatchDiputado(v.diputado, (v as any).diputadoSlug, diputado),
           );
-          if (!votoDiputado) {
-            votoDiputado = acta.votos.find((v) => {
-              const alias = diputadosAliases.find((a) =>
-                a.aliases.includes(v.diputado),
-              );
-              return Boolean(
-                alias && alias.nombreCompleto === diputado.nombreCompleto,
-              );
-            });
-          }
 
           return {
             id: acta.id,
@@ -235,19 +224,9 @@ export async function getActaWithDiputadosById(
   return {
     ...acta,
     votos: acta.votos.map((v) => {
-      let diputado = diputados.find(
-        (d) => d.nombreSlug === (v as any).diputadoSlug,
+      const diputado = diputados.find((d) =>
+        votoMatchDiputado(v.diputado, (v as any).diputadoSlug, d),
       );
-
-      if (!diputado) {
-        const alias = diputadosAliases.find((a) =>
-          a.aliases.includes(v.diputado),
-        );
-        if (alias)
-          diputado = diputados.find(
-            (d) => d.nombreCompleto === alias.nombreCompleto,
-          );
-      }
 
       const parsed = parseNombreVoto(v.diputado);
 

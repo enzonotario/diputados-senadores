@@ -157,8 +157,8 @@ server/
 | Votos raw | afirmativo/negativo/… | `si`/`no` → normalizar en data layer |
 
 Matching voto↔persona: slug + fuzzy (sin tildes, apellido+primer nombre) + aliases
-locales en `app/data/senadores-alias-nombres.json` (`manual` editable, `auto` precargado).
-Diputados tiene lista local en `diputados-data.ts`.
+locales en `app/data/senadores-alias-nombres.json` y `app/data/diputados-alias-nombres.json`
+(`manual` editable, `auto` precargado).
 
 ## Dónde tocar qué
 

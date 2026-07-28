@@ -367,7 +367,6 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           show-voto-halo
           show-presentismo
           show-voto-breakdown
-          :acta-resultado="acta?.resultado"
           :groups="groupsByPartido"
           :group-to="(g) => partidoPath(g.key)"
           empty-message="No hay senadores para mostrar con los filtros actuales."

@@ -18,7 +18,6 @@ withDefaults(
     showPresentismo?: boolean;
     /** Barra de % por tipo de voto en cada card */
     showVotoBreakdown?: boolean;
-    actaResultado?: string | null;
   }>(),
   {
     kind: "default",
@@ -27,7 +26,6 @@ withDefaults(
     columnsClass: "columns-1 md:columns-2 xl:columns-3 gap-4 space-y-4",
     showPresentismo: false,
     showVotoBreakdown: false,
-    actaResultado: null,
   },
 );
 </script>
@@ -45,7 +43,6 @@ withDefaults(
       :title-to="groupTo?.(group)"
       :show-presentismo="showPresentismo"
       :show-voto-breakdown="showVotoBreakdown"
-      :acta-resultado="actaResultado"
       class="mb-4"
     />
   </div>

@@ -3,8 +3,6 @@ import { normalizeVotoTipo } from "@/utils/votoTipo";
 
 const props = defineProps<{
   members: Array<{ tipoVoto?: string | null }>;
-  /** Resultado del acta (resalta el segmento ganador en la barra). */
-  resultado?: string | null;
 }>();
 
 const tallies = computed(() => {
@@ -40,6 +38,22 @@ const total = computed(
     tallies.value.abstenciones +
     tallies.value.ausentes,
 );
+
+/** Tipo de voto con más miembros en el grupo (para resaltar la barra). */
+const predominant = computed(() => {
+  const t = tallies.value;
+  const entries: Array<[string, number]> = [
+    ["afirmativo", t.votosAfirmativos],
+    ["negativo", t.votosNegativos],
+    ["abstencion", t.abstenciones],
+    ["ausente", t.ausentes],
+  ];
+  let best = entries[0]!;
+  for (const entry of entries) {
+    if (entry[1] > best[1]) best = entry;
+  }
+  return best[1] > 0 ? best[0] : "";
+});
 
 function pct(n: number) {
   if (!total.value) return "0";
@@ -86,7 +100,7 @@ function pct(n: number) {
 
     <VotacionesProgress
       :acta="tallies"
-      :resultado="resultado || ''"
+      :resultado="predominant"
     />
   </div>
 </template>

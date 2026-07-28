@@ -17,8 +17,6 @@ const props = withDefaults(
     showPresentismo?: boolean;
     /** Barra de % por tipo de voto (como ActaVotingCard) */
     showVotoBreakdown?: boolean;
-    /** Resultado del acta para resaltar el segmento ganador */
-    actaResultado?: string | null;
   }>(),
   {
     kind: "default",
@@ -26,7 +24,6 @@ const props = withDefaults(
     titleTo: null,
     showPresentismo: false,
     showVotoBreakdown: false,
-    actaResultado: null,
   },
 );
 
@@ -119,7 +116,6 @@ const presentismo = computed(() =>
       <GroupVotoBreakdown
         v-if="showVotoBreakdown && group.senadores.length"
         :members="group.senadores"
-        :resultado="actaResultado"
       />
     </div>
   </UCard>

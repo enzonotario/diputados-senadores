@@ -18,24 +18,16 @@ import { partidoPath } from "@/utils/partido";
 
 const { sorting } = useTableSorting("presentismo", true);
 const vista = useRouteQuery("vista", "lista");
-const tab = useRouteQuery("tab", "activos");
 const provinciaFilter = useMultiQuery("provincia");
 const partidoFilter = useMultiQuery("partido");
 const searchQuery = useRouteQuery("q", "");
-const { filterMembers, isVigente } = usePeriodoFilter();
+const { filterMembers } = usePeriodoFilter();
 
 const vistaItems = [
   { label: "Lista", value: "lista" },
   { label: "Por partidos", value: "partidos" },
   { label: "Por provincias", value: "provincias" },
 ];
-
-const mostrarActivos = computed({
-  get: () => tab.value !== "inactivos",
-  set: (value: boolean) => {
-    tab.value = value ? "activos" : "inactivos";
-  },
-});
 
 const { localFetch } = useLocalApi();
 
@@ -62,29 +54,13 @@ const filtersForMap = computed<FilterConfig>(() => {
   return rest;
 });
 
-const filtered = computed(() =>
+const displayed = computed(() =>
   filterSenadores(inPeriodo.value, filters.value),
 );
-const activos = computed(() => filtered.value.filter(isSenadorActivo));
-const inactivos = computed(() =>
-  filtered.value.filter((d) => !isSenadorActivo(d)),
+
+const displayedForMap = computed(() =>
+  filterSenadores(filterMembers(senadores.value), filtersForMap.value),
 );
-
-const displayed = computed(() => {
-  if (!isVigente.value) return filtered.value;
-  return mostrarActivos.value ? activos.value : inactivos.value;
-});
-
-const displayedForMap = computed(() => {
-  const base = filterSenadores(
-    filterMembers(senadores.value),
-    filtersForMap.value,
-  );
-  if (!isVigente.value) return base;
-  return mostrarActivos.value
-    ? base.filter(isSenadorActivo)
-    : base.filter((d) => !isSenadorActivo(d));
-});
 
 const groupsByPartido = computed(() =>
   groupSenadoresBy(displayed.value, "partido"),
@@ -154,10 +130,9 @@ const hasActiveFilters = computed(
     !!searchQuery.value,
 );
 
-const emptyMessage = computed(() => {
-  const estado = mostrarActivos.value ? "activos" : "inactivos";
-  return `No se encontraron senadores ${estado} con los filtros aplicados.`;
-});
+const emptyMessage = computed(
+  () => "No se encontraron senadores con los filtros aplicados.",
+);
 
 function clearFilters() {
   provinciaFilter.value = [];
@@ -255,26 +230,11 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
       />
     </div>
 
-    <div
-      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <SegmentedTabs
-        v-model="vista"
-        :items="vistaItems"
-        :center="false"
-        class="sm:flex-1"
-      />
-      <USwitch
-        v-if="isVigente"
-        v-model="mostrarActivos"
-        :label="
-          mostrarActivos
-            ? `Activos (${activos.length})`
-            : `Inactivos (${inactivos.length})`
-        "
-        class="shrink-0"
-      />
-    </div>
+    <SegmentedTabs
+      v-model="vista"
+      :items="vistaItems"
+      :center="false"
+    />
 
     <div class="w-full sm:max-w-sm">
       <FilterSearch

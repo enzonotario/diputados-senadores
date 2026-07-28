@@ -18,25 +18,17 @@ import { bloquePath } from "@/utils/bloque";
 
 const { sorting } = useTableSorting("presentismo", true);
 const vista = useRouteQuery("vista", "lista");
-const tab = useRouteQuery("tab", "activos");
 const provinciaFilter = useMultiQuery("provincia");
 const bloqueFilter = useMultiQuery("bloque");
 const generoFilter = useMultiQuery("genero");
 const searchQuery = useRouteQuery("q", "");
-const { filterMembers, isVigente } = usePeriodoFilter();
+const { filterMembers } = usePeriodoFilter();
 
 const vistaItems = [
   { label: "Lista", value: "lista" },
   { label: "Por bloques", value: "bloques" },
   { label: "Por provincias", value: "provincias" },
 ];
-
-const mostrarActivos = computed({
-  get: () => tab.value !== "inactivos",
-  set: (value: boolean) => {
-    tab.value = value ? "activos" : "inactivos";
-  },
-});
 
 const { localFetch } = useLocalApi();
 
@@ -64,30 +56,13 @@ const filtersForMap = computed<FilterConfig>(() => {
   return rest;
 });
 
-const filtered = computed(() =>
+const displayed = computed(() =>
   filterDiputados(inPeriodo.value, filters.value),
 );
-const activos = computed(() => filtered.value.filter(isDiputadoActivo));
-const inactivos = computed(() =>
-  filtered.value.filter((d) => !isDiputadoActivo(d)),
+
+const displayedForMap = computed(() =>
+  filterDiputados(filterMembers(diputados.value), filtersForMap.value),
 );
-
-/** Fuera del período vigente: mostrar todos los del período (sin split activo). */
-const displayed = computed(() => {
-  if (!isVigente.value) return filtered.value;
-  return mostrarActivos.value ? activos.value : inactivos.value;
-});
-
-const displayedForMap = computed(() => {
-  const base = filterDiputados(
-    filterMembers(diputados.value),
-    filtersForMap.value,
-  );
-  if (!isVigente.value) return base;
-  return mostrarActivos.value
-    ? base.filter(isDiputadoActivo)
-    : base.filter((d) => !isDiputadoActivo(d));
-});
 
 const groupsByBloque = computed(() =>
   groupDiputadosBy(displayed.value, "bloque"),
@@ -162,10 +137,9 @@ const hasActiveFilters = computed(
     !!searchQuery.value,
 );
 
-const emptyMessage = computed(() => {
-  const estado = mostrarActivos.value ? "activos" : "inactivos";
-  return `No se encontraron diputados ${estado} con los filtros aplicados.`;
-});
+const emptyMessage = computed(
+  () => "No se encontraron diputados con los filtros aplicados.",
+);
 
 function clearFilters() {
   provinciaFilter.value = [];
@@ -270,26 +244,11 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
       />
     </div>
 
-    <div
-      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <SegmentedTabs
-        v-model="vista"
-        :items="vistaItems"
-        :center="false"
-        class="sm:flex-1"
-      />
-      <USwitch
-        v-if="isVigente"
-        v-model="mostrarActivos"
-        :label="
-          mostrarActivos
-            ? `Activos (${activos.length})`
-            : `Inactivos (${inactivos.length})`
-        "
-        class="shrink-0"
-      />
-    </div>
+    <SegmentedTabs
+      v-model="vista"
+      :items="vistaItems"
+      :center="false"
+    />
 
     <div class="w-full sm:max-w-sm">
       <FilterSearch

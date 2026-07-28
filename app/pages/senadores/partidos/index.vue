@@ -266,8 +266,8 @@ useChamberSeo({
           :selected="provinciaFilter"
           members-label="senadores"
           title="Partidos por provincia"
-          description="Cada torta muestra la proporción de partidos entre los senadores del período en esa provincia. Clic para filtrar."
-          @select="(name) => (provinciaFilter = name ? [name] : [])"
+          description="Cada torta muestra la proporción de partidos entre los senadores del período en esa provincia. Clic = una · Ctrl/⌘+clic = sumar o quitar."
+          @select="(names) => (provinciaFilter = names)"
         />
         <SenadoresGroupedTable
           group-by="provincia"

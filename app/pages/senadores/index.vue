@@ -15,6 +15,7 @@ import {
 import { sortableHeader } from "@/utils/sortableHeader";
 import { groupSenadoresBy } from "@/utils/groupSenadoresBy";
 import { partidoPath } from "@/utils/partido";
+import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
 
 const { sorting } = useTableSorting("presentismo", true);
 const vista = useRouteQuery("vista", "lista");
@@ -78,6 +79,10 @@ const selectedProvinciaTitle = computed(() => {
   }
   return "";
 });
+
+const displayedByProvincia = computed(() =>
+  groupMembersBySelectedProvincias(displayed.value, provinciaFilter.value),
+);
 
 const provinciasMembersLayout = useProvinciasMembersLayout();
 
@@ -207,10 +212,8 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
       </div>
       <div
         class="grid grid-cols-1 md:grid-cols-2 gap-3"
-        :class="vista === 'provincias' ? 'md:grid-cols-1' : undefined"
       >
         <FilterSelect
-          v-if="vista !== 'provincias'"
           v-model="provinciaFilter"
           label="Provincia"
           placeholder="Todas las provincias"
@@ -347,7 +350,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
             :catalog="provincias"
             :selected="provinciaFilter"
             members-label="senadores"
-            @select="(name) => (provinciaFilter = name ? [name] : [])"
+            @select="(names) => (provinciaFilter = names)"
           />
         </div>
 
@@ -359,7 +362,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
             <UEmpty
               icon="i-lucide-map-pinned"
               title="Seleccioná una provincia"
-              description="Hacé clic en una provincia del mapa para ver sus senadores."
+              description="Usá el select o el mapa (clic / Ctrl+clic) para ver senadores."
               variant="naked"
             />
           </UCard>
@@ -395,88 +398,112 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
               </ClientOnly>
             </div>
 
-            <DataTableCard v-if="provinciasMembersLayout === 'tabla'">
-              <UTable
-                v-model:sorting="sorting"
-                :data="displayed"
-                :columns="provinciaTableColumns"
-                :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-                :empty="emptyMessage"
-                :on-select="onRowSelect"
+            <div class="space-y-8">
+              <section
+                v-for="group in displayedByProvincia"
+                :key="group.key"
+                class="space-y-3"
               >
-                <template #foto-cell="{ row }">
-                  <SenadorTableAvatar
-                    :src="(row.original as Senador).foto"
-                    :alt="(row.original as Senador).nombreCompleto"
-                  />
-                </template>
-                <template #nombreCompleto-cell="{ row }">
-                  <NuxtLink
-                    :to="`/senadores/${(row.original as Senador).id}`"
-                    class="hover:underline"
-                    @click.stop
-                  >
-                    {{ (row.original as Senador).nombreCompleto }}
-                  </NuxtLink>
-                </template>
-                <template #partido-cell="{ row }">
-                  <NuxtLink
-                    v-if="partidoPath((row.original as Senador).partido)"
-                    :to="partidoPath((row.original as Senador).partido)!"
-                    class="inline-flex"
-                    @click.stop
-                  >
-                    <UBadge
-                      variant="outline"
-                      color="neutral"
-                      class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
-                    >
-                      {{ (row.original as Senador).partido }}
-                    </UBadge>
-                  </NuxtLink>
-                  <UBadge
-                    v-else
-                    variant="outline"
-                    color="neutral"
-                    class="w-[max-content] max-w-32 whitespace-break-spaces"
-                  >
-                    {{ (row.original as Senador).partido || "—" }}
-                  </UBadge>
-                </template>
-                <template #inicio-cell="{ row }">
-                  <span>{{
-                    formatDate((row.original as Senador).periodoLegal?.inicio)
-                  }}</span>
-                </template>
-                <template #fin-cell="{ row }">
-                  <span>{{
-                    formatDate((row.original as Senador).periodoLegal?.fin)
-                  }}</span>
-                </template>
-                <template #presentismo-cell="{ row }">
-                  <UBadge
-                    :color="
-                      ((row.original as Senador).estadisticas?.presentismo ||
-                        0) > 80
-                        ? 'success'
-                        : 'error'
-                    "
-                    variant="soft"
-                  >
+                <div
+                  v-if="provinciaFilter.length > 1"
+                  class="flex flex-wrap items-center justify-between gap-3"
+                >
+                  <h3 class="text-base font-semibold">{{ group.label }}</h3>
+                  <UBadge variant="subtle" color="neutral">
+                    {{ group.members.length }}
                     {{
-                      (row.original as Senador).estadisticas?.presentismo ?? 0
-                    }}%
+                      group.members.length === 1 ? "senador" : "senadores"
+                    }}
                   </UBadge>
-                </template>
-              </UTable>
-            </DataTableCard>
+                </div>
 
-            <UCard v-else>
-              <SenadorAvatarGrid
-                :senadores="displayed"
-                grid-class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 justify-items-center"
-              />
-            </UCard>
+                <DataTableCard v-if="provinciasMembersLayout === 'tabla'">
+                  <UTable
+                    v-model:sorting="sorting"
+                    :data="group.members"
+                    :columns="provinciaTableColumns"
+                    :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
+                    :empty="emptyMessage"
+                    :on-select="onRowSelect"
+                  >
+                    <template #foto-cell="{ row }">
+                      <SenadorTableAvatar
+                        :src="(row.original as Senador).foto"
+                        :alt="(row.original as Senador).nombreCompleto"
+                      />
+                    </template>
+                    <template #nombreCompleto-cell="{ row }">
+                      <NuxtLink
+                        :to="`/senadores/${(row.original as Senador).id}`"
+                        class="hover:underline"
+                        @click.stop
+                      >
+                        {{ (row.original as Senador).nombreCompleto }}
+                      </NuxtLink>
+                    </template>
+                    <template #partido-cell="{ row }">
+                      <NuxtLink
+                        v-if="partidoPath((row.original as Senador).partido)"
+                        :to="partidoPath((row.original as Senador).partido)!"
+                        class="inline-flex"
+                        @click.stop
+                      >
+                        <UBadge
+                          variant="outline"
+                          color="neutral"
+                          class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                        >
+                          {{ (row.original as Senador).partido }}
+                        </UBadge>
+                      </NuxtLink>
+                      <UBadge
+                        v-else
+                        variant="outline"
+                        color="neutral"
+                        class="w-[max-content] max-w-32 whitespace-break-spaces"
+                      >
+                        {{ (row.original as Senador).partido || "—" }}
+                      </UBadge>
+                    </template>
+                    <template #inicio-cell="{ row }">
+                      <span>{{
+                        formatDate(
+                          (row.original as Senador).periodoLegal?.inicio,
+                        )
+                      }}</span>
+                    </template>
+                    <template #fin-cell="{ row }">
+                      <span>{{
+                        formatDate((row.original as Senador).periodoLegal?.fin)
+                      }}</span>
+                    </template>
+                    <template #presentismo-cell="{ row }">
+                      <UBadge
+                        :color="
+                          ((row.original as Senador).estadisticas
+                            ?.presentismo || 0) > 80
+                            ? 'success'
+                            : 'error'
+                        "
+                        variant="soft"
+                      >
+                        {{
+                          (row.original as Senador).estadisticas?.presentismo ??
+                          0
+                        }}%
+                      </UBadge>
+                    </template>
+                  </UTable>
+                </DataTableCard>
+
+                <UCard v-else>
+                  <SenadorAvatarGrid
+                    :senadores="group.members"
+                    grid-class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 justify-items-center"
+                  />
+                </UCard>
+              </section>
+            </div>
           </template>
         </div>
       </div>

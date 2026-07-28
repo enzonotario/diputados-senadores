@@ -26,7 +26,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  select: [name: string];
+  select: [names: string[]];
 }>();
 
 const compositionMembers = computed<ProvinciaCompositionMember[]>(() =>
@@ -53,7 +53,7 @@ const categories = computed(() =>
     :members-label="membersLabel"
     :height="height"
     title="Votos por provincia"
-    description="Cada torta muestra cómo se repartieron los votos. Clic en una provincia para ver sus legisladores."
+    description="Cada torta muestra cómo se repartieron los votos. Clic = una · Ctrl/⌘+clic = sumar o quitar."
     @select="emit('select', $event)"
   />
 </template>

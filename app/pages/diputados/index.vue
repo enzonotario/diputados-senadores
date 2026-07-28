@@ -15,6 +15,7 @@ import {
 import { sortableHeader } from "@/utils/sortableHeader";
 import { groupDiputadosBy } from "@/utils/groupDiputadosBy";
 import { bloquePath } from "@/utils/bloque";
+import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
 
 const { sorting } = useTableSorting("presentismo", true);
 const vista = useRouteQuery("vista", "lista");
@@ -80,6 +81,10 @@ const selectedProvinciaTitle = computed(() => {
   }
   return "";
 });
+
+const displayedByProvincia = computed(() =>
+  groupMembersBySelectedProvincias(displayed.value, provinciaFilter.value),
+);
 
 const provinciasMembersLayout = useProvinciasMembersLayout();
 
@@ -215,10 +220,8 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
       </div>
       <div
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
-        :class="vista === 'provincias' ? 'lg:grid-cols-2' : undefined"
       >
         <FilterSelect
-          v-if="vista !== 'provincias'"
           v-model="provinciaFilter"
           label="Provincia"
           placeholder="Todas las provincias"
@@ -361,7 +364,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
             :catalog="provincias"
             :selected="provinciaFilter"
             members-label="diputados"
-            @select="(name) => (provinciaFilter = name ? [name] : [])"
+            @select="(names) => (provinciaFilter = names)"
           />
         </div>
 
@@ -373,7 +376,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
             <UEmpty
               icon="i-lucide-map-pinned"
               title="Seleccioná una provincia"
-              description="Hacé clic en una provincia del mapa para ver sus diputados."
+              description="Usá el select o el mapa (clic / Ctrl+clic) para ver diputados."
               variant="naked"
             />
           </UCard>
@@ -409,88 +412,114 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
               </ClientOnly>
             </div>
 
-            <DataTableCard v-if="provinciasMembersLayout === 'tabla'">
-              <UTable
-                v-model:sorting="sorting"
-                :data="displayed"
-                :columns="provinciaTableColumns"
-                :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-                :empty="emptyMessage"
-                :on-select="onRowSelect"
+            <div class="space-y-8">
+              <section
+                v-for="group in displayedByProvincia"
+                :key="group.key"
+                class="space-y-3"
               >
-                <template #foto-cell="{ row }">
-                  <DiputadoTableAvatar
-                    :src="(row.original as Diputado).foto"
-                    :alt="(row.original as Diputado).nombreCompleto"
-                  />
-                </template>
-                <template #nombreCompleto-cell="{ row }">
-                  <NuxtLink
-                    :to="`/diputados/${(row.original as Diputado).id}`"
-                    class="hover:underline"
-                    @click.stop
-                  >
-                    {{ (row.original as Diputado).nombreCompleto }}
-                  </NuxtLink>
-                </template>
-                <template #bloque-cell="{ row }">
-                  <NuxtLink
-                    v-if="bloquePath((row.original as Diputado).bloque)"
-                    :to="bloquePath((row.original as Diputado).bloque)!"
-                    class="inline-flex"
-                    @click.stop
-                  >
-                    <UBadge
-                      variant="outline"
-                      color="neutral"
-                      class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
-                    >
-                      {{ (row.original as Diputado).bloque }}
-                    </UBadge>
-                  </NuxtLink>
-                  <UBadge
-                    v-else
-                    variant="outline"
-                    color="neutral"
-                    class="w-[max-content] max-w-32 whitespace-break-spaces"
-                  >
-                    {{ (row.original as Diputado).bloque || "—" }}
-                  </UBadge>
-                </template>
-                <template #inicio-cell="{ row }">
-                  <span>{{
-                    formatDate((row.original as Diputado).periodoMandato?.inicio)
-                  }}</span>
-                </template>
-                <template #fin-cell="{ row }">
-                  <span>{{
-                    formatDate((row.original as Diputado).periodoMandato?.fin)
-                  }}</span>
-                </template>
-                <template #presentismo-cell="{ row }">
-                  <UBadge
-                    :color="
-                      ((row.original as Diputado).estadisticas?.presentismo ||
-                        0) > 80
-                        ? 'success'
-                        : 'error'
-                    "
-                    variant="soft"
-                  >
+                <div
+                  v-if="provinciaFilter.length > 1"
+                  class="flex flex-wrap items-center justify-between gap-3"
+                >
+                  <h3 class="text-base font-semibold">{{ group.label }}</h3>
+                  <UBadge variant="subtle" color="neutral">
+                    {{ group.members.length }}
                     {{
-                      (row.original as Diputado).estadisticas?.presentismo ?? 0
-                    }}%
+                      group.members.length === 1 ? "diputado" : "diputados"
+                    }}
                   </UBadge>
-                </template>
-              </UTable>
-            </DataTableCard>
+                </div>
 
-            <UCard v-else>
-              <DiputadoAvatarGrid
-                :diputados="displayed"
-                grid-class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 justify-items-center"
-              />
-            </UCard>
+                <DataTableCard v-if="provinciasMembersLayout === 'tabla'">
+                  <UTable
+                    v-model:sorting="sorting"
+                    :data="group.members"
+                    :columns="provinciaTableColumns"
+                    :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
+                    :empty="emptyMessage"
+                    :on-select="onRowSelect"
+                  >
+                    <template #foto-cell="{ row }">
+                      <DiputadoTableAvatar
+                        :src="(row.original as Diputado).foto"
+                        :alt="(row.original as Diputado).nombreCompleto"
+                      />
+                    </template>
+                    <template #nombreCompleto-cell="{ row }">
+                      <NuxtLink
+                        :to="`/diputados/${(row.original as Diputado).id}`"
+                        class="hover:underline"
+                        @click.stop
+                      >
+                        {{ (row.original as Diputado).nombreCompleto }}
+                      </NuxtLink>
+                    </template>
+                    <template #bloque-cell="{ row }">
+                      <NuxtLink
+                        v-if="bloquePath((row.original as Diputado).bloque)"
+                        :to="bloquePath((row.original as Diputado).bloque)!"
+                        class="inline-flex"
+                        @click.stop
+                      >
+                        <UBadge
+                          variant="outline"
+                          color="neutral"
+                          class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                        >
+                          {{ (row.original as Diputado).bloque }}
+                        </UBadge>
+                      </NuxtLink>
+                      <UBadge
+                        v-else
+                        variant="outline"
+                        color="neutral"
+                        class="w-[max-content] max-w-32 whitespace-break-spaces"
+                      >
+                        {{ (row.original as Diputado).bloque || "—" }}
+                      </UBadge>
+                    </template>
+                    <template #inicio-cell="{ row }">
+                      <span>{{
+                        formatDate(
+                          (row.original as Diputado).periodoMandato?.inicio,
+                        )
+                      }}</span>
+                    </template>
+                    <template #fin-cell="{ row }">
+                      <span>{{
+                        formatDate(
+                          (row.original as Diputado).periodoMandato?.fin,
+                        )
+                      }}</span>
+                    </template>
+                    <template #presentismo-cell="{ row }">
+                      <UBadge
+                        :color="
+                          ((row.original as Diputado).estadisticas
+                            ?.presentismo || 0) > 80
+                            ? 'success'
+                            : 'error'
+                        "
+                        variant="soft"
+                      >
+                        {{
+                          (row.original as Diputado).estadisticas
+                            ?.presentismo ?? 0
+                        }}%
+                      </UBadge>
+                    </template>
+                  </UTable>
+                </DataTableCard>
+
+                <UCard v-else>
+                  <DiputadoAvatarGrid
+                    :diputados="group.members"
+                    grid-class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 justify-items-center"
+                  />
+                </UCard>
+              </section>
+            </div>
           </template>
         </div>
       </div>

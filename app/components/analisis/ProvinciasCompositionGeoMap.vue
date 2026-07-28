@@ -9,6 +9,7 @@ import {
   useChartPalette,
 } from "@/composables/useChartPalette";
 import { provinciaKey } from "@/utils/provinciaKey";
+import { applyMultiSelectClick } from "@/utils/multiSelectClick";
 
 export type ProvinciaCompositionMember = {
   provincia?: string | null;
@@ -40,13 +41,21 @@ const props = withDefaults(
     height: "min(70vh, 36rem)",
     title: "Composición por provincia",
     description:
-      "Cada torta muestra la proporción por categoría. Clic en una provincia para ver sus integrantes.",
+      "Cada torta muestra la proporción por categoría. Clic = una · Ctrl/⌘+clic = sumar o quitar.",
   },
 );
 
 const emit = defineEmits<{
-  select: [name: string];
+  select: [names: string[]];
 }>();
+
+const pointerMods = ref({ ctrl: false });
+
+function onPointerDown(e: MouseEvent) {
+  pointerMods.value = {
+    ctrl: !!(e.ctrlKey || e.metaKey),
+  };
+}
 
 const DEFAULT_BOUNDS: [[number, number], [number, number]] = [
   [-73.8, -55.3],
@@ -422,9 +431,22 @@ function resolveRawName(params: any): string {
 function onChartClick(params: any) {
   const raw = resolveRawName(params);
   if (!raw) return;
-  const key = provinciaKey(raw);
-  const already = (props.selected || []).some((n) => provinciaKey(n) === key);
-  emit("select", already ? "" : raw);
+
+  const orderedKeys =
+    (props.catalog || []).length > 0
+      ? [...(props.catalog || [])]
+      : getArgentinaProvinciaMetas().map((m) => m.displayName);
+
+  const { next } = applyMultiSelectClick({
+    key: raw,
+    orderedKeys,
+    selected: props.selected || [],
+    ctrl: pointerMods.value.ctrl,
+    shift: false,
+    shiftAnchorKey: null,
+    keyOf: provinciaKey,
+  });
+  emit("select", next);
 }
 </script>
 
@@ -438,18 +460,20 @@ function onChartClick(params: any) {
       aria-hidden="true"
     />
     <ClientOnly v-else>
-      <VChart
-        ref="chartRef"
-        class="w-full min-h-0"
-        :style="{ height }"
-        manual-update
-        :autoresize="{ throttle: 50 }"
-        :init-options="{ renderer: 'canvas' }"
-        role="img"
-        :aria-label="title"
-        @click="onChartClick"
-        @finished="onChartFinished"
-      />
+      <div @mousedown.capture="onPointerDown">
+        <VChart
+          ref="chartRef"
+          class="w-full min-h-0"
+          :style="{ height }"
+          manual-update
+          :autoresize="{ throttle: 50 }"
+          :init-options="{ renderer: 'canvas' }"
+          role="img"
+          :aria-label="title"
+          @click="onChartClick"
+          @finished="onChartFinished"
+        />
+      </div>
       <template #fallback>
         <div
           class="animate-pulse rounded-lg bg-elevated"

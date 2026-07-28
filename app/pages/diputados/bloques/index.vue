@@ -261,8 +261,8 @@ useChamberSeo({
           :selected="provinciaFilter"
           members-label="diputados"
           title="Bloques por provincia"
-          description="Cada torta muestra la proporción de bloques entre los diputados del período en esa provincia. Clic para filtrar."
-          @select="(name) => (provinciaFilter = name ? [name] : [])"
+          description="Cada torta muestra la proporción de bloques entre los diputados del período en esa provincia. Clic = una · Ctrl/⌘+clic = sumar o quitar."
+          @select="(names) => (provinciaFilter = names)"
         />
         <DiputadosGroupedTable
           group-by="provincia"

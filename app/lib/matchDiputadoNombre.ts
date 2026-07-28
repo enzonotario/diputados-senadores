@@ -1,11 +1,8 @@
 /**
  * Matching voto↔diputado: slug, tildes, nombres parciales y aliases locales.
  *
- * Editá los overrides permanentes en `manual` de:
- *   app/data/diputados-alias-nombres.json
- *
- * `auto` son sugerencias ya detectadas (2º nombre, tildes, apóstrofes).
- * Si un caso nuevo falla, agregalo en `manual` con el id HCDN.
+ * Mapa editable en `app/data/diputados-alias-nombres.json`
+ * (nombre-en-acta → id HCDN). Claves que empiezan con `_` se ignoran.
  */
 
 import aliasesFile from "../data/diputados-alias-nombres.json";

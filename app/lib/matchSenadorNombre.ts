@@ -1,20 +1,14 @@
 /**
- * Matching voto↔senador: tildes, nombres parciales y aliases locales editables.
+ * Matching voto↔senador: tildes, nombres parciales y aliases locales.
  *
- * Editá los overrides permanentes en `manual` de:
- *   app/data/senadores-alias-nombres.json
- *
- * `auto` son sugerencias ya detectadas (tildes / 2º nombre / apellidos cortos).
- * Si un caso nuevo falla, agregalo en `manual` con el id del senador.
+ * Mapa editable en `app/data/senadores-alias-nombres.json`
+ * (nombre-en-acta → id). Claves que empiezan con `_` se ignoran.
  */
 
 import aliasesFile from "../data/senadores-alias-nombres.json";
 
-export interface AliasNombresFile {
-  _comment?: string;
-  manual?: Record<string, string>;
-  auto?: Record<string, string>;
-}
+/** JSON plano: nombre → id; claves `_…` (p. ej. `_comment`) se ignoran. */
+export type AliasNombresFile = Record<string, string | undefined>;
 
 export function foldNombre(value: string): string {
   return String(value || "")
@@ -53,18 +47,11 @@ export function flattenAliasMap(
   const map = new Map<string, string>();
   if (!aliases) return map;
 
-  for (const [nombre, id] of Object.entries(aliases.auto || {})) {
-    if (nombre && id) {
-      map.set(nombre, String(id));
-      map.set(foldNombre(nombre), String(id));
-    }
-  }
-  // manual pisa auto
-  for (const [nombre, id] of Object.entries(aliases.manual || {})) {
-    if (nombre && id) {
-      map.set(nombre, String(id));
-      map.set(foldNombre(nombre), String(id));
-    }
+  for (const [nombre, id] of Object.entries(aliases)) {
+    if (!nombre || nombre.startsWith("_") || !id) continue;
+    const idStr = String(id);
+    map.set(nombre, idStr);
+    map.set(foldNombre(nombre), idStr);
   }
   return map;
 }

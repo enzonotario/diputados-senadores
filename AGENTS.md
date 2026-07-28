@@ -158,7 +158,7 @@ server/
 
 Matching voto↔persona: slug + fuzzy (sin tildes, apellido+primer nombre) + aliases
 locales en `app/data/senadores-alias-nombres.json` y `app/data/diputados-alias-nombres.json`
-(`manual` editable, `auto` precargado).
+(mapa plano nombre-en-acta → id).
 
 ## Dónde tocar qué
 

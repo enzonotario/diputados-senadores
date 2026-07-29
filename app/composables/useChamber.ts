@@ -17,10 +17,14 @@ import {
 /**
  * Sitio activo según Host (runtime) o DEFAULT_CHAMBER (prerender).
  * Local: diputados|senadores|congreso.localhost(.test).
+ *
+ * No llama `useRoute()` en el setup: middlewares (`chamber.global`,
+ * `legacy-seo.global`) usan este composable y Nuxt advierte si leés la
+ * route ahí. El path actual se toma de `useRouter().currentRoute`.
  */
 export function useChamber() {
   const config = useRuntimeConfig();
-  const route = useRoute();
+  const router = useRouter();
   const fallbackSite = parseSiteId(config.public.defaultChamber, "senadores");
   const fallbackChamber: ChamberId = isChamberId(fallbackSite)
     ? fallbackSite
@@ -92,7 +96,7 @@ export function useChamber() {
    * o home si el path es específico de esta cámara.
    */
   const otherChamberUrlForCurrentPath = computed(() => {
-    const path = route.path;
+    const path = router.currentRoute.value.path;
     const rewritten = rewritePathForChamber(path, otherId.value);
     const targetPath =
       rewritten ||

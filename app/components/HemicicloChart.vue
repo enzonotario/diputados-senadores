@@ -628,7 +628,7 @@ function clipId(i: number) {
                   {{ tooltip.member.nombreCompleto }}
                 </p>
                 <p
-                  class="mt-0.5 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+                  class="mt-0.5 flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400"
                 >
                   <span
                     class="inline-block size-2 flex-shrink-0 rounded-full"
@@ -650,7 +650,7 @@ function clipId(i: number) {
                     groupMeta(tooltip.member) &&
                     groupKey(tooltip.member) !== groupMeta(tooltip.member)
                   "
-                  class="text-xs text-gray-500 dark:text-gray-400"
+                  class="text-xs text-gray-600 dark:text-gray-400"
                 >
                   <NuxtLink
                     v-if="groupMetaPath(tooltip.member)"
@@ -663,7 +663,7 @@ function clipId(i: number) {
                 </p>
                 <p
                   v-if="tooltip.member.provincia"
-                  class="text-xs text-gray-400 dark:text-gray-500"
+                  class="text-xs text-gray-600 dark:text-gray-400"
                 >
                   {{ tooltip.member.provincia }}
                 </p>
@@ -695,7 +695,9 @@ function clipId(i: number) {
           />
           <span class="text-xs text-gray-700 dark:text-gray-300">
             {{ labelFor(group) }}
-            <span class="text-gray-400">({{ groupConteo[group] }})</span>
+            <span class="text-gray-600 dark:text-gray-400"
+              >({{ groupConteo[group] }})</span
+            >
           </span>
         </NuxtLink>
         <div
@@ -713,7 +715,9 @@ function clipId(i: number) {
           />
           <span class="text-xs text-gray-700 dark:text-gray-300">
             {{ labelFor(group) }}
-            <span class="text-gray-400">({{ groupConteo[group] }})</span>
+            <span class="text-gray-600 dark:text-gray-400"
+              >({{ groupConteo[group] }})</span
+            >
           </span>
         </div>
       </template>

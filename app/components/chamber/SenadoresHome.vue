@@ -162,7 +162,7 @@ const actasRecientes = computed(() => {
           <h2 class="text-2xl font-bold tracking-tight">
             Cómo viene votando el Senado
           </h2>
-          <p class="text-sm text-muted max-w-2xl">
+          <p class="text-sm text-gray-600 dark:text-gray-400 max-w-2xl">
             Cuántas votaciones se aprueban o rechazan, y cuántos senadores
             asisten, mes a mes — últimos
             {{ chartPeriodoKeys.length || HOME_CHART_PERIODS }} períodos.

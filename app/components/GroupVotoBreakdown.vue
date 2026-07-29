@@ -91,7 +91,7 @@ function pct(n: number) {
         <span>{{ pct(tallies.abstenciones) }}% ({{ tallies.abstenciones }})</span>
       </div>
       <div
-        class="flex flex-col items-center justify-center text-yellow-800 dark:text-yellow-300"
+        class="flex flex-col items-center justify-center text-amber-950 dark:text-amber-200"
       >
         <span>Ausentes</span>
         <span>{{ pct(tallies.ausentes) }}% ({{ tallies.ausentes }})</span>

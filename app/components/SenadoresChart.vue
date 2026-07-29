@@ -25,7 +25,7 @@ const partidosCount = computed(
         <h2 class="text-2xl font-bold text-center">
           El Senado hoy
         </h2>
-        <p class="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p class="mt-1 text-center text-sm text-gray-600 dark:text-gray-400">
           {{ senadores.length }} senadores agrupados en
           {{ partidosCount }} partidos
         </p>

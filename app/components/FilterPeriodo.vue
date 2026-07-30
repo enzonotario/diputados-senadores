@@ -6,6 +6,8 @@ const props = withDefaults(
   defineProps<{
     /** Mostrar el chart temporal debajo del select. */
     showTimeline?: boolean;
+    /** Mostrar el select de período. */
+    showSelect?: boolean;
     /** Ancho compacto (solo select, sin timeline). */
     compact?: boolean;
     /** Mostrar título + rangos del período seleccionado. */
@@ -31,6 +33,7 @@ const props = withDefaults(
   }>(),
   {
     showTimeline: true,
+    showSelect: true,
     compact: false,
     showHeading: true,
     timelineKeys: null,
@@ -76,7 +79,9 @@ const timelinePeriodsResolved = computed<PeriodoInfo[]>(() => {
   return base;
 });
 
-const showScopeHeading = computed(() => props.showHeading && !props.compact);
+const showScopeHeading = computed(
+  () => props.showHeading && !props.compact && props.showSelect,
+);
 </script>
 
 <template>
@@ -93,6 +98,7 @@ const showScopeHeading = computed(() => props.showHeading && !props.compact);
     <PeriodoScopeHeading v-if="showScopeHeading" />
 
     <UFormField
+      v-if="showSelect"
       label="Período"
       orientation="vertical"
       :class="

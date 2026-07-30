@@ -205,6 +205,18 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
   <div class="page-container space-y-6">
     <h1 class="text-3xl font-bold">Diputados de Argentina</h1>
 
+    <FilterPeriodo
+      :timeline-members="diputados"
+      members-label="diputados"
+      timeline-mode="members"
+    />
+
+    <SegmentedTabs
+      v-model="vista"
+      :items="vistaItems"
+      :center="false"
+    />
+
     <div class="space-y-3">
       <div class="flex items-center justify-between gap-2">
         <h2 class="text-sm font-medium text-toned">Filtros</h2>
@@ -219,7 +231,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
         />
       </div>
       <div
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"
       >
         <FilterSelect
           v-model="provinciaFilter"
@@ -240,24 +252,12 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           :items="generoItems"
         />
       </div>
-      <FilterPeriodo
-        :timeline-members="diputados"
-        members-label="diputados"
-        timeline-mode="members"
-      />
-    </div>
-
-    <SegmentedTabs
-      v-model="vista"
-      :items="vistaItems"
-      :center="false"
-    />
-
-    <div class="w-full sm:max-w-sm">
-      <FilterSearch
-        v-model="searchQuery"
-        placeholder="Nombre, provincia o bloque..."
-      />
+      <div class="w-full sm:max-w-sm">
+        <FilterSearch
+            v-model="searchQuery"
+            placeholder="Nombre, provincia o bloque..."
+        />
+      </div>
     </div>
 
     <AppDataSkeleton v-if="pending" variant="list" />

@@ -135,6 +135,24 @@ const hasActiveFilters = computed(
     !!searchQuery.value,
 );
 
+const resultsSummary = computed(() => {
+  const n = displayed.value.length;
+  const total = inPeriodo.value.length;
+  const partidos = groupsByPartido.value.length;
+  const provincias = new Set(
+    displayed.value.map((s) => s.provincia).filter(Boolean),
+  ).size;
+  const senadoresLabel = n === 1 ? "1 senador" : `${n} senadores`;
+  const head =
+    hasActiveFilters.value && n !== total
+      ? `Mostrando ${senadoresLabel} de ${total}`
+      : `Mostrando ${senadoresLabel}`;
+  const partidosLabel = partidos === 1 ? "1 partido" : `${partidos} partidos`;
+  const provinciasLabel =
+    provincias === 1 ? "1 provincia" : `${provincias} provincias`;
+  return `${head} · ${partidosLabel} · ${provinciasLabel}`;
+});
+
 const emptyMessage = computed(
   () => "No se encontraron senadores con los filtros aplicados.",
 );
@@ -249,6 +267,8 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
     <AppDataSkeleton v-if="pending" variant="list" />
 
     <template v-else>
+      <p class="text-sm text-muted">{{ resultsSummary }}</p>
+
       <DataTableCard v-if="vista === 'lista'">
         <UTable
           v-model:sorting="sorting"
@@ -368,9 +388,20 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           </UCard>
           <template v-else>
             <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold">
-                {{ selectedProvinciaTitle }}
-              </h2>
+              <div class="min-w-0 space-y-0.5">
+                <h2 class="text-lg font-semibold">
+                  {{ selectedProvinciaTitle }}
+                </h2>
+                <p
+                  v-if="provinciaFilter.length === 1"
+                  class="text-sm text-muted"
+                >
+                  {{ displayed.length }}
+                  {{
+                    displayed.length === 1 ? "senador" : "senadores"
+                  }}
+                </p>
+              </div>
               <ClientOnly>
                 <UFieldGroup size="sm">
                   <UButton

@@ -51,6 +51,15 @@ const BY_TIPO: Record<string, VotoTipoConfig> = {
     color: "#3b82f6",
   },
   ausente: DEFAULT_CONFIG,
+  presidente: {
+    key: "presidente",
+    label: "Presidió",
+    icon: "lucide:gavel",
+    iconClass: "text-amber-600 dark:text-amber-400",
+    textClass: "text-amber-900 dark:text-amber-200",
+    haloClass: "bg-amber-500",
+    color: "#d97706",
+  },
 };
 
 export const VOTO_TIPO_ORDER = [
@@ -67,6 +76,7 @@ export function normalizeVotoTipo(tipo?: string | null) {
   if (raw === "no" || raw === "negativo") return "negativo";
   if (raw === "abstencion" || raw === "abstención") return "abstencion";
   if (raw === "ausente") return "ausente";
+  if (raw === "presidente" || raw.includes("presid")) return "presidente";
   if (raw.includes("lev") || raw.includes("no emite")) return "ausente";
   return raw || "ausente";
 }

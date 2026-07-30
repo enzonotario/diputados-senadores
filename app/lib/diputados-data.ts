@@ -191,6 +191,25 @@ export async function getDiputadosConActas(): Promise<Diputado[]> {
         votoByDiputadoId.set(matched.id, v);
       }
 
+      // Quien preside asiste aunque no emita voto (tipo "presidente" se filtra
+      // de `votos` para el hemiciclo). Contar presencia vía `acta.presidente`.
+      const presidenteNombre = String((acta as any).presidente || "").trim();
+      if (presidenteNombre) {
+        const matched = resolve(
+          presidenteNombre,
+          slug(presidenteNombre),
+        );
+        if (matched && !votoByDiputadoId.has(matched.id)) {
+          votoByDiputadoId.set(matched.id, {
+            diputado: presidenteNombre,
+            diputadoSlug: slug(presidenteNombre),
+            tipoVoto: "presidente",
+            imagen: "",
+            videoDiscurso: "",
+          } as Voto);
+        }
+      }
+
       for (const [diputadoId, votoDiputado] of votoByDiputadoId) {
         let list = actasByDiputadoId.get(diputadoId);
         if (!list) {

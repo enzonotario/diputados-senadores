@@ -101,9 +101,13 @@ function fromTimestamp(fromDate = AFFINITY_FROM_DATE): number {
   return new Date(`${fromDate}T00:00:00`).getTime();
 }
 
-/** Voto emitido (no ausente). La abstención cuenta como voto propio. */
+/**
+ * Voto emitido en sala (a favor / en contra / abstención).
+ * Excluye ausente y presidente (preside sin emitir voto).
+ */
 export function isCastVote(voto?: string | null): boolean {
-  return normalizeVotoTipo(voto) !== "ausente";
+  const t = normalizeVotoTipo(voto);
+  return t === "afirmativo" || t === "negativo" || t === "abstencion";
 }
 
 /**

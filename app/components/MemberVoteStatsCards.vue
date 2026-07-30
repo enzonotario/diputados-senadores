@@ -10,10 +10,20 @@ const props = defineProps<{
 const palette = useChartPalette();
 
 const presentes = computed(
+  () => Math.max(0, props.stats.totalVotaciones - props.stats.ausencias),
+);
+
+const votaron = computed(
   () =>
     props.stats.votosAfirmativos +
     props.stats.votosNegativos +
     props.stats.abstenciones,
+);
+
+const presidencias = computed(
+  () =>
+    props.stats.presidencias ??
+    Math.max(0, presentes.value - votaron.value),
 );
 
 const presentismo = computed(() => Math.round(props.stats.presentismo));
@@ -25,6 +35,7 @@ const sankeyOption = computed(() => {
   const abs = props.stats.abstenciones;
   const aus = props.stats.ausencias;
   const pres = presentes.value;
+  const presid = presidencias.value;
   const tot = props.stats.totalVotaciones;
 
   if (tot <= 0) return null;
@@ -33,6 +44,7 @@ const sankeyOption = computed(() => {
   const cNeg = getVotoTipoConfig("negativo").color;
   const cAbs = getVotoTipoConfig("abstencion").color;
   const cAus = getVotoTipoConfig("ausente").color;
+  const cPresidio = getVotoTipoConfig("presidente").color;
   const cPres = p.presentismo;
 
   type Node = {
@@ -84,6 +96,7 @@ const sankeyOption = computed(() => {
     { name: "A favor", value: af, color: cAf },
     { name: "En contra", value: neg, color: cNeg },
     { name: "Abstenciones", value: abs, color: cAbs },
+    { name: "Presidió", value: presid, color: cPresidio },
   ];
 
   for (const branch of voteBranches) {
@@ -110,6 +123,7 @@ const sankeyOption = computed(() => {
     "A favor": af,
     "En contra": neg,
     Abstenciones: abs,
+    Presidió: presid,
   };
 
   return {
@@ -179,14 +193,15 @@ const sankeyOption = computed(() => {
             Votos y asistencia
           </h2>
           <p class="text-sm text-muted">
-            Del total: presentes vs ausentes; entre presentes, cómo votó.
+            Del total: presentes vs ausentes; entre presentes, cómo votó (o
+            presidió).
           </p>
         </div>
         <div
           class="shrink-0 rounded-lg border border-default bg-elevated/50 px-3 py-1.5 text-right"
         >
           <div class="text-[11px] uppercase tracking-wide text-muted">
-            Total votaciones
+            Total sesiones
           </div>
           <div class="text-xl font-bold tabular-nums leading-tight">
             {{ stats.totalVotaciones }}
@@ -211,7 +226,7 @@ const sankeyOption = computed(() => {
           </template>
         </ClientOnly>
         <p v-else class="text-sm text-muted py-8 text-center">
-          Sin votaciones en el período seleccionado.
+          Sin sesiones en el período seleccionado.
         </p>
       </div>
 
@@ -271,6 +286,20 @@ const sankeyOption = computed(() => {
             </div>
             <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight">
               Ausencias
+            </div>
+          </div>
+          <div
+            v-if="presidencias > 0"
+            role="listitem"
+            class="col-span-2 rounded-lg border border-amber-300! bg-amber-50 p-2.5 dark:border-amber-700! dark:bg-amber-950"
+          >
+            <div
+              class="text-2xl font-bold tabular-nums leading-none text-amber-700 dark:text-amber-300"
+            >
+              {{ presidencias }}
+            </div>
+            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight">
+              Presidió (asistió sin votar)
             </div>
           </div>
         </div>

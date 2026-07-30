@@ -289,6 +289,8 @@ export type MemberVoteStats = {
   votosNegativos: number;
   abstenciones: number;
   ausencias: number;
+  /** Sesiones donde asistió como presidente sin emitir voto. */
+  presidencias: number;
   presentismo: number;
 };
 
@@ -301,6 +303,7 @@ export function memberVoteStatsFromActas(
   let votosNegativos = 0;
   let abstenciones = 0;
   let ausencias = 0;
+  let presidencias = 0;
 
   for (const a of actas || []) {
     totalVotaciones++;
@@ -316,6 +319,9 @@ export function memberVoteStatsFromActas(
         break;
       case "ausente":
         ausencias++;
+        break;
+      case "presidente":
+        presidencias++;
         break;
       default:
         break;
@@ -333,6 +339,7 @@ export function memberVoteStatsFromActas(
     votosNegativos,
     abstenciones,
     ausencias,
+    presidencias,
     presentismo: Math.round(presentismo * 10) / 10,
   };
 }
@@ -416,8 +423,10 @@ export function miembroVotosOverTime(
   for (const a of actas) {
     const key = bucketKeyForActa(a, groupBy, mandatos);
     if (!key) continue;
-    const bucket = map.get(key) || EMPTY_VOTO_BUCKET();
     const tipo = memberVotoTipo(a);
+    // Preside sin emitir voto: cuenta en asistencia, no en el stacked de votos.
+    if (tipo === "presidente") continue;
+    const bucket = map.get(key) || EMPTY_VOTO_BUCKET();
     if (tipo === "afirmativo" || tipo === "negativo" || tipo === "abstencion") {
       bucket[tipo] += 1;
     } else {

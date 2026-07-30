@@ -142,7 +142,7 @@ const actasRecientes = computed(() => {
     <template v-else>
       <section>
         <ClientOnly>
-          <SenadoresChart
+          <LazySenadoresChart
             :senadores="senadoresInPeriodo"
             :partido-colores="partidoColores"
           />

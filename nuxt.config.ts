@@ -93,6 +93,11 @@ export default defineNuxtConfig({
   routeRules: {
     // Cache por path no distingue Host (diputados / senadores / congreso).
     "/api/**": { cache: false },
+    "/assets/**": {
+      headers: {
+        "cache-control": "public, max-age=31536000, immutable",
+      },
+    },
     "/": { prerender: true },
     ...chamberIndexRules,
     // Detalle: HTML prerenderizado si está en el manifiesto; si no, SSR + cache larga.
@@ -270,8 +275,8 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: "icon", href: "/favicon.ico" },
-        { rel: "preconnect", href: "https://api.argentinadatos.com" },
-        { rel: "dns-prefetch", href: "https://api.argentinadatos.com" },
+        // GTM: sí lo pide el browser. api.argentinadatos.com lo consume solo el
+        // server vía /api/* (same-origin) → preconnect client no aporta.
         { rel: "preconnect", href: "https://www.googletagmanager.com" },
         { rel: "dns-prefetch", href: "https://www.googletagmanager.com" },
       ],

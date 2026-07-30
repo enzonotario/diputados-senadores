@@ -31,11 +31,11 @@ const cards = computed(() => [
   >
     <div class="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
       <img
-        src="/assets/congreso.png"
+        src="/assets/congreso.webp"
         alt=""
         class="absolute inset-0 h-full w-full object-cover object-[center_35%]"
-        width="1920"
-        height="1080"
+        width="960"
+        height="639"
         decoding="async"
         fetchpriority="high"
       />
@@ -80,17 +80,19 @@ const cards = computed(() => [
               :src="item.config.logoSrc"
               :alt="item.config.siteName"
               class="h-24 w-auto object-contain sm:h-28 dark:hidden"
-              width="180"
-              height="180"
+              width="280"
+              height="208"
               decoding="async"
+              loading="lazy"
             />
             <img
               :src="item.config.logoSrcDark"
               :alt="item.config.siteName"
               class="hidden h-24 w-auto object-contain sm:h-28 dark:block"
-              width="180"
-              height="180"
+              width="280"
+              height="208"
               decoding="async"
+              loading="lazy"
             />
           </span>
           <div class="space-y-1">

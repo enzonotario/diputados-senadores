@@ -50,8 +50,8 @@ export const CHAMBERS: Record<ChamberId, ChamberConfig> = {
     keywords:
       "diputados, cámara de diputados, votaciones, actas, argentina, bloques",
     brand: "diputados",
-    logoSrc: "/assets/diputados.png",
-    logoSrcDark: "/assets/diputados-dark.png",
+    logoSrc: "/assets/diputados.webp",
+    logoSrcDark: "/assets/diputados-dark.webp",
     membersLabel: "Diputados",
     membersPath: "/diputados",
     groupsLabel: "Bloques",
@@ -72,8 +72,8 @@ export const CHAMBERS: Record<ChamberId, ChamberConfig> = {
     keywords:
       "senadores, senado, votaciones, actas, argentina, partidos políticos",
     brand: "senadores",
-    logoSrc: "/assets/senado.png",
-    logoSrcDark: "/assets/senado-dark.png",
+    logoSrc: "/assets/senado.webp",
+    logoSrcDark: "/assets/senado-dark.webp",
     membersLabel: "Senadores",
     membersPath: "/senadores",
     groupsLabel: "Partidos",
@@ -102,10 +102,11 @@ export const CONGRESO: CongresoConfig = {
   githubUrl: "https://github.com/enzonotario/diputados-senadores",
 };
 
-/** Logo para cards OG (Takumi). Congreso no usa logo de cámara en navbar. */
+/** Logo para cards OG (Takumi). Congreso no usa logo de cámara en navbar. PNG (no WebP). */
 export function siteOgLogoSrc(site: SiteConfig): string {
   if (site.id === "congreso") return "/assets/argentinadatos.png";
-  return site.logoSrc;
+  if (site.id === "diputados") return "/assets/diputados.png";
+  return "/assets/senado.png";
 }
 
 export const SITES: Record<SiteId, SiteConfig> = {

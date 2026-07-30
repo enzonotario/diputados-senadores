@@ -10,17 +10,21 @@ const { otherChamber, otherChamberUrl } = useChamber();
           :src="otherChamber.logoSrc"
           :alt="otherChamber.siteName"
           class="h-20 w-auto sm:h-24 object-contain dark:hidden"
-          width="180"
-          height="180"
+          width="280"
+          height="208"
           decoding="async"
+          loading="lazy"
+          fetchpriority="low"
         />
         <img
           :src="otherChamber.logoSrcDark"
           :alt="otherChamber.siteName"
           class="hidden h-20 w-auto sm:h-24 object-contain dark:block"
-          width="180"
-          height="180"
+          width="280"
+          height="208"
           decoding="async"
+          loading="lazy"
+          fetchpriority="low"
         />
       </span>
     </div>

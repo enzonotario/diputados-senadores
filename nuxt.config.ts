@@ -141,6 +141,7 @@ export default defineNuxtConfig({
     components: [
       "GridComponent",
       "TooltipComponent",
+      "AxisPointerComponent",
       "LegendComponent",
       "DataZoomComponent",
       "ToolboxComponent",

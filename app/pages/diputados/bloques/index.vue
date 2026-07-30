@@ -9,7 +9,7 @@ import {
 } from "@/lib/utils";
 import { groupDiputadosBy } from "@/utils/groupDiputadosBy";
 import { bloqueSlug } from "@/utils/bloque";
-import { averagePresentismo } from "@/utils/presentismo";
+import { averagePresentismo, withPeriodPresentismo } from "@/utils/presentismo";
 import { useMultiQuery } from "@/composables/useMultiQuery";
 
 type BloqueRow = {
@@ -27,7 +27,7 @@ type AffinityIndexResponse = {
 
 const { localFetch } = useLocalApi();
 const route = useRoute();
-const { filterMembers } = usePeriodoFilter();
+const { filterMembers, periodos } = usePeriodoFilter();
 const vista = useRouteQuery("vista", "lista");
 const provinciaFilter = useMultiQuery("provincia");
 
@@ -57,7 +57,7 @@ const { data: allMembers, pending: pendingMembers } = useAsyncData(
 );
 
 const inPeriodoMembers = computed(() =>
-  filterMembers(allMembers.value || []),
+  withPeriodPresentismo(filterMembers(allMembers.value || []), periodos.value),
 );
 
 const bloques = computed<BloqueRow[]>(() => {

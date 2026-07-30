@@ -6,6 +6,7 @@ import { getPartidoColores } from "@/lib/senadores-data";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { partidoSlug } from "@/utils/partido";
 import type { AffinityMemberInput } from "@/utils/votingAffinity";
+import { averagePresentismo, withPeriodPresentismo } from "@/utils/presentismo";
 
 type GroupDetailResponse = {
   nombre: string;
@@ -24,7 +25,7 @@ type GroupDetailResponse = {
 const route = useRoute();
 const slug = computed(() => String(route.params.slug || ""));
 const { localFetch } = useLocalApi();
-const { filterMembers } = usePeriodoFilter();
+const { filterMembers, periodos } = usePeriodoFilter();
 
 const { data } = await useAsyncData(
   () => `partido-${slug.value}`,
@@ -96,11 +97,16 @@ const integrantesVista = useLocalStorage<"lista" | "grilla">(
 /** Integrantes del grupo en el período seleccionado (sin split activo/inactivo). */
 const displayed = computed<Senador[]>(() => {
   if (!partido.value) return [];
-  return filterMembers([
-    ...(partido.value.activos || []),
-    ...(partido.value.inactivos || []),
-  ]);
+  return withPeriodPresentismo(
+    filterMembers([
+      ...(partido.value.activos || []),
+      ...(partido.value.inactivos || []),
+    ]),
+    periodos.value,
+  );
 });
+
+const partidoPresentismo = computed(() => averagePresentismo(displayed.value));
 
 const { sorting } = useTableSorting("nombreCompleto", false, {
   syncQuery: false,
@@ -216,19 +222,19 @@ useChamberSeo(() => {
               }}
             </p>
             <div
-              v-if="partido.presentismo != null"
+              v-if="partidoPresentismo != null"
               class="max-w-xs space-y-1.5 pt-1"
             >
               <div class="flex items-center justify-between gap-2">
                 <span class="text-sm font-medium">Asistencia del partido</span>
                 <span class="text-sm font-medium"
-                  >{{ partido.presentismo }}%</span
+                  >{{ partidoPresentismo }}%</span
                 >
               </div>
               <UProgress
-                :model-value="partido.presentismo"
+                :model-value="partidoPresentismo"
                 size="sm"
-                :color="partido.presentismo > 80 ? 'success' : 'error'"
+                :color="partidoPresentismo > 80 ? 'success' : 'error'"
               />
             </div>
           </div>

@@ -7,7 +7,7 @@ import { getPartidoColores } from "@/lib/senadores-data";
 import { getUniqueValues } from "@/lib/utils";
 import { groupSenadoresBy } from "@/utils/groupSenadoresBy";
 import { partidoSlug } from "@/utils/partido";
-import { averagePresentismo } from "@/utils/presentismo";
+import { averagePresentismo, withPeriodPresentismo } from "@/utils/presentismo";
 import { useMultiQuery } from "@/composables/useMultiQuery";
 
 type PartidoRow = {
@@ -25,7 +25,7 @@ type AffinityIndexResponse = {
 
 const { localFetch } = useLocalApi();
 const route = useRoute();
-const { filterMembers } = usePeriodoFilter();
+const { filterMembers, periodos } = usePeriodoFilter();
 const vista = useRouteQuery("vista", "lista");
 const provinciaFilter = useMultiQuery("provincia");
 
@@ -55,7 +55,7 @@ const { data: allMembers, pending: pendingMembers } = useAsyncData(
 );
 
 const inPeriodoMembers = computed(() =>
-  filterMembers(allMembers.value || []),
+  withPeriodPresentismo(filterMembers(allMembers.value || []), periodos.value),
 );
 
 const partidos = computed<PartidoRow[]>(() => {

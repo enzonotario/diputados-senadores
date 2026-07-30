@@ -1,7 +1,10 @@
 import slugify from "slugify";
 import type { Acta, Diputado, Voto } from "./types-diputados";
 import { calcularEstadisticasDiputado, isDiputadoActivo } from "./utils";
-import { averagePresentismo } from "../utils/presentismo";
+import {
+  averagePresentismo,
+  buildPresentismoPorPeriodo,
+} from "../utils/presentismo";
 import {
   buildDiputadoVotoResolver,
   clearDiputadosAliasMapCache,
@@ -218,7 +221,16 @@ export async function getDiputadosConActas(): Promise<Diputado[]> {
     return diputados.map((diputado) => {
       const actasDiputado = actasByDiputadoId.get(String(diputado.id)) || [];
       const estadisticas = calcularEstadisticasDiputado(actasDiputado as any);
-      return { ...diputado, estadisticas, actasDiputado };
+      const estadisticasPorPeriodo = buildPresentismoPorPeriodo(
+        actasDiputado.map((a) => ({
+          periodo: a.periodo,
+          tipoVoto:
+            a.tipoVotoDiputado ||
+            (a as any).votoDiputado?.tipoVoto ||
+            null,
+        })),
+      );
+      return { ...diputado, estadisticas, estadisticasPorPeriodo, actasDiputado };
     });
   });
 }

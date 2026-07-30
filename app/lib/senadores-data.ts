@@ -6,10 +6,13 @@ import {
   parseNombreSenador,
 } from "./utils";
 import {
+  averagePresentismo,
+  buildPresentismoPorPeriodo,
+} from "../utils/presentismo";
+import {
   getSenadoresAliasMap,
   votoCoincideConSenador,
 } from "./matchSenadorNombre";
-import { averagePresentismo } from "../utils/presentismo";
 import { normalizeResultado, normalizeVotoTipo } from "../utils/votoTipo";
 import {
   fakeSenadoPeriodoKey,
@@ -220,7 +223,16 @@ export async function getSenadoresConActas(): Promise<Senador[]> {
         });
 
       const estadisticas = calcularEstadisticasSenador(actasSenador);
-      return { ...senador, estadisticas, actasSenador };
+      const estadisticasPorPeriodo = buildPresentismoPorPeriodo(
+        actasSenador.map((a) => ({
+          periodo: a.periodo,
+          tipoVoto:
+            a.tipoVotoSenador ||
+            (a as any).votoSenador?.tipoVoto ||
+            null,
+        })),
+      );
+      return { ...senador, estadisticas, estadisticasPorPeriodo, actasSenador };
     });
   });
 }

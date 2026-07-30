@@ -16,13 +16,14 @@ import { sortableHeader } from "@/utils/sortableHeader";
 import { groupSenadoresBy } from "@/utils/groupSenadoresBy";
 import { partidoPath } from "@/utils/partido";
 import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
+import { withPeriodPresentismo } from "@/utils/presentismo";
 
 const { sorting } = useTableSorting("presentismo", true);
 const vista = useRouteQuery("vista", "lista");
 const provinciaFilter = useMultiQuery("provincia");
 const partidoFilter = useMultiQuery("partido");
 const searchQuery = useRouteQuery("q", "");
-const { filterMembers } = usePeriodoFilter();
+const { filterMembers, periodos } = usePeriodoFilter();
 
 const vistaItems = [
   { label: "Lista", value: "lista" },
@@ -56,11 +57,17 @@ const filtersForMap = computed<FilterConfig>(() => {
 });
 
 const displayed = computed(() =>
-  filterSenadores(inPeriodo.value, filters.value),
+  withPeriodPresentismo(
+    filterSenadores(inPeriodo.value, filters.value),
+    periodos.value,
+  ),
 );
 
 const displayedForMap = computed(() =>
-  filterSenadores(filterMembers(senadores.value), filtersForMap.value),
+  withPeriodPresentismo(
+    filterSenadores(filterMembers(senadores.value), filtersForMap.value),
+    periodos.value,
+  ),
 );
 
 const groupsByPartido = computed(() =>

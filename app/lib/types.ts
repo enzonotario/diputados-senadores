@@ -29,6 +29,11 @@ export interface Senador {
     abstenciones: number;
     ausencias: number;
   };
+  /** Conteos por período para presentismo scoped al filtro `?periodo=`. */
+  estadisticasPorPeriodo?: Record<
+    string,
+    { totalVotaciones: number; ausencias: number; presentismo: number }
+  >;
   actasSenador?: Acta[];
   tipoVoto?: string;
 }

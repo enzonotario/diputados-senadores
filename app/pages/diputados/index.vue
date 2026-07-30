@@ -16,6 +16,7 @@ import { sortableHeader } from "@/utils/sortableHeader";
 import { groupDiputadosBy } from "@/utils/groupDiputadosBy";
 import { bloquePath } from "@/utils/bloque";
 import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
+import { withPeriodPresentismo } from "@/utils/presentismo";
 
 const { sorting } = useTableSorting("presentismo", true);
 const vista = useRouteQuery("vista", "lista");
@@ -23,7 +24,7 @@ const provinciaFilter = useMultiQuery("provincia");
 const bloqueFilter = useMultiQuery("bloque");
 const generoFilter = useMultiQuery("genero");
 const searchQuery = useRouteQuery("q", "");
-const { filterMembers } = usePeriodoFilter();
+const { filterMembers, periodos } = usePeriodoFilter();
 
 const vistaItems = [
   { label: "Lista", value: "lista" },
@@ -58,11 +59,17 @@ const filtersForMap = computed<FilterConfig>(() => {
 });
 
 const displayed = computed(() =>
-  filterDiputados(inPeriodo.value, filters.value),
+  withPeriodPresentismo(
+    filterDiputados(inPeriodo.value, filters.value),
+    periodos.value,
+  ),
 );
 
 const displayedForMap = computed(() =>
-  filterDiputados(filterMembers(diputados.value), filtersForMap.value),
+  withPeriodPresentismo(
+    filterDiputados(filterMembers(diputados.value), filtersForMap.value),
+    periodos.value,
+  ),
 );
 
 const groupsByBloque = computed(() =>

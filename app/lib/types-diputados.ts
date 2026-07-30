@@ -26,6 +26,11 @@ export interface Diputado {
     abstenciones: number;
     ausencias: number;
   };
+  /** Conteos por período para presentismo scoped al filtro `?periodo=`. */
+  estadisticasPorPeriodo?: Record<
+    string,
+    { totalVotaciones: number; ausencias: number; presentismo: number }
+  >;
   actasDiputado?: Acta[];
   tipoVoto?: string;
 }

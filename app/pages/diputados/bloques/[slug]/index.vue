@@ -6,6 +6,7 @@ import { getBloqueColores } from "@/lib/diputados-data";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { bloqueSlug } from "@/utils/bloque";
 import type { AffinityMemberInput } from "@/utils/votingAffinity";
+import { averagePresentismo, withPeriodPresentismo } from "@/utils/presentismo";
 
 type GroupDetailResponse = {
   nombre: string;
@@ -24,7 +25,7 @@ type GroupDetailResponse = {
 const route = useRoute();
 const slug = computed(() => String(route.params.slug || ""));
 const { localFetch } = useLocalApi();
-const { filterMembers } = usePeriodoFilter();
+const { filterMembers, periodos } = usePeriodoFilter();
 
 const { data } = await useAsyncData(
   () => `bloque-${slug.value}`,
@@ -97,11 +98,16 @@ const integrantesVista = useLocalStorage<"lista" | "grilla">(
 /** Integrantes del grupo en el período seleccionado (sin split activo/inactivo). */
 const displayed = computed<Diputado[]>(() => {
   if (!bloque.value) return [];
-  return filterMembers([
-    ...(bloque.value.activos || []),
-    ...(bloque.value.inactivos || []),
-  ]);
+  return withPeriodPresentismo(
+    filterMembers([
+      ...(bloque.value.activos || []),
+      ...(bloque.value.inactivos || []),
+    ]),
+    periodos.value,
+  );
 });
+
+const bloquePresentismo = computed(() => averagePresentismo(displayed.value));
 
 const { sorting } = useTableSorting("nombreCompleto", false, {
   syncQuery: false,
@@ -212,19 +218,19 @@ useChamberSeo(() => {
               }}
             </p>
             <div
-              v-if="bloque.presentismo != null"
+              v-if="bloquePresentismo != null"
               class="max-w-xs space-y-1.5 pt-1"
             >
               <div class="flex items-center justify-between gap-2">
                 <span class="text-sm font-medium">Asistencia del bloque</span>
                 <span class="text-sm font-medium"
-                  >{{ bloque.presentismo }}%</span
+                  >{{ bloquePresentismo }}%</span
                 >
               </div>
               <UProgress
-                :model-value="bloque.presentismo"
+                :model-value="bloquePresentismo"
                 size="sm"
-                :color="bloque.presentismo > 80 ? 'success' : 'error'"
+                :color="bloquePresentismo > 80 ? 'success' : 'error'"
               />
             </div>
           </div>

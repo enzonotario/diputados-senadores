@@ -14,8 +14,11 @@ type SiteBase = {
   brand: string;
   /** Logo en /public (navbar + home), modo claro. Vacío = solo texto. */
   logoSrc: string;
+  /** Logo 2x para srcset (pantallas densas / hero grande). */
+  logoSrc2x?: string;
   /** Logo para dark mode. */
   logoSrcDark: string;
+  logoSrcDark2x?: string;
   githubUrl: string;
 };
 
@@ -51,7 +54,9 @@ export const CHAMBERS: Record<ChamberId, ChamberConfig> = {
       "diputados, cámara de diputados, votaciones, actas, argentina, bloques",
     brand: "diputados",
     logoSrc: "/assets/diputados.webp",
+    logoSrc2x: "/assets/diputados-2x.webp",
     logoSrcDark: "/assets/diputados-dark.webp",
+    logoSrcDark2x: "/assets/diputados-dark-2x.webp",
     membersLabel: "Diputados",
     membersPath: "/diputados",
     groupsLabel: "Bloques",
@@ -73,7 +78,9 @@ export const CHAMBERS: Record<ChamberId, ChamberConfig> = {
       "senadores, senado, votaciones, actas, argentina, partidos políticos",
     brand: "senadores",
     logoSrc: "/assets/senado.webp",
+    logoSrc2x: "/assets/senado-2x.webp",
     logoSrcDark: "/assets/senado-dark.webp",
+    logoSrcDark2x: "/assets/senado-dark-2x.webp",
     membersLabel: "Senadores",
     membersPath: "/senadores",
     groupsLabel: "Partidos",

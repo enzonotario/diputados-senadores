@@ -2,10 +2,15 @@
 import type { Diputado } from "@/lib/types-diputados";
 import { bloquePath } from "@/utils/bloque";
 
-const props = defineProps<{
-  diputados: Diputado[];
-  bloqueColores: Record<string, string>;
-}>();
+const props = withDefaults(
+  defineProps<{
+    diputados: Diputado[];
+    bloqueColores: Record<string, string>;
+    /** Fotos en asientos (desactivar solo si hace falta por peso de red). */
+    showPhotos?: boolean;
+  }>(),
+  { showPhotos: true },
+);
 
 const bloquesCount = computed(
   () => new Set(props.diputados.map((d) => d.bloque)).size,
@@ -19,6 +24,7 @@ const bloquesCount = computed(
     group-by="bloque"
     member-base-path="/diputados"
     :group-to="(key) => bloquePath(key)"
+    :show-photos="showPhotos"
   >
     <template #header>
       <div>

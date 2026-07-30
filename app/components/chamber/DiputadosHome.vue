@@ -32,7 +32,19 @@ const { data: membersData, pending: pendingMembers } = useAsyncData(
   "diputados-home-members",
   async () => {
     const res = await localFetch<{ members: Diputado[] }>("/api/members");
-    return res.members || [];
+    // Campos del hemiciclo/home (incl. foto).
+    return (res.members || []).map((m) => ({
+      id: m.id,
+      nombre: m.nombre,
+      apellido: m.apellido,
+      nombreCompleto: m.nombreCompleto,
+      provincia: m.provincia,
+      bloque: m.bloque,
+      foto: m.foto,
+      periodoMandato: m.periodoMandato,
+      ceseFecha: m.ceseFecha,
+      juramentoFecha: m.juramentoFecha,
+    }));
   },
   { lazy: true },
 );
@@ -41,7 +53,19 @@ const { data: actasData, pending: pendingActas } = useAsyncData(
   "diputados-actas-home",
   async () => {
     const res = await localFetch<{ actas: any[] }>("/api/actas");
-    return res.actas || [];
+    return (res.actas || []).map((a) => ({
+      id: a.id,
+      titulo: a.titulo,
+      fecha: a.fecha,
+      resultado: a.resultado,
+      periodo: a.periodo,
+      votosAfirmativos: a.votosAfirmativos,
+      votosNegativos: a.votosNegativos,
+      abstenciones: a.abstenciones,
+      ausentes: a.ausentes,
+      presentes: a.presentes,
+      miembros: a.miembros,
+    }));
   },
   { lazy: true },
 );
@@ -118,11 +142,17 @@ const actasRecientes = computed(() => {
         Mirá cómo votaron los diputados en cada proyecto de ley de la Cámara
       </p>
       <div class="flex flex-col sm:flex-row gap-4">
-        <UButton to="/actas" size="lg">
+        <UButton to="/actas" size="lg" :prefetch="false">
           <UIcon name="lucide:file-text" class="size-4" />
           <span>Ver votaciones</span>
         </UButton>
-        <UButton to="/diputados" size="lg" variant="soft" color="neutral">
+        <UButton
+          to="/diputados"
+          size="lg"
+          variant="soft"
+          color="neutral"
+          :prefetch="false"
+        >
           <UIcon name="lucide:users" class="size-4" />
           <span>Ver Diputados</span>
         </UButton>
@@ -151,7 +181,7 @@ const actasRecientes = computed(() => {
 
       <USeparator class="my-20" />
 
-      <section class="space-y-4">
+      <section class="space-y-4 min-h-[32rem] xl:min-h-[28rem]">
         <div class="space-y-1">
           <h2 class="text-2xl font-bold tracking-tight">
             Cómo viene votando la Cámara

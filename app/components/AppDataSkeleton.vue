@@ -99,14 +99,17 @@ withDefaults(
     role="status"
     aria-label="Cargando"
   >
-    <div class="flex flex-col gap-3 max-w-2xl">
-      <USkeleton class="h-10 w-72" />
-      <USkeleton class="h-4 w-full" />
-      <USkeleton class="h-4 w-5/6" />
+    <USkeleton class="w-full aspect-[2/1] max-w-4xl mx-auto rounded-lg" />
+    <div class="space-y-3">
+      <USkeleton class="h-8 w-72" />
+      <USkeleton class="h-4 w-full max-w-xl" />
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <USkeleton class="h-[28rem] w-full rounded-lg" />
+        <USkeleton class="h-[28rem] w-full rounded-lg" />
+      </div>
     </div>
-    <USkeleton class="h-64 w-full rounded-lg" />
     <div class="grid sm:grid-cols-3 gap-4">
-      <USkeleton v-for="i in 3" :key="i" class="h-28 rounded-lg" />
+      <USkeleton v-for="i in 3" :key="i" class="h-40 rounded-lg" />
     </div>
   </div>
 

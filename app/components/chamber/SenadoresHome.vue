@@ -36,7 +36,18 @@ const { data: membersData, pending: pendingMembers } = useAsyncData(
   "senadores-home-members",
   async () => {
     const res = await localFetch<{ members: Senador[] }>("/api/members");
-    return res.members || [];
+    return (res.members || []).map((m) => ({
+      id: m.id,
+      nombre: m.nombre,
+      nombreCompleto: m.nombreCompleto,
+      provincia: m.provincia,
+      partido: m.partido,
+      foto: m.foto,
+      periodoMandato: m.periodoMandato,
+      periodoReal: (m as any).periodoReal,
+      periodoLegal: (m as any).periodoLegal,
+      ceseFecha: (m as any).ceseFecha,
+    }));
   },
   { lazy: true },
 );
@@ -45,7 +56,19 @@ const { data: actasData, pending: pendingActas } = useAsyncData(
   "senadores-actas-home",
   async () => {
     const res = await localFetch<{ actas: any[] }>("/api/actas");
-    return res.actas || [];
+    return (res.actas || []).map((a) => ({
+      id: a.id,
+      titulo: a.titulo,
+      fecha: a.fecha,
+      resultado: a.resultado,
+      periodo: a.periodo,
+      votosAfirmativos: a.votosAfirmativos,
+      votosNegativos: a.votosNegativos,
+      abstenciones: a.abstenciones,
+      ausentes: a.ausentes,
+      presentes: a.presentes,
+      miembros: a.miembros,
+    }));
   },
   { lazy: true },
 );
@@ -124,11 +147,17 @@ const actasRecientes = computed(() => {
         Mirá cómo votaron los senadores en cada proyecto de ley del Senado
       </p>
       <div class="flex flex-col sm:flex-row gap-4">
-        <UButton to="/actas" size="lg">
+        <UButton to="/actas" size="lg" :prefetch="false">
           <UIcon name="lucide:file-text" class="size-4" />
           <span>Ver votaciones</span>
         </UButton>
-        <UButton to="/senadores" size="lg" variant="soft" color="neutral">
+        <UButton
+          to="/senadores"
+          size="lg"
+          variant="soft"
+          color="neutral"
+          :prefetch="false"
+        >
           <UIcon name="lucide:users" class="size-4" />
           <span>Ver Senadores</span>
         </UButton>
@@ -157,7 +186,7 @@ const actasRecientes = computed(() => {
 
       <USeparator class="my-20" />
 
-      <section class="space-y-4">
+      <section class="space-y-4 min-h-[32rem] xl:min-h-[28rem]">
         <div class="space-y-1">
           <h2 class="text-2xl font-bold tracking-tight">
             Cómo viene votando el Senado

@@ -30,6 +30,8 @@ const props = withDefaults(
     groupLabel?: (key: string) => string;
     clickable?: boolean;
     showLegend?: boolean;
+    /** Fotos en los asientos (caro en home: ~257 requests). Default true. */
+    showPhotos?: boolean;
     groupTo?: (key: string) => string | null | undefined;
     /** Base path para ficha: /diputados | /senadores */
     memberBasePath?: string;
@@ -38,6 +40,7 @@ const props = withDefaults(
     groupBy: "partido",
     clickable: true,
     showLegend: true,
+    showPhotos: true,
     memberBasePath: "/senadores",
   },
 );
@@ -548,7 +551,7 @@ function clipId(i: number) {
             :fill="colorFor(p.member)"
           />
           <text
-            v-if="!p.member.foto"
+            v-if="!showPhotos || !p.member.foto"
             :x="p.x"
             :y="p.y"
             text-anchor="middle"
@@ -561,7 +564,7 @@ function clipId(i: number) {
             {{ initials(p.member) }}
           </text>
           <image
-            v-if="p.member.foto"
+            v-if="showPhotos && p.member.foto"
             :clip-path="`url(#${clipId(i)})`"
             :href="p.member.foto"
             :x="p.x - DOT_R"

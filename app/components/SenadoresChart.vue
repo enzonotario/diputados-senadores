@@ -2,10 +2,15 @@
 import type { Senador } from "@/lib/types";
 import { partidoPath } from "@/utils/partido";
 
-const props = defineProps<{
-  senadores: Senador[];
-  partidoColores: Record<string, string>;
-}>();
+const props = withDefaults(
+  defineProps<{
+    senadores: Senador[];
+    partidoColores: Record<string, string>;
+    /** Fotos en asientos (desactivar solo si hace falta por peso de red). */
+    showPhotos?: boolean;
+  }>(),
+  { showPhotos: true },
+);
 
 const partidosCount = computed(
   () => new Set(props.senadores.map((d) => d.partido)).size,
@@ -19,6 +24,7 @@ const partidosCount = computed(
     group-by="partido"
     member-base-path="/senadores"
     :group-to="(key) => partidoPath(key)"
+    :show-photos="showPhotos"
   >
     <template #header>
       <div>

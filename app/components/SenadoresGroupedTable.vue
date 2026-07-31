@@ -207,12 +207,11 @@ function hrefForGroup(group: SenadoresGroupedTableRow) {
 <template>
   <DataTableCard :scrollable="false">
     <!--
-      Scrollport propio: overflow-x sin aplastar columnas, y sticky del grupo
-      relativo a este contenedor (top-0) en lugar del viewport.
+      Sin scrollport de alto fijo: el sticky va al viewport (bajo el navbar).
+      El containing block es .group-expanded-section, así que al salir del
+      contenido del grupo deja de pegarse — sin JS ni bottom calculado.
     -->
-    <div
-      class="grouped-expandable-table min-w-0 max-h-[min(70dvh,calc(100dvh-var(--ui-header-height)-8rem))] overflow-auto overscroll-contain"
-    >
+    <div class="grouped-expandable-table min-w-0">
       <UTable
         v-model:sorting="sorting"
         v-model:expanded="expanded"
@@ -286,7 +285,7 @@ function hrefForGroup(group: SenadoresGroupedTableRow) {
         <template #expanded="{ row }">
           <div class="group-expanded-section pb-2">
             <div
-              class="sticky top-0 z-10 flex items-center justify-between gap-3 flex-wrap py-3 -mx-1 px-3 sm:px-4 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80 dark:supports-[backdrop-filter]:bg-gray-950/80 border-b border-default"
+              class="sticky top-[calc(var(--ui-header-height)_-_0.20rem)] z-10 flex items-center justify-between gap-3 flex-wrap py-3 -mx-1 px-3 sm:px-4 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80 dark:supports-[backdrop-filter]:bg-gray-950/80 border-b border-default"
             >
               <div class="flex items-center gap-2 min-w-0">
                 <UButton
@@ -436,6 +435,10 @@ function hrefForGroup(group: SenadoresGroupedTableRow) {
 </template>
 
 <style scoped>
+/*
+ * Ocultamos la fila resumen al expandir: el sticky vive dentro de
+ * #expanded (.group-expanded-section) y se acota a ese bloque.
+ */
 .grouped-expandable-table :deep(tbody > tr[data-expanded="true"]) {
   display: none;
 }

@@ -146,12 +146,16 @@ const tipoVotoItems = computed(() =>
     value: t,
   })),
 );
-const votoColores = computed(() => getVotoTipoColores());
+const votoColores = computed(() =>
+  getVotoTipoColores([...VOTO_TIPO_ORDER, "presidente"]),
+);
 const votoGroupOrder = [...VOTO_TIPO_ORDER];
 
 function votoLabel(key: string) {
   return getVotoTipoConfig(key).label;
 }
+
+const presidenteMember = computed(() => acta.value?.presidenteObj || null);
 
 const tableColumns = [
   {
@@ -245,7 +249,16 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           </div>
           <div class="flex flex-col">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Presidente</dt>
-            <dd>{{ acta.presidente }}</dd>
+            <dd>
+              <NuxtLink
+                v-if="presidenteMember?.id"
+                :to="`/diputados/${presidenteMember.id}`"
+                class="text-primary hover:underline"
+              >
+                {{ acta.presidente }}
+              </NuxtLink>
+              <template v-else>{{ acta.presidente }}</template>
+            </dd>
           </div>
         </dl>
       </UCard>
@@ -253,10 +266,12 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
       <ClientOnly>
         <HemicicloChart
           :diputados="diputados"
+          :president="presidenteMember"
           :group-colors="votoColores"
           group-by="tipoVoto"
           :group-order="votoGroupOrder"
           :group-label="votoLabel"
+          member-base-path="/diputados"
         >
           <template #header>
             <div>

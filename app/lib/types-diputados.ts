@@ -53,6 +53,8 @@ export interface Acta {
   resultado: string;
   fecha: string;
   presidente: string;
+  /** Diputado resuelto desde `presidente` (para hemiciclo / links). */
+  presidenteObj?: Diputado | null;
   votosAfirmativos: number;
   votosNegativos: number;
   abstenciones: number;

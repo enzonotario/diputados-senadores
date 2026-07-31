@@ -24,6 +24,8 @@ const props = withDefaults(
     diputados?: HemicicloMember[];
     /** Alias cámara Senadores */
     senadores?: HemicicloMember[];
+    /** Presidente de la sesión: asiento en el centro del hemiciclo. */
+    president?: HemicicloMember | null;
     groupColors: Record<string, string>;
     groupBy?: "bloque" | "partido" | "tipoVoto" | ((d: HemicicloMember) => string);
     groupOrder?: string[];
@@ -42,6 +44,7 @@ const props = withDefaults(
     showLegend: true,
     showPhotos: true,
     memberBasePath: "/senadores",
+    president: null,
   },
 );
 
@@ -383,6 +386,31 @@ const puntos = computed<Punto[]>(() =>
   })),
 );
 
+const PRESIDENT_GROUP = "presidente";
+const presidentColor = computed(
+  () => props.groupColors[PRESIDENT_GROUP] ?? "#d97706",
+);
+
+const presidentDotR = computed(() => Math.round(DOT_R.value * 1.2));
+
+/** Asiento del presidente en el podio (abajo-centro del hemiciclo). */
+const presidentSeat = computed(() => {
+  const member = props.president;
+  if (!member) return null;
+  const g = geom.value;
+  const r = presidentDotR.value;
+  // Un poco arriba de la baseline para que el label "Presidente" no
+  // se meta en la leyenda de votos (overflow visible del SVG).
+  return {
+    x: g.cx,
+    y: g.cy - r * 1.55,
+    member: {
+      ...member,
+      tipoVoto: member.tipoVoto || PRESIDENT_GROUP,
+    },
+  };
+});
+
 const bgPath = computed(() => {
   const g = geom.value;
   const { cx, cy, outerR, innerR, aLeft, aRight } = g;
@@ -439,18 +467,24 @@ const separadores = computed(() => {
 
 function initials(d: HemicicloMember): string {
   const apellido = (d.apellido || d.nombreCompleto || "").charAt(0);
-  const nombre = (d.nombreDePila || "").charAt(0);
+  const nombre = (d.nombreDePila || d.nombre || "").charAt(0);
   return (apellido + nombre).toUpperCase();
 }
 
 type Tooltip = { member: HemicicloMember; x: number; y: number };
 const tooltip = ref<Tooltip | null>(null);
-/** Bloque/partido resaltado (leyenda o banca). */
+/** Bloque/partido/voto resaltado (leyenda o banca). */
 const hoveredGroup = ref<string | null>(null);
 
 function onEnter(p: Punto) {
   tooltip.value = { member: p.member, x: p.x, y: p.y };
   hoveredGroup.value = groupKey(p.member);
+}
+function onEnterPresident() {
+  const seat = presidentSeat.value;
+  if (!seat) return;
+  tooltip.value = { member: seat.member, x: seat.x, y: seat.y };
+  hoveredGroup.value = PRESIDENT_GROUP;
 }
 function onLeave() {
   tooltip.value = null;
@@ -467,6 +501,11 @@ function onLegendLeave() {
 function seatOpacity(d: HemicicloMember): number {
   if (!hoveredGroup.value) return 1;
   return groupKey(d) === hoveredGroup.value ? 1 : 0.22;
+}
+
+function presidentOpacity(): number {
+  if (!hoveredGroup.value) return 1;
+  return hoveredGroup.value === PRESIDENT_GROUP ? 1 : 0.22;
 }
 
 function onClick(d: HemicicloMember) {
@@ -488,8 +527,22 @@ const tooltipStyle = computed(() => {
   };
 });
 
-function clipId(i: number) {
+function clipId(i: number | string) {
   return `hemiciclo-clip-${uid}-${i}`;
+}
+
+function tooltipRoleLabel(m: HemicicloMember): string {
+  if ((m.tipoVoto || "").toLowerCase() === PRESIDENT_GROUP) {
+    return "Presidente";
+  }
+  return labelFor(groupKey(m));
+}
+
+function tooltipColor(m: HemicicloMember): string {
+  if ((m.tipoVoto || "").toLowerCase() === PRESIDENT_GROUP) {
+    return presidentColor.value;
+  }
+  return colorFor(m);
 }
 </script>
 
@@ -517,6 +570,16 @@ function clipId(i: number) {
             :key="clipId(i)"
           >
             <circle :cx="p.x" :cy="p.y" :r="DOT_R - 1" />
+          </clipPath>
+          <clipPath
+            v-if="presidentSeat"
+            :id="clipId('president')"
+          >
+            <circle
+              :cx="presidentSeat.x"
+              :cy="presidentSeat.y"
+              :r="presidentDotR - 1"
+            />
           </clipPath>
         </defs>
 
@@ -585,11 +648,86 @@ function clipId(i: number) {
           />
         </g>
 
+        <!-- Presidente: banca central (podio) -->
+        <g
+          v-if="presidentSeat"
+          :class="clickable ? 'cursor-pointer' : 'cursor-default'"
+          :style="{
+            opacity: presidentOpacity(),
+            transition: 'opacity 0.15s ease',
+          }"
+          @mouseenter="onEnterPresident"
+          @click="onClick(presidentSeat.member)"
+        >
+          <circle
+            :cx="presidentSeat.x"
+            :cy="presidentSeat.y"
+            :r="presidentDotR + 4"
+            :fill="isDark ? '#0f172a' : '#ffffff'"
+            opacity="0.85"
+          />
+          <circle
+            :cx="presidentSeat.x"
+            :cy="presidentSeat.y"
+            :r="presidentDotR"
+            :fill="presidentColor"
+          />
+          <text
+            v-if="!showPhotos || !presidentSeat.member.foto"
+            :x="presidentSeat.x"
+            :y="presidentSeat.y"
+            text-anchor="middle"
+            dominant-baseline="central"
+            fill="white"
+            :font-size="presidentDotR * 0.7"
+            font-weight="700"
+            pointer-events="none"
+          >
+            {{ initials(presidentSeat.member) }}
+          </text>
+          <image
+            v-if="showPhotos && presidentSeat.member.foto"
+            :clip-path="`url(#${clipId('president')})`"
+            :href="presidentSeat.member.foto"
+            :x="presidentSeat.x - presidentDotR"
+            :y="presidentSeat.y - presidentDotR"
+            :width="presidentDotR * 2"
+            :height="presidentDotR * 2"
+            preserveAspectRatio="xMidYMid slice"
+            pointer-events="none"
+          />
+          <circle
+            :cx="presidentSeat.x"
+            :cy="presidentSeat.y"
+            :r="presidentDotR"
+            fill="none"
+            :stroke="presidentColor"
+            stroke-width="3"
+            pointer-events="none"
+          />
+          <text
+            :x="presidentSeat.x"
+            :y="presidentSeat.y + presidentDotR + 14"
+            text-anchor="middle"
+            :fill="isDark ? '#cbd5e1' : '#475569'"
+            font-size="12"
+            font-weight="600"
+            pointer-events="none"
+          >
+            Presidente
+          </text>
+        </g>
+
         <circle
           v-if="tooltip"
           :cx="tooltip.x"
           :cy="tooltip.y"
-          :r="DOT_R + 4"
+          :r="
+            presidentSeat &&
+            tooltip.member.id === presidentSeat.member.id
+              ? presidentDotR + 4
+              : DOT_R + 4
+          "
           fill="none"
           :stroke="isDark ? 'white' : '#1e293b'"
           stroke-width="2"
@@ -609,8 +747,8 @@ function clipId(i: number) {
               <div
                 class="size-9 flex-shrink-0 overflow-hidden rounded-full"
                 :style="{
-                  border: `2.5px solid ${colorFor(tooltip.member)}`,
-                  background: colorFor(tooltip.member),
+                  border: `2.5px solid ${tooltipColor(tooltip.member)}`,
+                  background: tooltipColor(tooltip.member),
                 }"
               >
                 <img
@@ -635,23 +773,44 @@ function clipId(i: number) {
                 >
                   <span
                     class="inline-block size-2 flex-shrink-0 rounded-full"
-                    :style="{ backgroundColor: colorFor(tooltip.member) }"
+                    :style="{ backgroundColor: tooltipColor(tooltip.member) }"
                   />
                   <NuxtLink
-                    v-if="groupTo?.(groupKey(tooltip.member))"
+                    v-if="
+                      (tooltip.member.tipoVoto || '').toLowerCase() !==
+                        PRESIDENT_GROUP && groupTo?.(groupKey(tooltip.member))
+                    "
                     :to="groupTo(groupKey(tooltip.member))!"
                     class="hover:underline pointer-events-auto"
                   >
-                    {{ labelFor(groupKey(tooltip.member)) }}
+                    {{ tooltipRoleLabel(tooltip.member) }}
                   </NuxtLink>
                   <template v-else>
-                    {{ labelFor(groupKey(tooltip.member)) }}
+                    {{ tooltipRoleLabel(tooltip.member) }}
                   </template>
                 </p>
                 <p
                   v-if="
                     groupMeta(tooltip.member) &&
-                    groupKey(tooltip.member) !== groupMeta(tooltip.member)
+                    groupKey(tooltip.member) !== groupMeta(tooltip.member) &&
+                    (tooltip.member.tipoVoto || '').toLowerCase() !==
+                      PRESIDENT_GROUP
+                  "
+                  class="text-xs text-gray-600 dark:text-gray-400"
+                >
+                  <NuxtLink
+                    v-if="groupMetaPath(tooltip.member)"
+                    :to="groupMetaPath(tooltip.member)!"
+                    class="hover:underline pointer-events-auto"
+                  >
+                    {{ groupMeta(tooltip.member) }}
+                  </NuxtLink>
+                  <template v-else>{{ groupMeta(tooltip.member) }}</template>
+                </p>
+                <p
+                  v-else-if="
+                    (tooltip.member.tipoVoto || '').toLowerCase() ===
+                      PRESIDENT_GROUP && groupMeta(tooltip.member)
                   "
                   class="text-xs text-gray-600 dark:text-gray-400"
                 >
@@ -680,6 +839,7 @@ function clipId(i: number) {
     <div
       v-if="showLegend"
       class="mx-auto flex w-full max-w-3xl md:max-w-4xl flex-wrap justify-center gap-x-4 gap-y-2"
+      :class="presidentSeat ? 'mt-7' : ''"
     >
       <template v-for="group in groupsOrdenados" :key="group">
         <NuxtLink

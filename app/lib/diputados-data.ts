@@ -296,38 +296,67 @@ export async function getActaWithDiputadosById(
     })),
   );
 
+  const votos = acta.votos.map((v) => {
+    const matched = resolve(v.diputado, (v as any).diputadoSlug || "");
+    const diputado = matched
+      ? diputadosById.get(matched.id)
+      : undefined;
+
+    const parsed = parseNombreVoto(v.diputado);
+
+    return {
+      ...v,
+      diputadoObj: {
+        ...(diputado || {
+          id: (v as any).diputadoSlug,
+          nombre: parsed.nombre,
+          apellido: parsed.apellido,
+          nombreCompleto: parsed.nombreCompleto,
+          nombreSlug: (v as any).diputadoSlug,
+          genero: "",
+          provincia: "",
+          periodoMandato: { inicio: "", fin: "" },
+          juramentoFecha: "",
+          ceseFecha: null,
+          bloque: "",
+          periodoBloque: { inicio: "", fin: "" },
+          foto: v.imagen || "",
+        }),
+        tipoVoto: v.tipoVoto,
+      } as Diputado,
+    };
+  });
+
+  const presidenteNombre = String(acta.presidente || "").trim();
+  let presidenteObj: Diputado | null = null;
+  if (presidenteNombre) {
+    const matched = resolve(presidenteNombre, slug(presidenteNombre));
+    const diputado = matched ? diputadosById.get(matched.id) : undefined;
+    const parsed = parseNombreVoto(presidenteNombre);
+    presidenteObj = {
+      ...(diputado || {
+        id: slug(presidenteNombre),
+        nombre: parsed.nombre,
+        apellido: parsed.apellido,
+        nombreCompleto: parsed.nombreCompleto,
+        nombreSlug: slug(presidenteNombre),
+        genero: "",
+        provincia: "",
+        periodoMandato: { inicio: "", fin: "" },
+        juramentoFecha: "",
+        ceseFecha: null,
+        bloque: "",
+        periodoBloque: { inicio: "", fin: "" },
+        foto: "",
+      }),
+      tipoVoto: "presidente",
+    } as Diputado;
+  }
+
   return {
     ...acta,
-    votos: acta.votos.map((v) => {
-      const matched = resolve(v.diputado, (v as any).diputadoSlug || "");
-      const diputado = matched
-        ? diputadosById.get(matched.id)
-        : undefined;
-
-      const parsed = parseNombreVoto(v.diputado);
-
-      return {
-        ...v,
-        diputadoObj: {
-          ...(diputado || {
-            id: (v as any).diputadoSlug,
-            nombre: parsed.nombre,
-            apellido: parsed.apellido,
-            nombreCompleto: parsed.nombreCompleto,
-            nombreSlug: (v as any).diputadoSlug,
-            genero: "",
-            provincia: "",
-            periodoMandato: { inicio: "", fin: "" },
-            juramentoFecha: "",
-            ceseFecha: null,
-            bloque: "",
-            periodoBloque: { inicio: "", fin: "" },
-            foto: v.imagen || "",
-          }),
-          tipoVoto: v.tipoVoto,
-        } as Diputado,
-      };
-    }),
+    votos,
+    presidenteObj,
   } as Acta;
 }
 

@@ -22,10 +22,13 @@ const props = withDefaults(
     accentColors?: Record<string, string>;
     groupTo?: (group: SenadoresGroup) => string | null | undefined;
     showPresentismo?: boolean;
+    /** Columna de voto en la tabla anidada (detalle de acta). */
+    showTipoVoto?: boolean;
     emptyMessage?: string;
   }>(),
   {
     showPresentismo: true,
+    showTipoVoto: false,
     emptyMessage: "No se encontraron grupos con los filtros aplicados.",
   },
 );
@@ -179,11 +182,21 @@ const nestedColumns = computed(() => {
     });
   }
 
-  cols.push({
-    id: "presentismo",
-    accessorKey: "estadisticas.presentismo",
-    header: sortableHeader("Asistencia"),
-  });
+  if (props.showTipoVoto) {
+    cols.push({
+      id: "tipoVoto",
+      accessorKey: "tipoVoto",
+      header: sortableHeader("Voto"),
+    });
+  }
+
+  if (props.showPresentismo) {
+    cols.push({
+      id: "presentismo",
+      accessorKey: "estadisticas.presentismo",
+      header: sortableHeader("Asistencia"),
+    });
+  }
 
   return cols;
 });
@@ -409,7 +422,15 @@ function hrefForGroup(group: SenadoresGroupedTableRow) {
                     {{ (nested.original as Senador).partido || "—" }}
                   </UBadge>
                 </template>
-                <template #presentismo-cell="{ row: nested }">
+                <template v-if="showTipoVoto" #tipoVoto-cell="{ row: nested }">
+                  <TipoVotoLabel
+                    :tipo="(nested.original as Senador).tipoVoto"
+                  />
+                </template>
+                <template
+                  v-if="showPresentismo"
+                  #presentismo-cell="{ row: nested }"
+                >
                   <UBadge
                     :color="
                       ((nested.original as Senador).estadisticas

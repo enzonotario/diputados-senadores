@@ -111,6 +111,9 @@ const groupsByResultado = computed(() =>
 const groupsByPartido = computed(() =>
   groupSenadoresBy(displayed.value, "partido"),
 );
+const groupsByProvinciaMap = computed(() =>
+  groupSenadoresBy(displayedForMap.value, "provincia"),
+);
 
 const provinciasMembersLayout = useProvinciasMembersLayout();
 
@@ -405,17 +408,14 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           </div>
 
           <div class="min-w-0 flex-1 space-y-3">
-            <UCard
+            <SenadoresGroupedTable
               v-if="!provinciaFilter.length"
-              :ui="{ body: 'flex min-h-[28rem] items-center justify-center' }"
-            >
-              <UEmpty
-                icon="i-lucide-map-pinned"
-                title="Seleccioná una provincia"
-                description="Usá el select o el mapa (clic / Ctrl+clic) para ver senadores."
-                variant="naked"
-              />
-            </UCard>
+              group-by="provincia"
+              :groups="groupsByProvinciaMap"
+              :show-presentismo="false"
+              show-tipo-voto
+              empty-message="No hay senadores para mostrar con los filtros actuales."
+            />
             <template v-else>
               <div
                 class="flex flex-wrap items-center justify-between gap-3"

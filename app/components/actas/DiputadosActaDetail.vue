@@ -111,6 +111,9 @@ const groupsByResultado = computed(() =>
 const groupsByBloque = computed(() =>
   groupDiputadosBy(displayed.value, "bloque"),
 );
+const groupsByProvinciaMap = computed(() =>
+  groupDiputadosBy(displayedForMap.value, "provincia"),
+);
 
 const provinciasMembersLayout = useProvinciasMembersLayout();
 
@@ -420,17 +423,14 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           </div>
 
           <div class="min-w-0 flex-1 space-y-3">
-            <UCard
+            <DiputadosGroupedTable
               v-if="!provinciaFilter.length"
-              :ui="{ body: 'flex min-h-[28rem] items-center justify-center' }"
-            >
-              <UEmpty
-                icon="i-lucide-map-pinned"
-                title="Seleccioná una provincia"
-                description="Usá el select o el mapa (clic / Ctrl+clic) para ver diputados."
-                variant="naked"
-              />
-            </UCard>
+              group-by="provincia"
+              :groups="groupsByProvinciaMap"
+              :show-presentismo="false"
+              show-tipo-voto
+              empty-message="No hay diputados para mostrar con los filtros actuales."
+            />
             <template v-else>
               <div
                 class="flex flex-wrap items-center justify-between gap-3"

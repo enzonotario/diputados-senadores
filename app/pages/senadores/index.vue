@@ -382,17 +382,13 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
         </div>
 
         <div class="min-w-0 flex-1">
-          <UCard
+          <SenadoresGroupedTable
             v-if="!provinciaFilter.length"
-            :ui="{ body: 'flex min-h-[28rem] items-center justify-center' }"
-          >
-            <UEmpty
-              icon="i-lucide-map-pinned"
-              title="Seleccioná una provincia"
-              description="Usá el select o el mapa (clic / Ctrl+clic) para ver senadores."
-              variant="naked"
-            />
-          </UCard>
+            group-by="provincia"
+            :groups="groupsByProvinciaMap"
+            show-presentismo
+            :empty-message="emptyMessage"
+          />
           <template v-else>
             <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0 space-y-0.5">

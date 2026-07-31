@@ -258,23 +258,34 @@ useChamberSeo({
         v-if="pendingMembers || pendingPartidos"
         variant="list"
       />
-      <div v-else class="flex flex-col gap-6">
-        <AnalisisProvinciasCompositionGeoMap
-          :members="compositionMembers"
-          :categories="categories"
-          :catalog="provincias"
-          :selected="provinciaFilter"
-          members-label="senadores"
-          title="Partidos por provincia"
-          description="Cada torta muestra la proporción de partidos entre los senadores del período en esa provincia. Clic = una · Ctrl/⌘+clic = sumar o quitar."
-          @select="(names) => (provinciaFilter = names)"
-        />
-        <SenadoresGroupedTable
-          group-by="provincia"
-          :groups="groupsByProvincia"
-          show-presentismo
-          empty-message="No hay senadores en el período para mostrar."
-        />
+      <div
+        v-else
+        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6"
+      >
+        <div
+          class="w-full sm:w-[min(42%,28rem)] sm:shrink-0 sm:sticky sm:top-[calc(var(--ui-header-height)+1rem)] sm:self-start"
+        >
+          <AnalisisProvinciasCompositionGeoMap
+            :members="compositionMembers"
+            :categories="categories"
+            :catalog="provincias"
+            :selected="provinciaFilter"
+            members-label="senadores"
+            height="min(60vh, 28rem)"
+            title="Partidos por provincia"
+            description="Cada torta muestra la proporción de partidos entre los senadores del período en esa provincia. Clic = una · Ctrl/⌘+clic = sumar o quitar."
+            @select="(names) => (provinciaFilter = names)"
+          />
+        </div>
+
+        <div class="min-w-0 flex-1">
+          <SenadoresGroupedTable
+            group-by="provincia"
+            :groups="groupsByProvincia"
+            show-presentismo
+            empty-message="No hay senadores en el período para mostrar."
+          />
+        </div>
       </div>
     </template>
   </div>

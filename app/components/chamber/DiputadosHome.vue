@@ -10,6 +10,10 @@ import {
   filterMembersByPeriodo,
   recentPeriodoKeys,
 } from "@/utils/periodoLegislativo";
+import {
+  matchMemberByPresidenteNombre,
+  modePresidenteNombre,
+} from "@/utils/actaPresidente";
 
 /** Hemiciclo / recientes: período vigente. Charts overview: últimos N. */
 const HOME_CHART_PERIODS = 5;
@@ -59,6 +63,7 @@ const { data: actasData, pending: pendingActas } = useAsyncData(
       fecha: a.fecha,
       resultado: a.resultado,
       periodo: a.periodo,
+      presidente: a.presidente,
       votosAfirmativos: a.votosAfirmativos,
       votosNegativos: a.votosNegativos,
       abstenciones: a.abstenciones,
@@ -92,6 +97,20 @@ const bloqueColores = computed(() =>
 const actasInPeriodo = computed(() =>
   filterActasByPeriodo(actasData.value || [], homePeriodo.value, "diputados"),
 );
+
+/** Presidente más frecuente del período (p. ej. Menem en 142–144). */
+const homePresident = computed(() => {
+  const nombre = modePresidenteNombre(actasInPeriodo.value);
+  const matched = matchMemberByPresidenteNombre(
+    diputadosInPeriodo.value,
+    nombre,
+  );
+  if (!matched) return null;
+  return {
+    ...matched,
+    tipoVoto: "presidente",
+  };
+});
 
 const actasOverview = computed(() =>
   filterActasByPeriodo(
@@ -169,6 +188,7 @@ const actasRecientes = computed(() => {
           <LazyDiputadosChart
             :diputados="diputadosInPeriodo"
             :bloque-colores="bloqueColores"
+            :president="homePresident"
           />
           <template #fallback>
             <div

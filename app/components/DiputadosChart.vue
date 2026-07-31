@@ -1,26 +1,35 @@
 <script setup lang="ts">
 import type { Diputado } from "@/lib/types-diputados";
 import { bloquePath } from "@/utils/bloque";
+import { getVotoTipoConfig } from "@/utils/votoTipo";
 
 const props = withDefaults(
   defineProps<{
     diputados: Diputado[];
     bloqueColores: Record<string, string>;
+    /** Presidente del período (asiento central). */
+    president?: Diputado | null;
     /** Fotos en asientos (desactivar solo si hace falta por peso de red). */
     showPhotos?: boolean;
   }>(),
-  { showPhotos: true },
+  { showPhotos: true, president: null },
 );
 
 const bloquesCount = computed(
   () => new Set(props.diputados.map((d) => d.bloque)).size,
 );
+
+const groupColors = computed(() => ({
+  ...props.bloqueColores,
+  presidente: getVotoTipoConfig("presidente").color,
+}));
 </script>
 
 <template>
   <HemicicloChart
     :diputados="diputados"
-    :group-colors="bloqueColores"
+    :president="president"
+    :group-colors="groupColors"
     group-by="bloque"
     member-base-path="/diputados"
     :group-to="(key) => bloquePath(key)"

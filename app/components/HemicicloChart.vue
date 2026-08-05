@@ -130,7 +130,17 @@ const groupsOrdenados = computed(() => {
 });
 
 // --- Geometría del hemiciclo (escala según cantidad de bancas) ---
-const isDesktop = useMediaQuery("(min-width: 768px)");
+// Ancho del contenedor (no solo viewport): el sticky del Poroteo es angosto y el
+// zoom del browser cambia los CSS px de min-width, lo que rompía el layout.
+const chartRootRef = ref<HTMLElement | null>(null);
+const { width: chartWidth } = useElementSize(chartRootRef);
+const isDesktop = computed(() => {
+  const w = chartWidth.value;
+  if (w > 0) return w >= 420;
+  // Antes del primer layout: asumir desktop para no saltar de geom chica → grande.
+  if (!import.meta.client) return true;
+  return window.matchMedia("(min-width: 768px)").matches;
+});
 
 const geom = computed(() => {
   const n = Math.max(1, items.value.length);
@@ -143,16 +153,19 @@ const geom = computed(() => {
   const W = desktop ? (compact ? 1080 : 1280) : compact ? 880 : 1000;
   const H = desktop ? (compact ? 580 : 680) : compact ? 440 : 500;
   const cx = W / 2;
-  const cy = H - 8;
+
+  const maxDot = desktop ? (compact ? 30 : 17) : compact ? 22 : 13;
+  const minDot = desktop ? (compact ? 18 : 14) : compact ? 14 : 11;
+  // cy cerca de H-8 hacía que las bancas del borde inferior pintaran fuera del
+  // viewBox (SVG con overflow:visible) y se montaran sobre la leyenda/contadores.
+  const bottomPad = maxDot + 18;
+  const cy = H - bottomPad;
 
   const angleMargin =
     (((desktop ? (compact ? 6 : 4) : 8) * Math.PI) / 180);
   const aLeft = Math.PI - angleMargin;
   const aRight = angleMargin;
   const sweep = aLeft - aRight;
-
-  const maxDot = desktop ? (compact ? 30 : 17) : compact ? 22 : 13;
-  const minDot = desktop ? (compact ? 18 : 14) : compact ? 14 : 11;
 
   type Geom = {
     W: number;
@@ -571,11 +584,15 @@ function tooltipColor(m: HemicicloMember): string {
   <div>
     <slot name="header" />
 
-    <div class="relative mx-auto w-full max-w-3xl md:max-w-4xl">
+    <div
+      ref="chartRootRef"
+      class="relative mx-auto w-full max-w-3xl md:max-w-4xl overflow-hidden"
+      :style="{ aspectRatio: `${W} / ${H}` }"
+    >
       <svg
         :viewBox="`0 0 ${W} ${H}`"
-        class="w-full"
-        style="overflow: visible"
+        class="absolute inset-0 block size-full overflow-hidden"
+        preserveAspectRatio="xMidYMid meet"
         @mouseleave="onLeave"
       >
         <path

@@ -51,6 +51,15 @@ const BY_TIPO: Record<string, VotoTipoConfig> = {
     color: "#3b82f6",
   },
   ausente: DEFAULT_CONFIG,
+  indeciso: {
+    key: "indeciso",
+    label: "Indeciso",
+    icon: "lucide:circle-help",
+    iconClass: "text-amber-500",
+    textClass: "text-amber-900 dark:text-amber-200",
+    haloClass: "bg-amber-400",
+    color: "#fbbf24",
+  },
   presidente: {
     key: "presidente",
     label: "Presidió",
@@ -69,6 +78,14 @@ export const VOTO_TIPO_ORDER = [
   "ausente",
 ] as const;
 
+/** Ciclo de asignación en el Poroteo (sin ausente). */
+export const POROTEO_VOTO_ORDER = [
+  "indeciso",
+  "afirmativo",
+  "negativo",
+  "abstencion",
+] as const;
+
 /** Mapea votos crudos del Senado (si/no/…) al vocabulario UI. */
 export function normalizeVotoTipo(tipo?: string | null) {
   const raw = (tipo || "ausente").toLowerCase().trim();
@@ -76,6 +93,7 @@ export function normalizeVotoTipo(tipo?: string | null) {
   if (raw === "no" || raw === "negativo") return "negativo";
   if (raw === "abstencion" || raw === "abstención") return "abstencion";
   if (raw === "ausente") return "ausente";
+  if (raw === "indeciso" || raw === "indefinido") return "indeciso";
   if (raw === "presidente" || raw.includes("presid")) return "presidente";
   if (raw.includes("lev") || raw.includes("no emite")) return "ausente";
   return raw || "ausente";

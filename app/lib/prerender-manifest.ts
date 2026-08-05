@@ -92,7 +92,7 @@ export async function collectChamberPrerenderRoutes(
   chamber: ChamberId,
 ): Promise<string[]> {
   const cutoff = actasSsgCutoff();
-  const routes = new Set<string>(["/", "/actas"]);
+  const routes = new Set<string>(["/", "/actas", "/poroteo"]);
 
   if (chamber === "diputados") {
     routes.add("/diputados");

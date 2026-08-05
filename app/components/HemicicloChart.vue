@@ -34,6 +34,13 @@ const props = withDefaults(
     showLegend?: boolean;
     /** Fotos en los asientos (caro en home: ~257 requests). Default true. */
     showPhotos?: boolean;
+    /**
+     * Si true, el click emite `select` en lugar de navegar a la ficha.
+     * Útil para el Poroteo (asignar voto).
+     */
+    editable?: boolean;
+    /** Forzar paleta clara/oscura (p. ej. card de export). */
+    forcedColorMode?: "light" | "dark" | null;
     groupTo?: (key: string) => string | null | undefined;
     /** Base path para ficha: /diputados | /senadores */
     memberBasePath?: string;
@@ -43,13 +50,23 @@ const props = withDefaults(
     clickable: true,
     showLegend: true,
     showPhotos: true,
+    editable: false,
+    forcedColorMode: null,
     memberBasePath: "/senadores",
     president: null,
   },
 );
 
+const emit = defineEmits<{
+  select: [member: HemicicloMember];
+}>();
+
 const colorMode = useColorMode();
-const isDark = computed(() => colorMode.value === "dark");
+const isDark = computed(() => {
+  if (props.forcedColorMode === "dark") return true;
+  if (props.forcedColorMode === "light") return false;
+  return colorMode.value === "dark";
+});
 const uid = useId();
 
 const items = computed(
@@ -509,6 +526,10 @@ function presidentOpacity(): number {
 }
 
 function onClick(d: HemicicloMember) {
+  if (props.editable) {
+    emit("select", d);
+    return;
+  }
   if (!props.clickable) return;
   navigateTo(`${props.memberBasePath}/${d.id}`);
 }
@@ -599,7 +620,9 @@ function tooltipColor(m: HemicicloMember): string {
         <g
           v-for="(p, i) in puntos"
           :key="i"
-          :class="clickable ? 'cursor-pointer' : 'cursor-default'"
+          :class="
+            editable || clickable ? 'cursor-pointer' : 'cursor-default'
+          "
           :style="{
             opacity: seatOpacity(p.member),
             transition: 'opacity 0.15s ease',
@@ -651,7 +674,9 @@ function tooltipColor(m: HemicicloMember): string {
         <!-- Presidente: banca central (podio) -->
         <g
           v-if="presidentSeat"
-          :class="clickable ? 'cursor-pointer' : 'cursor-default'"
+          :class="
+            editable || clickable ? 'cursor-pointer' : 'cursor-default'
+          "
           :style="{
             opacity: presidentOpacity(),
             transition: 'opacity 0.15s ease',

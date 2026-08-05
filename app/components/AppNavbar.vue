@@ -47,6 +47,11 @@ const navLinks = computed(() => {
       active: path.startsWith("/actas"),
     },
     {
+      label: "Poroteo",
+      to: withPeriodo("/poroteo"),
+      active: path.startsWith("/poroteo"),
+    },
+    {
       label: c.membersLabel,
       to: withPeriodo(c.membersPath),
       active: membersActive,
@@ -95,6 +100,12 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
       icon: "i-lucide-file-text",
       to: "/actas",
       active: path.startsWith("/actas"),
+    },
+    {
+      label: "Poroteo",
+      icon: "i-lucide-pie-chart",
+      to: "/poroteo",
+      active: path.startsWith("/poroteo"),
     },
     {
       label: c.membersLabel,

@@ -32,7 +32,7 @@ const props = defineProps<{
   membersLabel: string;
   memberBasePath: string;
   pending?: boolean;
-  /** Storage key suffix (chamber + periodo). */
+  /** Storage key suffix (chamber). */
   storageKey: string;
 }>();
 
@@ -778,7 +778,7 @@ function groupLabel(key: string) {
           </UCard>
         </div>
 
-        <DataTableCard v-else>
+        <DataTableCard v-else :show-periodo-badge="false">
           <UTable
             v-model:sorting="sorting"
             v-model:column-pinning="columnPinning"
@@ -788,7 +788,7 @@ function groupLabel(key: string) {
             :ui="{
               base: 'w-full min-w-[48rem]',
             }"
-            empty="No hay legisladores en el período vigente."
+            empty="No hay legisladores vigentes."
           >
             <template #foto-cell="{ row }">
               <span

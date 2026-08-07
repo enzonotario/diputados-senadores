@@ -1,6 +1,6 @@
 # Cómo votan Diputados y Senadores
 
-Dos sitios para mirar, en claro, cómo vota el Congreso argentino:
+Dos sitios para mirar, en claro, cómo vota el Congreso Argentino:
 
 - [diputados.argentinadatos.com](https://diputados.argentinadatos.com) — Cámara de Diputados
 - [senadores.argentinadatos.com](https://senadores.argentinadatos.com) — Senado

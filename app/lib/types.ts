@@ -153,6 +153,10 @@ export interface Acta {
   ausentes: number;
   amn?: number;
   resultado: string;
+  /** Tipo de votación del PDF (p. ej. NOMINAL). */
+  votacion?: string | null;
+  /** Presidente de la sesión según cabecera del PDF. */
+  presidente?: string | null;
   votos: Voto[];
   observaciones?: string[];
   votoSenador?: Voto;
@@ -160,7 +164,6 @@ export interface Acta {
   /** Campos opcionales para UI compartida */
   periodo?: string;
   reunion?: string;
-  presidente?: string;
 }
 
 export type SortDirection = "asc" | "desc";

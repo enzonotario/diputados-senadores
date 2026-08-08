@@ -17,6 +17,17 @@ const ARGENTINA_DATE_FORMATTER = new Intl.DateTimeFormat("es-AR", {
   timeZone: "America/Argentina/Buenos_Aires",
 });
 
+const ARGENTINA_DATETIME_FORMATTER = new Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: "America/Argentina/Buenos_Aires",
+});
+
 /** Fecha visible en toda la UI: `dd/MM/yyyy` (calendario argentino). */
 export function formatDate(
   dateString: string | null | undefined,
@@ -44,6 +55,38 @@ export function formatDate(
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return fallback;
   return ARGENTINA_DATE_FORMATTER.format(date);
+}
+
+/** Fecha+hora argentina: `dd/MM/yyyy HH:mm:ss` (como en el PDF del Senado). */
+export function formatDateTime(
+  dateString: string | null | undefined,
+  fallback = "N/A",
+): string {
+  const raw = String(dateString || "").trim();
+  if (!raw) return fallback;
+
+  const ar = raw.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
+  );
+  if (ar) {
+    const date = `${ar[1]!.padStart(2, "0")}/${ar[2]!.padStart(2, "0")}/${ar[3]}`;
+    if (!ar[4]) return date;
+    const hh = ar[4]!.padStart(2, "0");
+    const mm = ar[5]!;
+    const ss = (ar[6] || "00").padStart(2, "0");
+    return `${date} ${hh}:${mm}:${ss}`;
+  }
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return formatDate(raw, fallback);
+
+  // Intl puede usar coma u otros separadores; normalizar a PDF-like.
+  const parts = ARGENTINA_DATETIME_FORMATTER.formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value || "";
+  const d = `${get("day")}/${get("month")}/${get("year")}`;
+  const t = `${get("hour")}:${get("minute")}:${get("second")}`;
+  return t.includes(":") ? `${d} ${t}` : d;
 }
 
 export function formatDateRange(

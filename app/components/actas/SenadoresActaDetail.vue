@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Senador, FilterConfig, Voto } from "@/lib/types";
-import { filterSenadores, formatDate, getUniqueValues } from "@/lib/utils";
+import { filterSenadores, formatDate, formatDateTime, getUniqueValues } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { groupSenadoresBy } from "@/utils/groupSenadoresBy";
 import {
@@ -212,51 +212,120 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
         header: 'border-0 p-3! pb-0!'
       }" class="">
         <template #header>
-          <div
-            class="flex flex-col md:flex-row md:justify-between md:items-start gap-3"
-          >
-            <div>
-              <h1 class="text-lg md:text-2xl font-semibold">
-                {{ acta.titulo }}
-              </h1>
-            </div>
-            <div class="flex flex-col justify-center items-center gap-0.5">
-              <span class="text-xs text-gray-600 dark:text-gray-300"
-                >Resultado</span
-              >
-              <ResultadoBadge
-                :resultado="acta.resultado"
-                class="text-base py-1 px-3"
-              />
-            </div>
+          <div class="flex flex-col gap-2">
+            <h1 class="text-lg md:text-2xl font-semibold">
+              {{ acta.titulo }}
+            </h1>
           </div>
         </template>
 
-        <dl class="flex flex-wrap gap-3 sm:gap-6">
-          <div class="flex flex-col">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Acta N°</dt>
-            <dd>{{ acta.numeroActa || "—" }}</dd>
+        <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div v-if="acta.proyecto" class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Proyecto</dt>
+            <dd class="text-sm font-medium break-words">{{ acta.proyecto }}</dd>
           </div>
-          <div class="flex flex-col">
+          <div v-if="acta.descripcion" class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Descripción</dt>
+            <dd class="text-sm font-medium break-words">
+              {{ acta.descripcion }}
+            </dd>
+          </div>
+          <div v-if="acta.quorumTipo" class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Tipo quórum</dt>
+            <dd class="text-sm font-medium">{{ acta.quorumTipo }}</dd>
+          </div>
+          <div v-if="acta.mayoria" class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Mayoría</dt>
+            <dd class="text-sm font-medium">{{ acta.mayoria }}</dd>
+          </div>
+          <div v-if="acta.votacion" class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Votación</dt>
+            <dd class="text-sm font-medium">{{ acta.votacion }}</dd>
+          </div>
+          <div
+            v-if="acta.miembros != null && acta.miembros > 0"
+            class="flex flex-col min-w-0"
+          >
+            <dt class="text-sm text-gray-600 dark:text-gray-300">
+              Miembros del cuerpo
+            </dt>
+            <dd class="text-sm font-medium tabular-nums">{{ acta.miembros }}</dd>
+          </div>
+          <div v-if="acta.presidente" class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Presidente</dt>
+            <dd class="text-sm font-medium break-words">
+              {{ acta.presidente }}
+            </dd>
+          </div>
+          <div class="flex flex-col min-w-0">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Fecha</dt>
-            <dd class="inline-flex items-center gap-1">
-              {{ formatDate(acta.fecha) }}
+            <dd class="inline-flex items-center gap-1 text-sm font-medium">
+              <span class="tabular-nums">{{ formatDateTime(acta.fecha) }}</span>
               <FuentePdfButton :href="pdfHref" />
             </dd>
           </div>
-          <div v-if="acta.proyecto" class="flex flex-col">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Proyecto</dt>
-            <dd>{{ acta.proyecto }}</dd>
-          </div>
-          <div v-if="acta.mayoria" class="flex flex-col">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Mayoría</dt>
-            <dd>{{ acta.mayoria }}</dd>
-          </div>
-          <div v-if="acta.quorumTipo" class="flex flex-col">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Tipo de quórum</dt>
-            <dd>{{ acta.quorumTipo }}</dd>
+          <div class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Acta</dt>
+            <dd class="text-sm font-medium tabular-nums">
+              {{ acta.numeroActa || "—" }}
+            </dd>
           </div>
         </dl>
+
+        <div
+          class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3"
+        >
+          <div
+            class="rounded-lg border border-default px-3 py-2 grid grid-cols-3 gap-2 text-center"
+          >
+            <div>
+              <p class="text-xs text-muted">Presentes</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.presentes ?? "—" }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Ausentes</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.ausentes ?? "—" }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">AMN</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.amn ?? "—" }}
+              </p>
+            </div>
+          </div>
+          <div
+            class="rounded-lg border border-default px-3 py-2 grid grid-cols-4 gap-2 text-center"
+          >
+            <div>
+              <p class="text-xs text-muted">Afirmativos</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.votosAfirmativos }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Negativos</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.votosNegativos }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Abstenciones</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.abstenciones }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Resultado</p>
+              <div class="flex justify-center pt-0.5">
+                <ResultadoBadge :resultado="acta.resultado" />
+              </div>
+            </div>
+          </div>
+        </div>
       </UCard>
 
       <ClientOnly>

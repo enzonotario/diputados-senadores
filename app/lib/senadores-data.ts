@@ -210,6 +210,9 @@ function mapActa(raw: any): Acta {
     ausentes: raw.ausentes ?? 0,
     amn: raw.amn ?? 0,
     resultado: normalizeResultado(raw.resultado),
+    votacion: raw.votacion != null ? String(raw.votacion).trim() || null : null,
+    presidente:
+      raw.presidente != null ? String(raw.presidente).trim() || null : null,
     observaciones: raw.observaciones || [],
     periodo,
     votos: (raw.votos || []).map(

@@ -11,6 +11,11 @@ import {
   formatPeriodoLabel,
   recentPeriodoKeys,
 } from "@/utils/periodoLegislativo";
+import {
+  matchMemberByPresidenteNombre,
+  modePresidenteNombre,
+  parsePresidenteNombre,
+} from "@/utils/actaPresidente";
 
 /** Hemiciclo / recientes: período vigente. Charts overview: últimos N. */
 const HOME_CHART_PERIODS = 5;
@@ -39,6 +44,7 @@ const { data: membersData, pending: pendingMembers } = useAsyncData(
     return (res.members || []).map((m) => ({
       id: m.id,
       nombre: m.nombre,
+      apellido: m.apellido,
       nombreCompleto: m.nombreCompleto,
       provincia: m.provincia,
       partido: m.partido,
@@ -63,6 +69,7 @@ const { data: actasData, pending: pendingActas } = useAsyncData(
       fecha: a.fecha,
       resultado: a.resultado,
       periodo: a.periodo,
+      presidente: a.presidente,
       votosAfirmativos: a.votosAfirmativos,
       votosNegativos: a.votosNegativos,
       abstenciones: a.abstenciones,
@@ -74,8 +81,31 @@ const { data: actasData, pending: pendingActas } = useAsyncData(
   { lazy: true },
 );
 
+const { data: presidenciaData, pending: pendingPresidencia } = useAsyncData(
+  "senadores-presidencia",
+  () =>
+    localFetch<{
+      presidencia: {
+        nombre: string;
+        cargo: string | null;
+        periodoInicio: string | null;
+        periodoFin: string | null;
+        foto: string | null;
+        email: string | null;
+        telefono: string | null;
+        direccion: string | null;
+        fuente: string | null;
+      } | null;
+    }>("/api/presidencia"),
+  { lazy: true },
+);
+
 const pendingHome = computed(
-  () => pendingMembers.value || pendingActas.value || pendingPeriodos.value,
+  () =>
+    pendingMembers.value ||
+    pendingActas.value ||
+    pendingPeriodos.value ||
+    pendingPresidencia.value,
 );
 
 const senadoresInPeriodo = computed(() =>
@@ -98,6 +128,53 @@ const partidoColores = computed(() =>
 const actasInPeriodo = computed(() =>
   filterActasByPeriodo(actasData.value || [], homePeriodo.value, "senadores"),
 );
+
+/**
+ * Presidente del Senado desde `/v1/senado/presidencia` (vía mini-API).
+ * Fallback: nombre más frecuente en actas del período (provisional).
+ */
+const homePresident = computed(() => {
+  const fromApi = presidenciaData.value?.presidencia || null;
+  if (fromApi?.nombre) {
+    const matched = matchMemberByPresidenteNombre(
+      senadoresInPeriodo.value,
+      fromApi.nombre,
+    );
+    if (matched) {
+      return {
+        ...matched,
+        foto: fromApi.foto || matched.foto,
+        tipoVoto: "presidente" as const,
+      };
+    }
+    const parsed = parsePresidenteNombre(fromApi.nombre);
+    return {
+      id: "",
+      nombreCompleto: parsed.nombreCompleto || fromApi.nombre,
+      nombre: parsed.nombre,
+      apellido: parsed.apellido,
+      foto: fromApi.foto,
+      tipoVoto: "presidente" as const,
+    };
+  }
+
+  const nombre = modePresidenteNombre(actasInPeriodo.value);
+  const matched = matchMemberByPresidenteNombre(
+    senadoresInPeriodo.value,
+    nombre,
+  );
+  if (matched) return { ...matched, tipoVoto: "presidente" as const };
+  if (!nombre) return null;
+  const parsed = parsePresidenteNombre(nombre);
+  return {
+    id: "",
+    nombreCompleto: parsed.nombreCompleto || nombre,
+    nombre: parsed.nombre,
+    apellido: parsed.apellido,
+    foto: null,
+    tipoVoto: "presidente" as const,
+  };
+});
 
 const actasOverview = computed(() =>
   filterActasByPeriodo(
@@ -175,6 +252,7 @@ const actasRecientes = computed(() => {
           <LazySenadoresChart
             :senadores="senadoresInPeriodo"
             :partido-colores="partidoColores"
+            :president="homePresident"
           />
           <template #fallback>
             <div

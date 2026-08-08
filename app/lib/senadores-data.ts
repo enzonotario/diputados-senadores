@@ -111,6 +111,7 @@ let _viajesConteo12m = createSingleflight<Record<string, number>>();
 let _viajes12mRaw = createSingleflight<Viajes12mRaw>();
 let _viajesExplore = createSingleflight<ViajesExplorePayload>();
 let _comisiones = createSingleflight<import("./types").Comision[]>();
+let _presidencia = createSingleflight<import("./types").PresidenciaSenado | null>();
 
 function assertServerData() {
   if (import.meta.client) {
@@ -131,6 +132,7 @@ export function clearSenadoresDataCache() {
   _viajes12mRaw.clear();
   _viajesExplore.clear();
   _comisiones.clear();
+  _presidencia.clear();
 }
 
 function votoMatchesSenador(voto: Voto, senador: Senador): boolean {
@@ -856,5 +858,45 @@ export async function getComisionById(
   } catch {
     return null;
   }
+}
+
+/** Presidencia actual del Senado (`/v1/senado/presidencia`). */
+export async function getPresidencia(): Promise<
+  import("./types").PresidenciaSenado | null
+> {
+  assertServerData();
+  return _presidencia.get(async () => {
+    const origin = getApiOrigin();
+    try {
+      const raw = await $fetch<any>(`${origin}/v1/senado/presidencia`);
+      const nombre = String(raw?.nombre || "").trim();
+      if (!nombre) return null;
+      return {
+        nombre,
+        cargo: raw?.cargo != null ? String(raw.cargo).trim() || null : null,
+        periodoInicio:
+          raw?.periodoInicio != null
+            ? String(raw.periodoInicio).trim() || null
+            : null,
+        periodoFin:
+          raw?.periodoFin != null
+            ? String(raw.periodoFin).trim() || null
+            : null,
+        foto: raw?.foto != null ? String(raw.foto).trim() || null : null,
+        email: raw?.email != null ? String(raw.email).trim() || null : null,
+        telefono:
+          raw?.telefono != null ? String(raw.telefono).trim() || null : null,
+        direccion:
+          raw?.direccion != null ? String(raw.direccion).trim() || null : null,
+        curriculum:
+          raw?.curriculum != null
+            ? String(raw.curriculum).trim() || null
+            : null,
+        fuente: raw?.fuente != null ? String(raw.fuente).trim() || null : null,
+      };
+    } catch {
+      return null;
+    }
+  });
 }
 

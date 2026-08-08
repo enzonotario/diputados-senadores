@@ -544,6 +544,8 @@ function onClick(d: HemicicloMember) {
     return;
   }
   if (!props.clickable) return;
+  // Presidente del Senado (VP) no tiene ficha de senador.
+  if (!d.id) return;
   navigateTo(`${props.memberBasePath}/${d.id}`);
 }
 
@@ -692,7 +694,9 @@ function tooltipColor(m: HemicicloMember): string {
         <g
           v-if="presidentSeat"
           :class="
-            editable || clickable ? 'cursor-pointer' : 'cursor-default'
+            editable || (clickable && presidentSeat.member.id)
+              ? 'cursor-pointer'
+              : 'cursor-default'
           "
           :style="{
             opacity: presidentOpacity(),

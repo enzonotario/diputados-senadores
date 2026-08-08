@@ -32,6 +32,40 @@ function normNombre(value: string): string {
     .trim();
 }
 
+/** Parsea "Apellido, Nombre" o "Nombre Apellido(s)". */
+export function parsePresidenteNombre(raw: string): {
+  apellido: string;
+  nombre: string;
+  nombreCompleto: string;
+} {
+  const value = String(raw || "").trim().replace(/\s+/g, " ");
+  if (!value) return { apellido: "", nombre: "", nombreCompleto: "" };
+
+  if (value.includes(",")) {
+    const [apellidoRaw, ...rest] = value.split(",");
+    const apellido = (apellidoRaw || "").trim();
+    const nombre = rest.join(",").trim();
+    return {
+      apellido,
+      nombre,
+      nombreCompleto: nombre ? `${apellido}, ${nombre}` : apellido,
+    };
+  }
+
+  const parts = value.split(" ");
+  if (parts.length >= 2) {
+    const apellido = parts[parts.length - 1] || "";
+    const nombre = parts.slice(0, -1).join(" ");
+    return {
+      apellido,
+      nombre,
+      nombreCompleto: `${apellido}, ${nombre}`,
+    };
+  }
+
+  return { apellido: value, nombre: "", nombreCompleto: value };
+}
+
 type MemberLike = {
   id: string;
   nombreCompleto?: string | null;
@@ -46,29 +80,34 @@ export function matchMemberByPresidenteNombre<T extends MemberLike>(
 ): T | null {
   const raw = String(presidenteNombre || "").trim();
   if (!raw || !members.length) return null;
-  const target = normNombre(raw);
+  const parsed = parsePresidenteNombre(raw);
+  const target = normNombre(parsed.nombreCompleto || raw);
+  const targetAlt = normNombre(`${parsed.nombre} ${parsed.apellido}`.trim());
 
   for (const m of members) {
     const full = normNombre(
       m.nombreCompleto || `${m.apellido || ""}, ${m.nombre || ""}`,
     );
-    if (full && full === target) return m;
+    if (full && (full === target || full === targetAlt)) return m;
   }
 
-  // Fallback: apellido + primer token del nombre
-  const [apellidoRaw, ...rest] = raw.split(",");
-  const apellido = normNombre(apellidoRaw || "");
-  const nombreHead = normNombre(rest.join(",")).split(" ")[0] || "";
+  const apellido = normNombre(parsed.apellido);
+  const nombreHead = normNombre(parsed.nombre).split(" ")[0] || "";
   if (!apellido) return null;
 
   for (const m of members) {
-    const mApellido = normNombre(m.apellido || m.nombreCompleto?.split(",")[0] || "");
+    const mApellido = normNombre(
+      m.apellido || m.nombreCompleto?.split(",")[0] || "",
+    );
     if (mApellido !== apellido) continue;
     if (!nombreHead) return m;
     const mNombre = normNombre(
       m.nombre || m.nombreCompleto?.split(",")[1] || "",
     );
-    if (mNombre.startsWith(nombreHead) || nombreHead.startsWith(mNombre.split(" ")[0] || "")) {
+    if (
+      mNombre.startsWith(nombreHead) ||
+      nombreHead.startsWith(mNombre.split(" ")[0] || "")
+    ) {
       return m;
     }
   }

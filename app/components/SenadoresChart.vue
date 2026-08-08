@@ -1,26 +1,35 @@
 <script setup lang="ts">
 import type { Senador } from "@/lib/types";
 import { partidoPath } from "@/utils/partido";
+import { getVotoTipoConfig } from "@/utils/votoTipo";
 
 const props = withDefaults(
   defineProps<{
     senadores: Senador[];
     partidoColores: Record<string, string>;
+    /** Presidente del Senado (asiento central). */
+    president?: Senador | Record<string, unknown> | null;
     /** Fotos en asientos (desactivar solo si hace falta por peso de red). */
     showPhotos?: boolean;
   }>(),
-  { showPhotos: true },
+  { showPhotos: true, president: null },
 );
 
 const partidosCount = computed(
   () => new Set(props.senadores.map((d) => d.partido)).size,
 );
+
+const groupColors = computed(() => ({
+  ...props.partidoColores,
+  presidente: getVotoTipoConfig("presidente").color,
+}));
 </script>
 
 <template>
   <HemicicloChart
     :senadores="senadores"
-    :group-colors="partidoColores"
+    :president="(president as any) || null"
+    :group-colors="groupColors"
     group-by="partido"
     member-base-path="/senadores"
     :group-to="(key) => partidoPath(key)"

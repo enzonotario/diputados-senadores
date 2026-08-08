@@ -126,6 +126,20 @@ export interface Comision {
   integrantes: ComisionIntegrante[]
 }
 
+/** Presidente actual del Senado (`/v1/senado/presidencia`). */
+export interface PresidenciaSenado {
+  nombre: string
+  cargo: string | null
+  periodoInicio: string | null
+  periodoFin: string | null
+  foto: string | null
+  email: string | null
+  telefono: string | null
+  direccion: string | null
+  curriculum: string | null
+  fuente: string | null
+}
+
 export interface Voto {
   /** Nombre tal como viene en el acta */
   senador: string;

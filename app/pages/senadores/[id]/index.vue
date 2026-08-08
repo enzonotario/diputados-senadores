@@ -6,7 +6,6 @@ import type { CareerCargo } from "@/utils/memberCareer";
 import { filterActasByPeriodo } from "@/utils/periodoLegislativo";
 import type { PeriodoInfo } from "@/utils/periodoLegislativo";
 import { memberVoteStatsFromActas } from "@/utils/chartSeries";
-import { actaPdfUrl } from "@/utils/staticPdf";
 
 type HistoryRow = {
   id: string;
@@ -270,14 +269,9 @@ useChamberSeo(() => {
           :on-select="onRowSelect"
         >
           <template #fecha-cell="{ row }">
-            <div class="flex items-center gap-1">
-              <span>{{
-                formatDate((row.original as HistoryRow).fecha || "")
-              }}</span>
-              <FuentePdfButton
-                :href="actaPdfUrl('senadores', (row.original as HistoryRow).id)"
-              />
-            </div>
+            <span>{{
+              formatDate((row.original as HistoryRow).fecha || "")
+            }}</span>
           </template>
           <template #titulo-cell="{ row }">
             <NuxtLink

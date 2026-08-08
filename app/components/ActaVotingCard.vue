@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { formatDate } from "@/lib/utils";
 import { actaVoteTotal } from "@/lib/payload-slim";
-import { actaPdfUrl } from "@/utils/staticPdf";
 
 type ActaCard = {
   id: string;
@@ -18,9 +17,6 @@ type ActaCard = {
 const props = defineProps<{
   acta: ActaCard;
 }>();
-
-const { chamberId } = useChamber();
-const pdfHref = computed(() => actaPdfUrl(chamberId.value, props.acta.id));
 
 const totalVotos = computed(() => actaVoteTotal(props.acta));
 
@@ -47,7 +43,6 @@ function pct(n: number) {
             <div class="flex items-center gap-1">
               <UIcon name="lucide:calendar" class="size-3" />
               <span>{{ formatDate(acta.fecha) }}</span>
-              <FuentePdfButton :href="pdfHref" />
             </div>
             <ResultadoBadge :resultado="acta.resultado" />
           </div>

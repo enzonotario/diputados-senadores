@@ -2,7 +2,6 @@
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import type { DissentActa } from "@/utils/votingAffinity";
-import { actaPdfUrl } from "@/utils/staticPdf";
 
 export type DissentActaMeta = {
   id: string;
@@ -25,8 +24,6 @@ const props = withDefaults(
 const open = ref(false);
 
 const { sorting } = useTableSorting("fecha", true, { syncQuery: false });
-const { chamberId } = useChamber();
-const actaPdf = (id: string) => actaPdfUrl(chamberId.value, id);
 
 const metaById = computed(() => {
   const map = new Map<string, DissentActaMeta>();
@@ -113,10 +110,7 @@ function onSelect(_e: Event, row: { original: Row }) {
         :on-select="onSelect"
       >
         <template #fecha-cell="{ row }">
-          <div class="flex items-center gap-1">
-            <span>{{ formatDate((row.original as Row).fecha) }}</span>
-            <FuentePdfButton :href="actaPdf((row.original as Row).id)" />
-          </div>
+          <span>{{ formatDate((row.original as Row).fecha) }}</span>
         </template>
         <template #titulo-cell="{ row }">
           <NuxtLink

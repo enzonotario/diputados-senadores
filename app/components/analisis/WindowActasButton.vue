@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
-import { actaPdfUrl } from "@/utils/staticPdf";
 
 export type WindowActaRow = {
   id: string;
@@ -33,8 +32,6 @@ const props = withDefaults(
 
 const open = ref(false);
 const { sorting } = useTableSorting("fecha", true, { syncQuery: false });
-const { chamberId } = useChamber();
-const actaPdf = (id: string) => actaPdfUrl(chamberId.value, id);
 
 const withVoto = computed(() => {
   if (props.showVoto != null) return props.showVoto;
@@ -110,12 +107,7 @@ function onSelect(_e: Event, row: { original: WindowActaRow }) {
         :on-select="onSelect"
       >
         <template #fecha-cell="{ row }">
-          <div class="flex items-center gap-1">
-            <span>{{ formatDate((row.original as WindowActaRow).fecha) }}</span>
-            <FuentePdfButton
-              :href="actaPdf((row.original as WindowActaRow).id)"
-            />
-          </div>
+          <span>{{ formatDate((row.original as WindowActaRow).fecha) }}</span>
         </template>
         <template #titulo-cell="{ row }">
           <NuxtLink

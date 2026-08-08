@@ -9,7 +9,6 @@ import {
 } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { voteMarginSortValue } from "@/utils/voteMargin";
-import { actaPdfUrl } from "@/utils/staticPdf";
 
 useChamberSeo({
   title: "Votaciones",
@@ -17,9 +16,6 @@ useChamberSeo({
     "Mirá las votaciones del Senado de la Nación Argentina y cómo votó cada uno.",
   og: { kind: "list", eyebrow: "actas", badge: "Votaciones" },
 });
-
-const { chamberId } = useChamber();
-const actaPdf = (id: string) => actaPdfUrl(chamberId.value, id);
 
 const { filterActas: filterByPeriodo } = usePeriodoFilter();
 const { sorting } = useTableSorting("fecha", true);
@@ -181,19 +177,16 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
             </NuxtLink>
           </template>
           <template #fecha-cell="{ row }">
-            <div class="flex items-start gap-1">
-              <div class="flex flex-col leading-tight">
-                <span class="tabular-nums">{{
-                  formatDate((row.original as Acta).fecha)
-                }}</span>
-                <span
-                  v-if="formatTime((row.original as Acta).fecha, '')"
-                  class="text-xs text-muted tabular-nums"
-                >
-                  {{ formatTime((row.original as Acta).fecha) }}
-                </span>
-              </div>
-              <FuentePdfButton :href="actaPdf((row.original as Acta).id)" />
+            <div class="flex flex-col leading-tight">
+              <span class="tabular-nums">{{
+                formatDate((row.original as Acta).fecha)
+              }}</span>
+              <span
+                v-if="formatTime((row.original as Acta).fecha, '')"
+                class="text-xs text-muted tabular-nums"
+              >
+                {{ formatTime((row.original as Acta).fecha) }}
+              </span>
             </div>
           </template>
           <template #descripcion-cell="{ row }">

@@ -212,10 +212,21 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
         header: 'border-0 p-3! pb-0!'
       }" class="">
         <template #header>
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <h1 class="text-lg md:text-2xl font-semibold">
               {{ acta.titulo }}
             </h1>
+            <UButton
+              v-if="pdfHref"
+              :to="pdfHref"
+              target="_blank"
+              external
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-file-text"
+              label="Ver PDF"
+              class="shrink-0 self-start"
+            />
           </div>
         </template>
 
@@ -259,9 +270,8 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           </div>
           <div class="flex flex-col min-w-0">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Fecha</dt>
-            <dd class="inline-flex items-center gap-1 text-sm font-medium">
-              <span class="tabular-nums">{{ formatDateTime(acta.fecha) }}</span>
-              <FuentePdfButton :href="pdfHref" />
+            <dd class="text-sm font-medium tabular-nums">
+              {{ formatDateTime(acta.fecha) }}
             </dd>
           </div>
           <div class="flex flex-col min-w-0">

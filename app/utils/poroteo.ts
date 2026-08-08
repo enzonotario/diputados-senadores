@@ -47,6 +47,7 @@ export function countPoroteoVotes(
     afirmativo: 0,
     negativo: 0,
     abstencion: 0,
+    ausente: 0,
   } satisfies Record<PoroteoVoto, number>;
   for (const m of members) {
     counts[voteOf(votes, m.id)] += 1;

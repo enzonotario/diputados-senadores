@@ -78,12 +78,13 @@ export const VOTO_TIPO_ORDER = [
   "ausente",
 ] as const;
 
-/** Ciclo de asignación en el Poroteo (sin ausente). */
+/** Ciclo de asignación en el Poroteo. */
 export const POROTEO_VOTO_ORDER = [
   "indeciso",
   "afirmativo",
   "negativo",
   "abstencion",
+  "ausente",
 ] as const;
 
 /** Mapea votos crudos del Senado (si/no/…) al vocabulario UI. */

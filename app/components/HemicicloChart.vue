@@ -34,6 +34,8 @@ const props = withDefaults(
     showLegend?: boolean;
     /** Fotos en los asientos (caro en home: ~257 requests). Default true. */
     showPhotos?: boolean;
+    /** Tooltip al hover de bancas. Apagar en miniaturas (p. ej. dock del Poroteo). */
+    showTooltip?: boolean;
     /**
      * Si true, el click emite `select` en lugar de navegar a la ficha.
      * Útil para el Poroteo (asignar voto).
@@ -50,6 +52,7 @@ const props = withDefaults(
     clickable: true,
     showLegend: true,
     showPhotos: true,
+    showTooltip: true,
     editable: false,
     forcedColorMode: null,
     memberBasePath: "/senadores",
@@ -507,10 +510,12 @@ const tooltip = ref<Tooltip | null>(null);
 const hoveredGroup = ref<string | null>(null);
 
 function onEnter(p: Punto) {
+  if (!props.showTooltip) return;
   tooltip.value = { member: p.member, x: p.x, y: p.y };
   hoveredGroup.value = groupKey(p.member);
 }
 function onEnterPresident() {
+  if (!props.showTooltip) return;
   const seat = presidentSeat.value;
   if (!seat) return;
   tooltip.value = { member: seat.member, x: seat.x, y: seat.y };

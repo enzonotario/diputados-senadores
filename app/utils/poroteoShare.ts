@@ -7,13 +7,14 @@ import {
 
 /**
  * Payload compacto v1: solo ids con voto ≠ `indeciso`.
- * a = afirmativo · n = negativo · b = abstencion
+ * a = afirmativo · n = negativo · b = abstencion · u = ausente
  */
 export type PoroteoSharePayloadV1 = {
   v: 1;
   a?: string[];
   n?: string[];
   b?: string[];
+  u?: string[];
 };
 
 /** Query param del poroteo comprimido (lz-string URI-safe). */
@@ -23,19 +24,23 @@ export function votesToSharePayload(votes: PoroteoVotes): PoroteoSharePayloadV1 
   const a: string[] = [];
   const n: string[] = [];
   const b: string[] = [];
+  const u: string[] = [];
   for (const [id, raw] of Object.entries(votes)) {
     if (!id || !isPoroteoVoto(raw) || raw === "indeciso") continue;
     if (raw === "afirmativo") a.push(id);
     else if (raw === "negativo") n.push(id);
     else if (raw === "abstencion") b.push(id);
+    else if (raw === "ausente") u.push(id);
   }
   a.sort();
   n.sort();
   b.sort();
+  u.sort();
   const payload: PoroteoSharePayloadV1 = { v: 1 };
   if (a.length) payload.a = a;
   if (n.length) payload.n = n;
   if (b.length) payload.b = b;
+  if (u.length) payload.u = u;
   return payload;
 }
 
@@ -55,12 +60,18 @@ export function sharePayloadToVotes(
   apply(payload.a, "afirmativo");
   apply(payload.n, "negativo");
   apply(payload.b, "abstencion");
+  apply(payload.u, "ausente");
   return votes;
 }
 
 export function encodePoroteoShare(votes: PoroteoVotes): string | null {
   const payload = votesToSharePayload(votes);
-  if (!payload.a?.length && !payload.n?.length && !payload.b?.length) {
+  if (
+    !payload.a?.length &&
+    !payload.n?.length &&
+    !payload.b?.length &&
+    !payload.u?.length
+  ) {
     return null;
   }
   return LZString.compressToEncodedURIComponent(JSON.stringify(payload));

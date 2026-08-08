@@ -30,7 +30,10 @@ const members = computed<PoroteoMember[]>(() => {
     foto: m.foto,
     nombreCompleto: m.nombreCompleto,
     apellido: m.apellido,
-    nombre: m.nombre,
+    nombre:
+      ("nombre" in m && m.nombre) ||
+      ("nombreDePila" in m && (m as Senador).nombreDePila) ||
+      undefined,
     provincia: m.provincia,
     bloque: "bloque" in m ? m.bloque || undefined : undefined,
     partido: "partido" in m ? m.partido : undefined,
@@ -67,9 +70,8 @@ useChamberSeo(() => ({
       <h1 class="text-3xl font-bold tracking-tight">Poroteo</h1>
       <p class="text-muted max-w-2xl">
         Armá un escenario de votación con los
-        {{ membersLabel.toLowerCase() }} vigentes: asigná a favor, en contra,
-        abstención o indecisos por {{ groupField }}, y descargá una imagen lista
-        para compartir.
+        {{ membersLabel.toLowerCase() }} vigentes: asigná votos por
+        {{ groupField }} o provincia, y exportá una imagen para compartir.
       </p>
     </div>
 

@@ -48,7 +48,7 @@ function pct(n: number) {
           </div>
 
           <h3
-            class="line-clamp-3 text-lg font-semibold group-hover:text-primary transition-colors"
+            class="line-clamp-3 text-lg font-semibold text-muted group-hover:text-neutral group-hover:underline transition-colors"
           >
             {{ acta.titulo }}
           </h3>

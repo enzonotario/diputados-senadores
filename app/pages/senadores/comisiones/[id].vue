@@ -2,7 +2,6 @@
 import type { Senador } from "@/lib/types";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { partidoPath } from "@/utils/partido";
-import { withPeriodPresentismo } from "@/utils/presentismo";
 
 type IntegranteRow = {
   nombre: string;
@@ -23,7 +22,6 @@ type ComisionDetail = {
 const route = useRoute();
 const id = computed(() => String(route.params.id || ""));
 const { localFetch } = useLocalApi();
-const { filterMembers, periodos } = usePeriodoFilter();
 const integrantesVista = useLocalStorage<"lista" | "grilla">(
   "comision-integrantes-vista",
   "lista",
@@ -39,24 +37,6 @@ const { data, pending } = await useAsyncData(
 const comision = computed(() => data.value || null);
 
 const integrantes = computed(() => comision.value?.integrantes || []);
-
-/** Senadores con ficha en el catálogo, respetando filtro de período. */
-const senadoresEnPeriodo = computed(() => {
-  const members = integrantes.value
-    .map((i) => i.senador)
-    .filter(Boolean) as Senador[];
-  return withPeriodPresentismo(filterMembers(members), periodos.value);
-});
-
-const displayedRows = computed(() => {
-  const allowed = new Set(senadoresEnPeriodo.value.map((s) => String(s.id)));
-  const periodScoped = periodos.value.length > 0;
-  return integrantes.value.filter((i) => {
-    if (!i.senadorId) return !periodScoped;
-    if (!i.senador) return !periodScoped;
-    return allowed.has(String(i.senadorId));
-  });
-});
 
 const { sorting } = useTableSorting("cargo", false, { syncQuery: false });
 
@@ -193,19 +173,11 @@ useChamberSeo(() => {
         </div>
       </UCard>
 
-      <FilterPeriodo
-        :timeline-members="senadoresEnPeriodo"
-        members-label="senadores"
-        timeline-mode="members"
-      />
-
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-muted">
-          {{ displayedRows.length }}
+          {{ integrantes.length }}
           {{
-            displayedRows.length === 1
-              ? "integrante mostrado"
-              : "integrantes mostrados"
+            integrantes.length === 1 ? "integrante" : "integrantes"
           }}
         </p>
         <ClientOnly>
@@ -234,10 +206,10 @@ useChamberSeo(() => {
       <DataTableCard v-if="integrantesVista === 'lista'" :show-periodo-badge="false">
         <UTable
           v-model:sorting="sorting"
-          :data="displayedRows"
+          :data="integrantes"
           :columns="tableColumns"
           :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-          empty="No hay integrantes para mostrar con los filtros aplicados."
+          empty="No hay integrantes en esta comisión."
           :on-select="onRowSelect"
         >
           <template #foto-cell="{ row }">
@@ -318,7 +290,7 @@ useChamberSeo(() => {
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
       >
         <UCard
-          v-for="row in displayedRows"
+          v-for="row in integrantes"
           :key="`${row.senadorId || row.nombre}-${row.cargo}`"
           :ui="{ body: 'p-4' }"
         >
@@ -357,10 +329,10 @@ useChamberSeo(() => {
           </div>
         </UCard>
         <p
-          v-if="!displayedRows.length"
+          v-if="!integrantes.length"
           class="text-sm text-muted col-span-full"
         >
-          No hay integrantes para mostrar con los filtros aplicados.
+          No hay integrantes en esta comisión.
         </p>
       </div>
     </template>

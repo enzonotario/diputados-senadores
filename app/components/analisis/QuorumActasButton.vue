@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
+import { actaPdfUrl } from "@/utils/staticPdf";
 
 export type QuorumActaRow = {
   id: string;
@@ -19,6 +20,8 @@ const props = defineProps<{
 
 const open = ref(false);
 const { sorting } = useTableSorting("fecha", true, { syncQuery: false });
+const { chamberId } = useChamber();
+const actaPdf = (id: string) => actaPdfUrl(chamberId.value, id);
 
 const columns = [
   { id: "fecha", accessorKey: "fecha", header: sortableHeader("Fecha") },
@@ -74,7 +77,12 @@ function onSelect(_e: Event, row: { original: QuorumActaRow }) {
         :on-select="onSelect"
       >
         <template #fecha-cell="{ row }">
-          <span>{{ formatDate((row.original as QuorumActaRow).fecha) }}</span>
+          <div class="flex items-center gap-1">
+            <span>{{ formatDate((row.original as QuorumActaRow).fecha) }}</span>
+            <FuentePdfButton
+              :href="actaPdf((row.original as QuorumActaRow).id)"
+            />
+          </div>
         </template>
         <template #titulo-cell="{ row }">
           <NuxtLink

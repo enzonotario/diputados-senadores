@@ -3,6 +3,7 @@ import type { SenadorViajes, ViajeInternacional, ViajeNacional } from "@/lib/typ
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { VIAJES_FUENTE_URL } from "@/utils/viajes";
+import { viajePdfUrl } from "@/utils/staticPdf";
 import SenadorViajesMap from "@/components/SenadorViajesMap.vue";
 
 const props = withDefaults(
@@ -117,18 +118,6 @@ const internacionalesColumns = [
     id: "expediente",
     accessorKey: "expediente",
     header: sortableHeader("Expediente"),
-  },
-  {
-    id: "documento",
-    accessorKey: "documentoUrl",
-    header: "",
-    enableSorting: false,
-    meta: {
-      class: {
-        th: "w-10",
-        td: "w-10",
-      },
-    },
   },
 ];
 
@@ -358,7 +347,7 @@ onBeforeUnmount(() => {
 
         <div class="min-w-0 flex-1">
           <div
-            class="mb-2 grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)_minmax(0,1fr)_2.25rem] gap-3 px-3 text-xs font-medium text-muted"
+            class="mb-2 grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-3 text-xs font-medium text-muted"
           >
             <button
               type="button"
@@ -377,7 +366,6 @@ onBeforeUnmount(() => {
             </button>
             <span>Origen</span>
             <span>Destino</span>
-            <span class="sr-only">Fuente</span>
           </div>
 
           <ul class="divide-y divide-default rounded-lg ring ring-default overflow-hidden">
@@ -385,7 +373,7 @@ onBeforeUnmount(() => {
               v-for="(viaje, index) in nacionalesSorted"
               :key="viajeNacKey(viaje, index)"
               :ref="(el) => setRowRef(el, index)"
-              class="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)_minmax(0,1fr)_2.25rem] gap-3 px-3 py-3 cursor-pointer transition-colors"
+              class="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-3 py-3 cursor-pointer transition-colors"
               :class="
                 index === activeIndex
                   ? 'bg-elevated/80 ring-1 ring-inset ring-primary/40'
@@ -393,35 +381,26 @@ onBeforeUnmount(() => {
               "
               @click="selectRow(index)"
             >
-              <div class="leading-tight min-w-0">
-                <p class="text-sm">
-                  {{
-                    periodoLabel(viaje.anio, viaje.mes, viaje.mesNombre)
-                  }}
-                </p>
-                <p class="text-xs text-muted tabular-nums">
-                  {{ periodoKey(viaje.anio, viaje.mes) }}
-                </p>
+              <div class="flex items-start gap-1 min-w-0">
+                <div class="leading-tight min-w-0">
+                  <p class="text-sm">
+                    {{
+                      periodoLabel(viaje.anio, viaje.mes, viaje.mesNombre)
+                    }}
+                  </p>
+                  <p class="text-xs text-muted tabular-nums">
+                    {{ periodoKey(viaje.anio, viaje.mes) }}
+                  </p>
+                </div>
+                <FuentePdfButton
+                  :href="viajePdfUrl(viaje.ambito, viaje.documentoId)"
+                />
               </div>
               <div class="min-w-0 text-sm truncate">
                 {{ lugarLabel(viaje.origen, viaje.origenCodigo) }}
               </div>
               <div class="min-w-0 text-sm truncate">
                 {{ lugarLabel(viaje.destino, viaje.destinoCodigo) }}
-              </div>
-              <div class="flex items-center justify-end">
-                <UButton
-                  v-if="viaje.documentoUrl"
-                  :to="viaje.documentoUrl"
-                  target="_blank"
-                  external
-                  color="neutral"
-                  variant="ghost"
-                  size="xs"
-                  icon="i-lucide-file-text"
-                  aria-label="Ver documento oficial"
-                  @click.stop
-                />
               </div>
             </li>
           </ul>
@@ -440,48 +419,45 @@ onBeforeUnmount(() => {
       empty="Sin viajes internacionales registrados."
     >
       <template #periodo-cell="{ row }">
-        <div class="leading-tight">
-          <p class="text-sm">
-            {{
-              fechasIntl(row.original as ViajeInternacional) ||
-              periodoLabel(
-                (row.original as ViajeInternacional).anio,
-                (row.original as ViajeInternacional).mes,
-                (row.original as ViajeInternacional).mesNombre,
+        <div class="flex items-start gap-1">
+          <div class="leading-tight min-w-0">
+            <p class="text-sm">
+              {{
+                fechasIntl(row.original as ViajeInternacional) ||
+                periodoLabel(
+                  (row.original as ViajeInternacional).anio,
+                  (row.original as ViajeInternacional).mes,
+                  (row.original as ViajeInternacional).mesNombre,
+                )
+              }}
+            </p>
+            <p class="text-xs text-muted tabular-nums">
+              {{
+                (row.original as ViajeInternacional).fechaInicio
+                  ? String(
+                      (row.original as ViajeInternacional).fechaInicio,
+                    ).slice(0, 7)
+                  : periodoKey(
+                      (row.original as ViajeInternacional).anio,
+                      (row.original as ViajeInternacional).mes,
+                    )
+              }}
+            </p>
+          </div>
+          <FuentePdfButton
+            :href="
+              viajePdfUrl(
+                (row.original as ViajeInternacional).ambito,
+                (row.original as ViajeInternacional).documentoId,
               )
-            }}
-          </p>
-          <p class="text-xs text-muted tabular-nums">
-            {{
-              (row.original as ViajeInternacional).fechaInicio
-                ? String(
-                    (row.original as ViajeInternacional).fechaInicio,
-                  ).slice(0, 7)
-                : periodoKey(
-                    (row.original as ViajeInternacional).anio,
-                    (row.original as ViajeInternacional).mes,
-                  )
-            }}
-          </p>
+            "
+          />
         </div>
       </template>
       <template #motivo-cell="{ row }">
         <span class="text-sm">
           {{ (row.original as ViajeInternacional).motivo || "—" }}
         </span>
-      </template>
-      <template #documento-cell="{ row }">
-        <UButton
-          v-if="(row.original as ViajeInternacional).documentoUrl"
-          :to="(row.original as ViajeInternacional).documentoUrl"
-          target="_blank"
-          external
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-file-text"
-          aria-label="Ver documento oficial"
-        />
       </template>
     </UTable>
 

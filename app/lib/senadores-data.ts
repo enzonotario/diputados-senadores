@@ -62,6 +62,7 @@ export type ViajesExploreNacional = {
   origenCodigo: string | null;
   destino: string;
   destinoCodigo: string | null;
+  documentoId: string;
   documentoUrl: string;
 };
 
@@ -76,6 +77,7 @@ export type ViajesExploreInternacional = {
   fechaTexto: string | null;
   motivo: string | null;
   expediente: string | null;
+  documentoId: string;
   documentoUrl: string;
 };
 
@@ -439,6 +441,7 @@ export async function getViajesExplore(): Promise<ViajesExplorePayload> {
         destino: String(v?.destino || ""),
         destinoCodigo:
           v?.destinoCodigo != null ? String(v.destinoCodigo) : null,
+        documentoId: String(v?.documentoId || ""),
         documentoUrl: String(v?.documentoUrl || ""),
       }))
       .sort((a, b) => {
@@ -459,6 +462,7 @@ export async function getViajesExplore(): Promise<ViajesExplorePayload> {
         fechaTexto: v?.fechaTexto != null ? String(v.fechaTexto) : null,
         motivo: v?.motivo != null ? String(v.motivo) : null,
         expediente: v?.expediente != null ? String(v.expediente) : null,
+        documentoId: String(v?.documentoId || ""),
         documentoUrl: String(v?.documentoUrl || ""),
       }))
       .sort((a, b) => {

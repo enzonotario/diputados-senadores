@@ -12,10 +12,13 @@ import {
 import { partidoPath } from "@/utils/partido";
 import { resultadoBadgeLabel } from "@/lib/og";
 import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
+import { actaPdfUrl } from "@/utils/staticPdf";
 
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 const { localFetch } = useLocalApi();
+const { chamberId } = useChamber();
+const pdfHref = computed(() => actaPdfUrl(chamberId.value, id.value));
 
 const { data, pending } = useAsyncData(
   () => `acta-${id.value}`,
@@ -236,7 +239,10 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           </div>
           <div class="flex flex-col">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Fecha</dt>
-            <dd>{{ formatDate(acta.fecha) }}</dd>
+            <dd class="inline-flex items-center gap-1">
+              {{ formatDate(acta.fecha) }}
+              <FuentePdfButton :href="pdfHref" />
+            </dd>
           </div>
           <div v-if="acta.proyecto" class="flex flex-col">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Proyecto</dt>

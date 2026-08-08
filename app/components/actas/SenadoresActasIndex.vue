@@ -8,6 +8,7 @@ import {
 } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { voteMarginSortValue } from "@/utils/voteMargin";
+import { actaPdfUrl } from "@/utils/staticPdf";
 
 useChamberSeo({
   title: "Votaciones",
@@ -15,6 +16,9 @@ useChamberSeo({
     "Mirá las votaciones del Senado de la Nación Argentina y cómo votó cada uno.",
   og: { kind: "list", eyebrow: "actas", badge: "Votaciones" },
 });
+
+const { chamberId } = useChamber();
+const actaPdf = (id: string) => actaPdfUrl(chamberId.value, id);
 
 const { filterActas: filterByPeriodo } = usePeriodoFilter();
 const { sorting } = useTableSorting("fecha", true);
@@ -167,7 +171,10 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
             </NuxtLink>
           </template>
           <template #fecha-cell="{ row }">
-            <span>{{ formatDate((row.original as Acta).fecha) }}</span>
+            <div class="flex items-center gap-1">
+              <span>{{ formatDate((row.original as Acta).fecha) }}</span>
+              <FuentePdfButton :href="actaPdf((row.original as Acta).id)" />
+            </div>
           </template>
           <template #resultado-cell="{ row }">
             <ResultadoBadge :resultado="(row.original as Acta).resultado" />

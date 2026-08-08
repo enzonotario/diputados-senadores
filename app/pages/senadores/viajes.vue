@@ -10,6 +10,7 @@ import type {
   ViajesExploreRankingRow,
 } from "@/lib/senadores-data";
 import { VIAJES_FUENTE_URL } from "@/utils/viajes";
+import { viajePdfUrl } from "@/utils/staticPdf";
 
 const { localFetch } = useLocalApi();
 const vista = useRouteQuery("vista", "ranking");
@@ -435,13 +436,25 @@ useChamberSeo(() => ({
           :on-select="onNacSelect"
         >
           <template #periodo-cell="{ row }">
-            {{
-              periodoLabel(
-                (row.original as ViajesExploreNacional).anio,
-                (row.original as ViajesExploreNacional).mes,
-                (row.original as ViajesExploreNacional).mesNombre,
-              )
-            }}
+            <div class="flex items-center gap-1">
+              <span>
+                {{
+                  periodoLabel(
+                    (row.original as ViajesExploreNacional).anio,
+                    (row.original as ViajesExploreNacional).mes,
+                    (row.original as ViajesExploreNacional).mesNombre,
+                  )
+                }}
+              </span>
+              <FuentePdfButton
+                :href="
+                  viajePdfUrl(
+                    'nacional',
+                    (row.original as ViajesExploreNacional).documentoId,
+                  )
+                "
+              />
+            </div>
           </template>
           <template #senadorNombre-cell="{ row }">
             <NuxtLink
@@ -465,28 +478,12 @@ useChamberSeo(() => ({
             }}
           </template>
           <template #destino-cell="{ row }">
-            <div class="flex items-center gap-2">
-              <span>
-                {{
-                  lugarLabel(
-                    (row.original as ViajesExploreNacional).destino,
-                    (row.original as ViajesExploreNacional).destinoCodigo,
-                  )
-                }}
-              </span>
-              <UButton
-                v-if="(row.original as ViajesExploreNacional).documentoUrl"
-                :to="(row.original as ViajesExploreNacional).documentoUrl"
-                target="_blank"
-                external
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                icon="i-lucide-file-text"
-                aria-label="Ver documento"
-                @click.stop
-              />
-            </div>
+            {{
+              lugarLabel(
+                (row.original as ViajesExploreNacional).destino,
+                (row.original as ViajesExploreNacional).destinoCodigo,
+              )
+            }}
           </template>
         </UTable>
       </DataTableCard>
@@ -501,7 +498,21 @@ useChamberSeo(() => ({
           :on-select="onIntlSelect"
         >
           <template #periodo-cell="{ row }">
-            {{ fechasIntl(row.original as ViajesExploreInternacional) || "—" }}
+            <div class="flex items-center gap-1">
+              <span>
+                {{
+                  fechasIntl(row.original as ViajesExploreInternacional) || "—"
+                }}
+              </span>
+              <FuentePdfButton
+                :href="
+                  viajePdfUrl(
+                    'internacional',
+                    (row.original as ViajesExploreInternacional).documentoId,
+                  )
+                "
+              />
+            </div>
           </template>
           <template #senadorNombre-cell="{ row }">
             <NuxtLink
@@ -517,23 +528,7 @@ useChamberSeo(() => ({
             </span>
           </template>
           <template #destino-cell="{ row }">
-            <div class="flex items-center gap-2">
-              <span>
-                {{ (row.original as ViajesExploreInternacional).destino }}
-              </span>
-              <UButton
-                v-if="(row.original as ViajesExploreInternacional).documentoUrl"
-                :to="(row.original as ViajesExploreInternacional).documentoUrl"
-                target="_blank"
-                external
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                icon="i-lucide-file-text"
-                aria-label="Ver documento"
-                @click.stop
-              />
-            </div>
+            {{ (row.original as ViajesExploreInternacional).destino }}
           </template>
           <template #motivo-cell="{ row }">
             {{ (row.original as ViajesExploreInternacional).motivo || "—" }}

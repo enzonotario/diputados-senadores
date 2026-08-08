@@ -15,7 +15,7 @@ const { data: membersData, pending } = useAsyncData(
     );
     return res.members || [];
   },
-  { lazy: true, watch: [chamberId] },
+  { watch: [chamberId] },
 );
 
 /** Solo legisladores vigentes (mismo criterio que activos en listados / home). */

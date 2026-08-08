@@ -218,6 +218,10 @@ function votoSelectColor(
   return POROTEO_ACTIONS.find((a) => a.tipo === tipo)?.color ?? "neutral";
 }
 
+function votoBadgeTextClass(tipo: PoroteoVoto): string {
+  return tipo === "indeciso" ? "text-gray-900" : "text-white";
+}
+
 function votoAction(tipo: PoroteoVoto) {
   return POROTEO_ACTIONS.find((a) => a.tipo === tipo);
 }
@@ -247,7 +251,6 @@ function fillMissingVotes(base: PoroteoVotes): PoroteoVotes {
 }
 
 function bootstrapVotes() {
-  if (!import.meta.client) return;
   const ids = memberIds();
   if (!ids.length) return;
 
@@ -259,10 +262,11 @@ function bootstrapVotes() {
   suppressUrlWrite.value = true;
   bootstrappedKey.value = bootKey;
 
+  // Preferir `?s=` también en SSR para que badges/colores no hidraten como indeciso.
   const fromUrl = decodePoroteoShare(urlEncoded, ids);
   if (fromUrl) {
     votes.value = fillMissingVotes(fromUrl);
-  } else {
+  } else if (import.meta.client) {
     try {
       const raw = localStorage.getItem(`poroteo:${key}`);
       if (raw) {
@@ -276,6 +280,8 @@ function bootstrapVotes() {
     } catch {
       votes.value = resetVotes(ids);
     }
+  } else {
+    votes.value = resetVotes(ids);
   }
 
   nextTick(() => {
@@ -284,7 +290,12 @@ function bootstrapVotes() {
 }
 
 watch(
-  () => [props.storageKey, props.members.map((m) => m.id).join(",")] as const,
+  () =>
+    [
+      props.storageKey,
+      props.members.map((m) => m.id).join(","),
+      String(route.query[POROTEO_SHARE_QUERY] || ""),
+    ] as const,
   () => bootstrapVotes(),
   { immediate: true },
 );
@@ -913,18 +924,19 @@ const groupsSectionTitle = computed(() => {
                   :content="{ align: 'end', side: 'bottom', sideOffset: 4 }"
                   size="sm"
                   :ui="{ content: 'min-w-40' }"
-                  class="absolute right-0.5 top-0.5 z-10"
                 >
-                  <UBadge
-                    size="sm"
-                    :color="votoSelectColor(voteOf(votes, m.id))"
-                    variant="solid"
-                    class="cursor-pointer px-1.5 py-0 text-[0.6rem] font-semibold leading-4 shadow-sm"
+                  <button
+                    type="button"
+                    class="absolute right-0.5 top-0.5 z-10 cursor-pointer rounded-sm px-1.5 py-0 text-[0.6rem] font-semibold leading-4 shadow-sm"
+                    :class="votoBadgeTextClass(voteOf(votes, m.id))"
+                    :style="{
+                      backgroundColor: groupColors[voteOf(votes, m.id)],
+                    }"
                     :aria-label="`Cambiar voto de ${m.nombreCompleto}`"
                     @click.stop
                   >
                     {{ votoAction(voteOf(votes, m.id))?.short }}
-                  </UBadge>
+                  </button>
                 </UDropdownMenu>
 
                 <button

@@ -13,7 +13,7 @@ type RevalidateBody = {
 
 const SEED_PATHS: Record<ChamberId, string[]> = {
   diputados: ["/", "/actas", "/diputados", "/diputados/bloques"],
-  senadores: ["/", "/actas", "/senadores", "/senadores/partidos"],
+  senadores: ["/", "/actas", "/senadores", "/senadores/partidos", "/senadores/comisiones", "/senadores/dietas", "/senadores/viajes"],
 };
 
 function defaultHosts(): string[] {

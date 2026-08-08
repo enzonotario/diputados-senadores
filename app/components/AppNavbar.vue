@@ -20,7 +20,11 @@ function withPeriodo(path: string) {
   return periodo ? { path, query: { periodo } } : path;
 }
 
-const navLinks = computed(() => {
+/**
+ * Desktop: Inicio / Votaciones / Poroteo / Senadores / Partidos / Explorar▾
+ * Explorar agrupa Viajes, Dietas, Comisiones (solo senadores).
+ */
+const desktopNavItems = computed<NavigationMenuItem[]>(() => {
   const c = legislative.value;
   if (!c) return [];
 
@@ -29,13 +33,23 @@ const navLinks = computed(() => {
     path.startsWith(c.groupsPath) ||
     path.includes("/bloques") ||
     path.includes("/partidos");
+  const exploreActive =
+    path.startsWith("/senadores/viajes") ||
+    path.startsWith("/senadores/dietas") ||
+    path.startsWith("/senadores/comisiones");
   const membersActive =
     !groupsActive &&
-    (path.startsWith(c.membersPath) ||
-      path.startsWith("/diputados") ||
-      path.startsWith("/senadores"));
+    !exploreActive &&
+    (path === c.membersPath ||
+      path.startsWith(`${c.membersPath}/`) ||
+      // ficha /senadores/:id… pero no explore
+      (/^\/senadores\/[^/]+/.test(path) &&
+        !path.startsWith("/senadores/viajes") &&
+        !path.startsWith("/senadores/dietas") &&
+        !path.startsWith("/senadores/comisiones") &&
+        !path.startsWith("/senadores/partidos")));
 
-  return [
+  const items: NavigationMenuItem[] = [
     {
       label: "Inicio",
       to: withPeriodo("/"),
@@ -62,6 +76,38 @@ const navLinks = computed(() => {
       active: groupsActive,
     },
   ];
+
+  if (chamberId.value === "senadores") {
+    items.push({
+      label: "Explorar",
+      active: exploreActive,
+      children: [
+        {
+          label: "Viajes",
+          description: "Viajes nacionales e internacionales de todos los senadores.",
+          icon: "i-lucide-plane",
+          to: withPeriodo("/senadores/viajes"),
+          active: path.startsWith("/senadores/viajes"),
+        },
+        {
+          label: "Dietas",
+          description: "Donación, renuncia al aumento y aportes partidarios.",
+          icon: "i-lucide-wallet",
+          to: withPeriodo("/senadores/dietas"),
+          active: path.startsWith("/senadores/dietas"),
+        },
+        {
+          label: "Comisiones",
+          description: "Comisiones del Senado e integrantes.",
+          icon: "i-lucide-users-round",
+          to: withPeriodo("/senadores/comisiones"),
+          active: path.startsWith("/senadores/comisiones"),
+        },
+      ],
+    });
+  }
+
+  return items;
 });
 
 const sidebarItems = computed<NavigationMenuItem[]>(() => {
@@ -82,13 +128,22 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
     path.startsWith(c.groupsPath) ||
     path.includes("/bloques") ||
     path.includes("/partidos");
+  const exploreActive =
+    path.startsWith("/senadores/viajes") ||
+    path.startsWith("/senadores/dietas") ||
+    path.startsWith("/senadores/comisiones");
   const membersActive =
     !groupsActive &&
-    (path.startsWith(c.membersPath) ||
-      path.startsWith("/diputados") ||
-      path.startsWith("/senadores"));
+    !exploreActive &&
+    (path === c.membersPath ||
+      path.startsWith(`${c.membersPath}/`) ||
+      (/^\/senadores\/[^/]+/.test(path) &&
+        !path.startsWith("/senadores/viajes") &&
+        !path.startsWith("/senadores/dietas") &&
+        !path.startsWith("/senadores/comisiones") &&
+        !path.startsWith("/senadores/partidos")));
 
-  return [
+  const items: NavigationMenuItem[] = [
     {
       label: "Inicio",
       icon: "i-lucide-house",
@@ -119,14 +174,45 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
       to: c.groupsPath,
       active: groupsActive,
     },
-    {
-      label: otherChamber.value.membersLabel,
-      icon: "i-lucide-external-link",
-      to: otherChamberUrl.value,
-      target: "_blank",
-      external: true,
-    },
   ];
+
+  if (chamberId.value === "senadores") {
+    items.push({
+      label: "Explorar",
+      icon: "i-lucide-compass",
+      defaultOpen: exploreActive,
+      children: [
+        {
+          label: "Viajes",
+          icon: "i-lucide-plane",
+          to: "/senadores/viajes",
+          active: path.startsWith("/senadores/viajes"),
+        },
+        {
+          label: "Dietas",
+          icon: "i-lucide-wallet",
+          to: "/senadores/dietas",
+          active: path.startsWith("/senadores/dietas"),
+        },
+        {
+          label: "Comisiones",
+          icon: "i-lucide-users-round",
+          to: "/senadores/comisiones",
+          active: path.startsWith("/senadores/comisiones"),
+        },
+      ],
+    });
+  }
+
+  items.push({
+    label: otherChamber.value.membersLabel,
+    icon: "i-lucide-external-link",
+    to: otherChamberUrl.value,
+    target: "_blank",
+    external: true,
+  });
+
+  return items;
 });
 </script>
 
@@ -170,29 +256,23 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
         <AppBrand :logo="!isCongreso" />
       </template>
 
-      <!-- Slot default = center: oculto en mobile (lg:flex) -->
-      <nav
+      <UNavigationMenu
         v-if="isLegislative"
-        class="h-full flex items-stretch justify-end gap-0"
+        :items="desktopNavItems"
+        orientation="horizontal"
+        color="neutral"
+        variant="link"
+        content-orientation="vertical"
+        class="h-full justify-end data-[orientation=horizontal]:border-b-0"
+        :ui="{
+          list: 'h-full gap-0',
+          item: 'h-full',
+          link: 'h-full rounded-none px-3 text-sm data-[active]:font-medium',
+          childList: 'min-w-64 p-1',
+          childLink: 'p-2.5',
+        }"
         aria-label="Navegación principal"
-      >
-        <UButton
-          v-for="link in navLinks"
-          :key="link.label"
-          :to="link.to"
-          :variant="link.active ? 'link' : 'ghost'"
-          color="neutral"
-          size="sm"
-          :class="[
-            'h-full rounded-none px-3 sm:px-4 text-sm whitespace-nowrap transition-colors',
-            link.active
-              ? 'border-b-2 border-neutral! text-highlighted'
-              : 'text-muted hover:text-highlighted',
-          ]"
-        >
-          {{ link.label }}
-        </UButton>
-      </nav>
+      />
 
       <template #right>
         <template v-if="isLegislative">

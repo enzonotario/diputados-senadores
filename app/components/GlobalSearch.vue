@@ -22,6 +22,7 @@ const loading = ref(false);
 
 const members = ref<SearchItem[]>([]);
 const groups = ref<SearchItem[]>([]);
+const comisiones = ref<SearchItem[]>([]);
 const actas = ref<SearchItem[]>([]);
 let loadedFor: string | null = null;
 
@@ -34,11 +35,13 @@ async function loadCatalog() {
     const catalog = await localFetch<{
       members: SearchItem[];
       groups: SearchItem[];
+      comisiones?: SearchItem[];
       actas: SearchItem[];
     }>("/api/search-catalog");
 
     members.value = catalog.members || [];
     groups.value = catalog.groups || [];
+    comisiones.value = catalog.comisiones || [];
     actas.value = catalog.actas || [];
     loadedFor = id;
   } finally {
@@ -56,48 +59,78 @@ watch(
     loadedFor = null;
     members.value = [];
     groups.value = [];
+    comisiones.value = [];
     actas.value = [];
   },
 );
 
-const pageItems = computed<SearchItem[]>(() => [
-  {
-    id: "page-home",
-    label: "Inicio",
-    suffix: "Página",
-    icon: "i-lucide-house",
-    to: "/",
-  },
-  {
-    id: "page-actas",
-    label: "Votaciones",
-    suffix: "Página",
-    icon: "i-lucide-file-text",
-    to: "/actas",
-  },
-  {
-    id: "page-members",
-    label: chamber.value.membersLabel,
-    suffix: "Página",
-    icon: "i-lucide-users",
-    to: chamber.value.membersPath,
-  },
-  {
-    id: "page-groups",
-    label: chamber.value.groupsLabel,
-    suffix: "Página",
-    icon: "i-lucide-shapes",
-    to: chamber.value.groupsPath,
-  },
-  {
+const pageItems = computed<SearchItem[]>(() => {
+  const items: SearchItem[] = [
+    {
+      id: "page-home",
+      label: "Inicio",
+      suffix: "Página",
+      icon: "i-lucide-house",
+      to: "/",
+    },
+    {
+      id: "page-actas",
+      label: "Votaciones",
+      suffix: "Página",
+      icon: "i-lucide-file-text",
+      to: "/actas",
+    },
+    {
+      id: "page-members",
+      label: chamber.value.membersLabel,
+      suffix: "Página",
+      icon: "i-lucide-users",
+      to: chamber.value.membersPath,
+    },
+    {
+      id: "page-groups",
+      label: chamber.value.groupsLabel,
+      suffix: "Página",
+      icon: "i-lucide-shapes",
+      to: chamber.value.groupsPath,
+    },
+  ];
+
+  if (chamber.value.id === "senadores") {
+    items.push({
+      id: "page-viajes",
+      label: "Viajes",
+      suffix: "Página",
+      icon: "i-lucide-plane",
+      to: "/senadores/viajes",
+    });
+    items.push({
+      id: "page-dietas",
+      label: "Dietas",
+      suffix: "Página",
+      icon: "i-lucide-wallet",
+      to: "/senadores/dietas",
+    });
+    items.push({
+      id: "page-comisiones",
+      label: "Comisiones",
+      suffix: "Página",
+      icon: "i-lucide-users-round",
+      to: "/senadores/comisiones",
+    });
+  }
+
+  items.push({
     id: "page-other-chamber",
     label: otherChamber.value.membersLabel,
     suffix: "Otra cámara",
     icon: "i-lucide-external-link",
     to: otherChamberUrl.value,
     target: "_blank",
-  },
-]);
+  });
+
+  return items;
+});
 const paletteGroups = computed(() => {
   const term = searchTerm.value.trim();
   const showAllActas = term.length >= 2;
@@ -123,6 +156,14 @@ const paletteGroups = computed(() => {
       id: "groups",
       label: chamber.value.groupsLabel,
       items: groups.value,
+    });
+  }
+
+  if (comisiones.value.length) {
+    result.push({
+      id: "comisiones",
+      label: "Comisiones",
+      items: comisiones.value,
     });
   }
 

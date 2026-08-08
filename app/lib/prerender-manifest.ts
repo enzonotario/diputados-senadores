@@ -133,10 +133,14 @@ export async function collectChamberPrerenderRoutes(
 
   routes.add("/senadores");
   routes.add("/senadores/partidos");
+  routes.add("/senadores/comisiones");
+  routes.add("/senadores/dietas");
+  routes.add("/senadores/viajes");
 
-  const [rawSenadores, rawActas] = await Promise.all([
+  const [rawSenadores, rawActas, rawComisiones] = await Promise.all([
     fetchJson<any[]>("/v1/senado/senadores"),
     fetchJson<any[]>("/v1/senado/actas"),
+    fetchJson<any[]>("/v1/senado/comisiones").catch(() => [] as any[]),
   ]);
 
   const senadores = dedupeById(rawSenadores).map((d) => ({
@@ -164,6 +168,11 @@ export async function collectChamberPrerenderRoutes(
   for (const name of partidos) {
     const s = slug(name) || "sin-partido";
     routes.add(`/senadores/partidos/${s}`);
+  }
+
+  for (const c of Array.isArray(rawComisiones) ? rawComisiones : []) {
+    const cid = String(c?.id || "").trim();
+    if (cid) routes.add(`/senadores/comisiones/${cid}`);
   }
 
   for (const a of rawActas) {

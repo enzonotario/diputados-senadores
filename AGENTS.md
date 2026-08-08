@@ -146,6 +146,7 @@ server/
 | `/diputados/bloques`, `/diputados/bloques/[slug]` | Agrupación = **bloque** |
 | `/senadores`, `/senadores/[id]` | Solo host senadores |
 | `/senadores/partidos`, `/senadores/partidos/[slug]` | Agrupación = **partido** |
+| `/senadores/comisiones`, `/senadores/comisiones/[id]` | Comisiones del Senado + integrantes |
 
 ### Dominio: diferencias que importan
 

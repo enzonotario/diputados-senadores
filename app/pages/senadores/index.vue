@@ -22,12 +22,14 @@ const { sorting } = useTableSorting("presentismo", true);
 const vista = useRouteQuery("vista", "lista");
 const provinciaFilter = useMultiQuery("provincia");
 const partidoFilter = useMultiQuery("partido");
+const bloqueFilter = useMultiQuery("bloque");
 const searchQuery = useRouteQuery("q", "");
 const { filterMembers, periodos } = usePeriodoFilter();
 
 const vistaItems = [
   { label: "Lista", value: "lista" },
   { label: "Por partidos", value: "partidos" },
+  { label: "Por bloques", value: "bloques" },
   { label: "Por provincias", value: "provincias" },
 ];
 
@@ -48,6 +50,7 @@ const inPeriodo = computed(() => filterMembers(senadores.value));
 const filters = computed<FilterConfig>(() => ({
   ...(provinciaFilter.value.length ? { provincia: provinciaFilter.value } : {}),
   ...(partidoFilter.value.length ? { partido: partidoFilter.value } : {}),
+  ...(bloqueFilter.value.length ? { bloque: bloqueFilter.value } : {}),
   ...(searchQuery.value ? { nombreCompleto: searchQuery.value } : {}),
 }));
 
@@ -72,6 +75,12 @@ const displayedForMap = computed(() =>
 
 const groupsByPartido = computed(() =>
   groupSenadoresBy(displayed.value, "partido"),
+);
+const groupsByBloque = computed(() =>
+  groupSenadoresBy(
+    displayed.value.filter((s) => s.bloque),
+    "bloque",
+  ),
 );
 const groupsByProvinciaMap = computed(() =>
   groupSenadoresBy(displayedForMap.value, "provincia"),
@@ -127,6 +136,12 @@ const provincias = computed(() =>
   getUniqueValues(senadores.value, "provincia"),
 );
 const partidos = computed(() => getUniqueValues(senadores.value, "partido"));
+const bloques = computed(() =>
+  getUniqueValues(
+    senadores.value.filter((s) => s.bloque),
+    "bloque",
+  ),
+);
 
 const provinciaItems = computed(() =>
   provincias.value.map((p) => ({ label: p, value: p })),
@@ -134,11 +149,15 @@ const provinciaItems = computed(() =>
 const partidoItems = computed(() =>
   partidos.value.map((b) => ({ label: b, value: b })),
 );
+const bloqueItems = computed(() =>
+  bloques.value.map((b) => ({ label: b, value: b })),
+);
 
 const hasActiveFilters = computed(
   () =>
     provinciaFilter.value.length > 0 ||
     partidoFilter.value.length > 0 ||
+    bloqueFilter.value.length > 0 ||
     !!searchQuery.value,
 );
 
@@ -146,6 +165,7 @@ const resultsSummary = computed(() => {
   const n = displayed.value.length;
   const total = inPeriodo.value.length;
   const partidos = groupsByPartido.value.length;
+  const bloquesN = groupsByBloque.value.length;
   const provincias = new Set(
     displayed.value.map((s) => s.provincia).filter(Boolean),
   ).size;
@@ -155,9 +175,10 @@ const resultsSummary = computed(() => {
       ? `Mostrando ${senadoresLabel} de ${total}`
       : `Mostrando ${senadoresLabel}`;
   const partidosLabel = partidos === 1 ? "1 partido" : `${partidos} partidos`;
+  const bloquesLabel = bloquesN === 1 ? "1 bloque" : `${bloquesN} bloques`;
   const provinciasLabel =
     provincias === 1 ? "1 provincia" : `${provincias} provincias`;
-  return `${head} · ${partidosLabel} · ${provinciasLabel}`;
+  return `${head} · ${partidosLabel} · ${bloquesLabel} · ${provinciasLabel}`;
 });
 
 const emptyMessage = computed(
@@ -167,6 +188,7 @@ const emptyMessage = computed(
 function clearFilters() {
   provinciaFilter.value = [];
   partidoFilter.value = [];
+  bloqueFilter.value = [];
   searchQuery.value = "";
 }
 
@@ -194,6 +216,7 @@ const tableColumns = [
     header: sortableHeader("Provincia"),
   },
   { id: "partido", accessorKey: "partido", header: sortableHeader("Partido") },
+  { id: "bloque", accessorKey: "bloque", header: sortableHeader("Bloque") },
   {
     id: "inicio",
     accessorKey: "periodoLegal.inicio",
@@ -203,6 +226,17 @@ const tableColumns = [
     id: "fin",
     accessorKey: "periodoLegal.fin",
     header: sortableHeader("Fin período"),
+  },
+  {
+    id: "viajesUltimos12Meses",
+    accessorKey: "viajesUltimos12Meses",
+    header: sortableHeader("Viajes 12m"),
+    meta: {
+      class: {
+        th: "text-right whitespace-nowrap",
+        td: "text-right tabular-nums whitespace-nowrap",
+      },
+    },
   },
   {
     id: "presentismo",
@@ -248,7 +282,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
         />
       </div>
       <div
-        class="grid grid-cols-1 md:grid-cols-3 gap-3"
+        class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3"
       >
         <FilterSelect
           v-model="provinciaFilter"
@@ -262,11 +296,17 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           placeholder="Todos los partidos"
           :items="partidoItems"
         />
+        <FilterSelect
+          v-model="bloqueFilter"
+          label="Bloque"
+          placeholder="Todos los bloques"
+          :items="bloqueItems"
+        />
       </div>
       <div class="w-full sm:max-w-sm">
         <FilterSearch
             v-model="searchQuery"
-            placeholder="Nombre, provincia o partido..."
+            placeholder="Nombre, provincia, partido o bloque..."
         />
       </div>
     </div>
@@ -324,6 +364,11 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
               {{ (row.original as Senador).partido || "—" }}
             </UBadge>
           </template>
+          <template #bloque-cell="{ row }">
+            <span class="text-sm">
+              {{ (row.original as Senador).bloque || "—" }}
+            </span>
+          </template>
           <template #inicio-cell="{ row }">
             <span>{{
               formatDate((row.original as Senador).periodoLegal?.inicio)
@@ -333,6 +378,16 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
             <span>{{
               formatDate((row.original as Senador).periodoLegal?.fin)
             }}</span>
+          </template>
+          <template #viajesUltimos12Meses-cell="{ row }">
+            <NuxtLink
+              :to="`/senadores/${(row.original as Senador).id}/viajes`"
+              class="tabular-nums hover:underline"
+              title="Viajes en los últimos 12 meses"
+              @click.stop
+            >
+              {{ (row.original as Senador).viajesUltimos12Meses ?? 0 }}
+            </NuxtLink>
           </template>
           <template #presentismo-cell="{ row }">
             <UBadge
@@ -355,6 +410,14 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
         :groups="groupsByPartido"
         :accent-colors="partidoColores"
         :group-to="(g) => partidoPath(g.key)"
+        show-presentismo
+        :empty-message="emptyMessage"
+      />
+
+      <SenadoresGroupedTable
+        v-else-if="vista === 'bloques'"
+        group-by="bloque"
+        :groups="groupsByBloque"
         show-presentismo
         :empty-message="emptyMessage"
       />
@@ -510,6 +573,16 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                       <span>{{
                         formatDate((row.original as Senador).periodoLegal?.fin)
                       }}</span>
+                    </template>
+                    <template #viajesUltimos12Meses-cell="{ row }">
+                      <NuxtLink
+                        :to="`/senadores/${(row.original as Senador).id}/viajes`"
+                        class="tabular-nums hover:underline"
+                        title="Viajes en los últimos 12 meses"
+                        @click.stop
+                      >
+                        {{ (row.original as Senador).viajesUltimos12Meses ?? 0 }}
+                      </NuxtLink>
                     </template>
                     <template #presentismo-cell="{ row }">
                       <UBadge

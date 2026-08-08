@@ -12,12 +12,16 @@ import {
 import { getMemberCareerCargos } from "../../app/lib/member-career-data";
 import {
   getActas as getActasSenadores,
+  getComisionById,
+  getComisiones,
   getPartidoBySlug,
   getPartidoSlugs,
   getPartidosIndex,
   getSenadorConActasById,
+  getSenadorViajes,
   getSenadores,
   getSenadoresConActas,
+  getViajesExplore,
   getActaWithSenadoresById,
 } from "../../app/lib/senadores-data";
 import type { SlimAffinityPeer } from "../../app/lib/payload-slim";
@@ -28,6 +32,7 @@ import {
   isSenadorActivo,
 } from "../../app/lib/utils";
 import { bloquePath } from "../../app/utils/bloque";
+import { comisionPath, sortComisionIntegrantes } from "../../app/utils/comision";
 import { partidoPath } from "../../app/utils/partido";
 import {
   memberActasInWindow,
@@ -137,13 +142,14 @@ export async function buildSearchCatalog(chamber: ChamberId) {
         to: `/actas/${a.id}`,
       }));
 
-    return { chamber, members, groups, actas };
+    return { chamber, members, groups, comisiones: [] as SearchCatalogItem[], actas };
   }
 
-  const [senadores, partidos, listaActas] = await Promise.all([
+  const [senadores, partidos, listaActas, listaComisiones] = await Promise.all([
     getSenadores(),
     getPartidoSlugs(),
     getActasSenadores(),
+    getComisiones(),
   ]);
 
   const members: SearchCatalogItem[] = [...senadores]
@@ -162,7 +168,9 @@ export async function buildSearchCatalog(chamber: ChamberId) {
         id: `senador-${s.id}`,
         label: s.nombreCompleto || s.nombre,
         suffix: activo ? "Activo" : "Inactivo",
-        description: [s.partido, s.provincia].filter(Boolean).join(" · "),
+        description: [s.bloque || s.partido, s.provincia]
+          .filter(Boolean)
+          .join(" · "),
         to: `/senadores/${s.id}`,
         avatar: s.foto ? { src: s.foto } : undefined,
       };
@@ -182,6 +190,15 @@ export async function buildSearchCatalog(chamber: ChamberId) {
     })
     .filter(Boolean) as SearchCatalogItem[];
 
+  const comisiones: SearchCatalogItem[] = listaComisiones.map((c) => ({
+    id: `comision-${c.id}`,
+    label: c.nombre,
+    suffix: "Comisión",
+    description: c.tipo || undefined,
+    icon: "i-lucide-users-round",
+    to: comisionPath(c.id) || undefined,
+  }));
+
   const actas: SearchCatalogItem[] = [...listaActas]
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
     .map((a) => ({
@@ -196,7 +213,7 @@ export async function buildSearchCatalog(chamber: ChamberId) {
       to: `/actas/${a.id}`,
     }));
 
-  return { chamber, members, groups, actas };
+  return { chamber, members, groups, comisiones, actas };
 }
 
 export async function buildAffinityPeers(
@@ -226,7 +243,7 @@ export async function buildAffinityPeers(
     .map((s) => ({
       id: s.id,
       name: s.nombreCompleto || s.nombre,
-      group: s.partido,
+      group: s.bloque || s.partido,
       foto: s.foto,
       votes: memberActasInWindow(votesFromSenador(s)),
       activo: true,
@@ -507,12 +524,14 @@ export async function buildMemberProfile(
     provincia: member.provincia,
     genero: null,
   });
+  const viajes = await getSenadorViajes(String(member.id));
   return {
     chamber,
     member: slimMemberStats(member),
     chartActas,
     actasMeta,
     career,
+    viajes,
     history: { page, limit, total, items },
   };
 }
@@ -611,7 +630,7 @@ export async function buildGroupBySlug(chamber: ChamberId, slug: string) {
     cohesionPeers: p.activos.map((s) => ({
       id: s.id,
       name: s.nombreCompleto || s.nombre,
-      group: s.partido,
+      group: s.bloque || s.partido,
       foto: s.foto,
       votes: memberActasInWindow(votesFromSenador(s)),
     })),
@@ -625,3 +644,66 @@ export async function buildActaDetail(chamber: ChamberId, id: string) {
   }
   return getActaWithSenadoresById(id);
 }
+
+export async function buildComisionesList() {
+  const list = await getComisiones();
+  return {
+    chamber: "senadores" as const,
+    comisiones: list.map((c) => ({
+      id: c.id,
+      nombre: c.nombre,
+      tipo: c.tipo,
+      url: c.url,
+      integrantesCount: c.integrantes.length,
+      senadoresCount: c.integrantes.filter((i) => i.senadorId).length,
+    })),
+  };
+}
+
+export async function buildViajesExplore() {
+  const data = await getViajesExplore();
+  return {
+    chamber: "senadores" as const,
+    ...data,
+  };
+}
+
+export async function buildComisionById(id: string) {
+  const comision = await getComisionById(id);
+  if (!comision) return null;
+
+  const integrantes = sortComisionIntegrantes(comision.integrantes).map(
+    (i) => ({
+      nombre: i.nombre,
+      cargo: i.cargo,
+      camara: i.camara,
+      senadorId: i.senadorId,
+      senador: i.senador
+        ? slimMemberStats({
+            id: i.senador.id,
+            nombre: i.senador.nombre,
+            nombreCompleto: i.senador.nombreCompleto,
+            apellido: i.senador.apellido,
+            provincia: i.senador.provincia,
+            partido: i.senador.partido,
+            bloque: i.senador.bloque,
+            foto: i.senador.foto,
+            periodoLegal: i.senador.periodoLegal,
+            periodoReal: i.senador.periodoReal,
+            estadisticas: i.senador.estadisticas,
+            estadisticasPorPeriodo: i.senador.estadisticasPorPeriodo,
+          })
+        : null,
+    }),
+  );
+
+  return {
+    chamber: "senadores" as const,
+    id: comision.id,
+    nombre: comision.nombre,
+    tipo: comision.tipo,
+    url: comision.url,
+    integrantes,
+  };
+}
+

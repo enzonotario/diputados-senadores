@@ -32,14 +32,17 @@ const members = computed<PoroteoMember[]>(() => {
     apellido: m.apellido,
     nombre: m.nombre,
     provincia: m.provincia,
-    bloque: "bloque" in m ? m.bloque : undefined,
+    bloque: "bloque" in m ? m.bloque || undefined : undefined,
     partido: "partido" in m ? m.partido : undefined,
   }));
 });
 
-const groupField = computed(() =>
-  isDiputados.value ? ("bloque" as const) : ("partido" as const),
-);
+/** Diputados: bloque. Senadores: bloque si la API lo trae; si no, partido. */
+const groupField = computed(() => {
+  if (isDiputados.value) return "bloque" as const;
+  const hasBloque = members.value.some((m) => !!m.bloque?.trim());
+  return hasBloque ? ("bloque" as const) : ("partido" as const);
+});
 
 const membersLabel = computed(() =>
   isDiputados.value ? "Diputados" : "Senadores",

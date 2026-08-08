@@ -132,6 +132,7 @@ export default defineNuxtConfig({
       "BarChart",
       "PieChart",
       "ScatterChart",
+      "LinesChart",
       "HeatmapChart",
       "SankeyChart",
       "GraphChart",

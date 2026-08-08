@@ -1,41 +1,129 @@
 export interface Senador {
-  id: string;
+  id: string
   /** "Apellido, Nombre" según la API del Senado */
-  nombre: string;
-  apellido?: string;
-  nombreDePila?: string;
-  nombreCompleto?: string;
-  nombreSlug?: string;
-  provincia: string;
-  partido: string;
+  nombre: string
+  apellido?: string
+  nombreDePila?: string
+  nombreCompleto?: string
+  nombreSlug?: string
+  provincia: string
+  partido: string
+  /** Bloque parlamentario actual (oficial; distinto de partido/alianza). */
+  bloque?: string | null
   periodoLegal: {
-    inicio: string;
-    fin: string | null;
-  };
+    inicio: string
+    fin: string | null
+  }
   periodoReal: {
-    inicio: string;
-    fin: string | null;
-  };
-  reemplazo?: string | null;
-  observaciones?: string | null;
-  foto?: string | null;
-  email?: string | null;
-  telefono?: string | null;
+    inicio: string
+    fin: string | null
+  }
+  reemplazo?: string | null
+  observaciones?: string | null
+  foto?: string | null
+  email?: string | null
+  telefono?: string | null
+  meta?: SenadorMeta | null
+  /**
+   * Viajes nacionales + internacionales en los últimos 12 meses
+   * (desde `/v1/senado/viajes/conteo-12m`).
+   */
+  viajesUltimos12Meses?: number
   estadisticas?: {
-    totalVotaciones: number;
-    presentismo: number;
-    votosAfirmativos: number;
-    votosNegativos: number;
-    abstenciones: number;
-    ausencias: number;
-  };
+    totalVotaciones: number
+    presentismo: number
+    votosAfirmativos: number
+    votosNegativos: number
+    abstenciones: number
+    ausencias: number
+  }
   /** Conteos por período para presentismo scoped al filtro `?periodo=`. */
   estadisticasPorPeriodo?: Record<
     string,
-    { totalVotaciones: number; ausencias: number; presentismo: number }
-  >;
-  actasSenador?: Acta[];
-  tipoVoto?: string;
+    { totalVotaciones: number, ausencias: number, presentismo: number }
+  >
+  actasSenador?: Acta[]
+  tipoVoto?: string
+}
+
+export interface SenadorDietaMeta {
+  renunciaAlAumento: boolean
+  donacion: boolean
+  aportesPartidarios: boolean
+  fuente?: string
+  actualizado?: string
+}
+
+export interface SenadorComisionMeta {
+  id: string
+  nombre: string
+  cargo: string
+}
+
+export interface SenadorMeta {
+  dieta?: SenadorDietaMeta
+  comisiones?: SenadorComisionMeta[]
+}
+
+export interface ViajeNacional {
+  ambito: 'nacional'
+  anio: number
+  mes: number
+  mesNombre: string
+  documentoId: string
+  documentoUrl: string
+  nombre: string
+  senadorId: string | null
+  origen: string
+  origenCodigo: string | null
+  destino: string
+  destinoCodigo: string | null
+}
+
+export interface ViajeInternacional {
+  ambito: 'internacional'
+  anio: number
+  mes: number | null
+  mesNombre: string | null
+  documentoId: string
+  documentoUrl: string
+  nombre: string
+  senadorId: string | null
+  expediente: string
+  destino: string
+  fechaInicio: string | null
+  fechaFin: string | null
+  fechaTexto: string | null
+  asistenciaAlViajero: boolean | null
+  viaticos: boolean | null
+  viaticosUsd: number | null
+  viaticosEuro: number | null
+  viaticosArs: number | null
+  motivo: string | null
+  bloque: string | null
+}
+
+export interface SenadorViajes {
+  senadorId: string
+  nacionales: ViajeNacional[]
+  internacionales: ViajeInternacional[]
+}
+
+export interface ComisionIntegrante {
+  nombre: string
+  cargo: string
+  camara: 'senado' | 'diputados' | null
+  senadorId: string | null
+  /** Senador resuelto desde el catálogo (solo cámara senado). */
+  senador?: Senador | null
+}
+
+export interface Comision {
+  id: string
+  nombre: string
+  tipo: string | null
+  url: string
+  integrantes: ComisionIntegrante[]
 }
 
 export interface Voto {

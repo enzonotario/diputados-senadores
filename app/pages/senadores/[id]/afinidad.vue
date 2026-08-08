@@ -27,7 +27,7 @@ const { localFetch } = useLocalApi();
 const { filterActas: filterByPeriodo } = usePeriodoFilter();
 
 const { data, pending } = await useAsyncData(
-  () => `senador-afinidad-${id.value}`,
+  () => `senador-${id.value}`,
   () => localFetch<MemberProfileResponse>(`/api/members/${id.value}`),
   { watch: [id] },
 );
@@ -37,15 +37,12 @@ const mandatoRanges = computed(() =>
   mandatoRangesForChamber(data.value?.career, "senadores"),
 );
 
-if (senador.value && senador.value.id !== id.value) {
-  await navigateTo(`/senadores/${senador.value.id}/afinidad`, {
-    redirectCode: 301,
-    replace: true,
-  });
-}
-
 const { data: peersPayload, pending: peersPending } = useAffinityPeers(
   "senadores-affinity-peers",
+);
+
+const affinityGroupName = computed(
+  () => senador.value?.bloque || senador.value?.partido || "",
 );
 
 const { peers: affinityPeers } = usePeriodFilteredPeers({
@@ -55,7 +52,7 @@ const { peers: affinityPeers } = usePeriodFilteredPeers({
       ? {
           id: current.id,
           name: current.nombreCompleto || current.nombre,
-          group: current.partido,
+          group: current.bloque || current.partido,
           foto: current.foto,
           votes: memberActasInWindow(
             chartActas.value.map((a) => ({
@@ -71,15 +68,16 @@ const { peers: affinityPeers } = usePeriodFilteredPeers({
   deps: () => [
     peersPayload.value,
     senador.value?.id,
+    senador.value?.bloque,
     senador.value?.partido,
     chartActas.value,
   ],
 });
 
 const affinityGroupPeers = computed(() => {
-  const partido = senador.value?.partido;
-  if (!partido) return [];
-  return affinityPeers.value.filter((p) => p.group === partido);
+  const group = affinityGroupName.value;
+  if (!group) return [];
+  return affinityPeers.value.filter((p) => p.group === group);
 });
 
 const groupColors = computed(() => {
@@ -107,6 +105,10 @@ const memberName = computed(
   () => senador.value?.nombreCompleto || senador.value?.nombre || "Senador",
 );
 
+const groupLabel = computed(() =>
+  senador.value?.bloque ? "bloque" : "partido",
+);
+
 useChamberSeo(() => {
   if (!senador.value) {
     return {
@@ -116,42 +118,31 @@ useChamberSeo(() => {
     };
   }
   return {
-    title: `Con quién vota parecido · ${memberName.value}`,
-    description: `Con quién coincide ${memberName.value}, con quién no, y cuántas veces se apartó de su partido.`,
+    title: `Afinidad · ${memberName.value}`,
+    description: `Con quién coincide ${memberName.value}, con quién no, y cuántas veces se apartó de su ${groupLabel.value}.`,
     og: {
       kind: "afinidad",
       eyebrow: "afinidad",
-      badge: senador.value.partido || undefined,
+      badge: affinityGroupName.value || undefined,
     },
   };
 });
 </script>
 
 <template>
-  <div class="page-container">
-    <AppDataSkeleton v-if="pending" variant="member" />
-
-    <UCard v-else-if="!senador">
-      <template #header>
-        <h1 class="text-xl font-semibold">Senador no encontrado</h1>
-      </template>
-      <p class="text-gray-600 dark:text-gray-300">
-        No se pudo encontrar información para el senador solicitado.
-      </p>
-    </UCard>
-
-    <ClientOnly v-else>
+  <div v-if="senador">
+    <ClientOnly>
       <FilterPeriodo class="mb-6" />
-      <AppDataSkeleton v-if="peersPending" variant="affinity" />
+      <AppDataSkeleton v-if="pending || peersPending" variant="affinity" />
       <AnalisisMemberAffinityDetail
         v-else
         :member-id="senador.id"
         :member-name="memberName"
         :member-foto="senador.foto"
         :member-to="`/senadores/${senador.id}`"
-        group-label="partido"
-        :group-name="senador.partido"
-        :group-to="partidoPath(senador.partido)"
+        :group-label="groupLabel"
+        :group-name="affinityGroupName"
+        :group-to="senador.bloque ? null : partidoPath(senador.partido)"
         member-base-path="/senadores"
         :peers="affinityPeers"
         :group-peers="affinityGroupPeers"

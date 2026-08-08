@@ -258,10 +258,13 @@ export function rewritePathForChamber(
 ): string | null {
   if (chamber === "diputados") {
     if (path === "/senadores" || path.startsWith("/senadores/")) {
-      return path.replace(/^\/senadores/, "/diputados").replace(
-        /\/partidos\b/,
-        "/bloques",
-      );
+      return path
+        .replace(/^\/senadores/, "/diputados")
+        .replace(/\/partidos\b/, "/bloques")
+        // Tabs / secciones solo de senadores (ficha o explorar).
+        .replace(/\/viajes$/, "")
+        .replace(/\/comisiones(\/[^/]+)?$/, "")
+        .replace(/\/dietas$/, "");
     }
   }
   if (chamber === "senadores") {

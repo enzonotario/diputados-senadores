@@ -37,12 +37,18 @@ const exploreItems = computed<NavigationMenuItem[]>(() => {
   }
 
   const c = legislative.value;
-  return [
+  const items = [
     { label: "Inicio", to: "/" },
     { label: "Votaciones", to: "/actas" },
     { label: c.membersLabel, to: c.membersPath },
     { label: c.groupsLabel, to: c.groupsPath },
   ];
+  if (c.id === "senadores") {
+    items.push({ label: "Viajes", to: "/senadores/viajes" });
+    items.push({ label: "Dietas", to: "/senadores/dietas" });
+    items.push({ label: "Comisiones", to: "/senadores/comisiones" });
+  }
+  return items;
 });
 
 const sourceItems = computed<NavigationMenuItem[]>(() => {

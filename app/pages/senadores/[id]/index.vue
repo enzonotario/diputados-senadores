@@ -1,15 +1,8 @@
 <script setup lang="ts">
 import type { Senador } from "@/lib/types";
-import { formatDate, isSenadorActivo } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
-import { partidoPath } from "@/utils/partido";
-import { type ProfileFactSection } from "@/utils/memberProfile";
 import type { CareerCargo } from "@/utils/memberCareer";
-import { mandatoRangesForChamber } from "@/utils/memberCareer";
-import {
-  memberActasInWindow,
-  type AffinityMemberInput,
-} from "@/utils/votingAffinity";
 import { filterActasByPeriodo } from "@/utils/periodoLegislativo";
 import type { PeriodoInfo } from "@/utils/periodoLegislativo";
 import { memberVoteStatsFromActas } from "@/utils/chartSeries";
@@ -39,17 +32,6 @@ type MemberProfileResponse = {
     miembros?: number | null;
     tipoVotoSenador?: string | null;
   }>;
-  actasMeta: Array<{
-    id: string;
-    titulo?: string | null;
-    resultado?: string | null;
-  }>;
-  history: {
-    page: number;
-    limit: number;
-    total: number;
-    items: HistoryRow[];
-  };
   career?: CareerCargo[];
 };
 
@@ -57,13 +39,9 @@ const HISTORY_LIMIT = 40;
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 const { localFetch } = useLocalApi();
-const {
-  periodos,
-  isTodos,
-  periods,
-} = usePeriodoFilter();
+const { periodos, isTodos, periods } = usePeriodoFilter();
 
-const { data, pending } = await useAsyncData(
+const { data } = await useAsyncData(
   () => `senador-${id.value}`,
   () =>
     localFetch<MemberProfileResponse>(`/api/members/${id.value}`, {
@@ -81,6 +59,8 @@ const periodStats = computed(() =>
   memberVoteStatsFromActas(chartActasFiltered.value),
 );
 const periodScoped = computed(() => !isTodos.value);
+const career = computed(() => data.value?.career || []);
+
 const memberTimelinePeriods = computed<PeriodoInfo[]>(() => {
   const byKey = new Map<
     string,
@@ -117,89 +97,11 @@ const memberTimelinePeriods = computed<PeriodoInfo[]>(() => {
     })
     .filter((p) => p.minFecha && p.maxFecha);
 });
-const actasMeta = computed(() => {
-  const ids = new Set(chartActasFiltered.value.map((a) => a.id));
-  return (data.value?.actasMeta || []).filter((a) => ids.has(a.id));
-});
-const career = computed(() => data.value?.career || []);
-const mandatoRanges = computed(() =>
-  mandatoRangesForChamber(career.value, "senadores"),
-);
-
-if (senador.value && senador.value.id !== id.value) {
-  await navigateTo(`/senadores/${senador.value.id}`, {
-    redirectCode: 301,
-    replace: true,
-  });
-}
 
 const historyItems = ref<HistoryRow[]>([]);
 const historyTotal = ref(0);
 const historyPage = ref(1);
 const historyLoading = ref(false);
-
-const { data: peersPayload, pending: peersPending } = useAffinityPeers(
-  "senadores-affinity-peers",
-);
-
-const { peers: affinityPeers } = usePeriodFilteredPeers({
-  getSource: () => {
-    const current = senador.value;
-    const ensure: AffinityMemberInput | null = current
-      ? {
-          id: current.id,
-          name: current.nombreCompleto || current.nombre,
-          group: current.partido,
-          foto: current.foto,
-          votes: memberActasInWindow(
-            chartActas.value.map((a) => ({
-              id: a.id,
-              fecha: String(a.fecha || ""),
-              voto: a.tipoVotoSenador,
-            })),
-          ),
-        }
-      : null;
-    return peersToAffinityInputs(peersPayload.value?.peers, { ensure });
-  },
-  deps: () => [
-    peersPayload.value,
-    senador.value?.id,
-    senador.value?.partido,
-    chartActas.value,
-  ],
-});
-
-const affinityGroupPeers = computed(() => {
-  const partido = senador.value?.partido;
-  if (!partido) return [];
-  return affinityPeers.value.filter((p) => p.group === partido);
-});
-
-useChamberSeo(() => {
-  const s = senador.value;
-  if (!s) {
-    return {
-      title: "Senador",
-      description: "Perfil de un senador del Senado de la Nación Argentina.",
-      og: { kind: "member", eyebrow: "senador" },
-    };
-  }
-  const name = s.nombreCompleto || s.nombre;
-  const bits = [s.partido, s.provincia].filter(Boolean);
-  return {
-    title: name,
-    description: bits.length
-      ? `${name} (${bits.join(" · ")}). Historial de votos, presentismo y afinidad en el Senado.`
-      : `${name}. Historial de votos, presentismo y afinidad en el Senado.`,
-    og: {
-      kind: "member",
-      eyebrow: "senador",
-      badge: s.partido || undefined,
-      photoSrc: s.foto || "/placeholder-user.jpg",
-    },
-  };
-});
 
 const { sorting } = useTableSorting("fecha", true, { syncQuery: false });
 const searchQuery = ref("");
@@ -246,7 +148,6 @@ watch(
 );
 
 const displayedHistory = computed(() => historyItems.value);
-
 const hasMoreHistory = computed(
   () => historyItems.value.length < historyTotal.value,
 );
@@ -284,126 +185,34 @@ function onRowSelect(_e: Event, row: { original: HistoryRow }) {
   navigateTo(`/actas/${row.original.id}`);
 }
 
-const profileSections = computed<ProfileFactSection[]>(() => {
+useChamberSeo(() => {
   const s = senador.value;
-  if (!s) return [];
-
-  const legalInicio = s.periodoLegal?.inicio
-    ? formatDate(s.periodoLegal.inicio)
-    : "—";
-  const legalFin = s.periodoLegal?.fin ? formatDate(s.periodoLegal.fin) : "—";
-
-  return [
-    {
-      title: "Identidad",
-      items: [
-        { label: "Provincia", value: s.provincia },
-        {
-          label: "Partido",
-          value: s.partido || "—",
-          to: partidoPath(s.partido),
-        },
-      ],
+  if (!s) {
+    return {
+      title: "Senador",
+      description: "Perfil de un senador del Senado de la Nación Argentina.",
+      og: { kind: "member", eyebrow: "senador" },
+    };
+  }
+  const name = s.nombreCompleto || s.nombre;
+  const bits = [s.bloque || s.partido, s.provincia].filter(Boolean);
+  return {
+    title: name,
+    description: bits.length
+      ? `${name} (${bits.join(" · ")}). Historial de votos y presentismo en el Senado.`
+      : `${name}. Historial de votos y presentismo en el Senado.`,
+    og: {
+      kind: "member",
+      eyebrow: "senador",
+      badge: s.bloque || s.partido || undefined,
+      photoSrc: s.foto || "/placeholder-user.jpg",
     },
-    {
-      title: "Mandato",
-      items: [
-        {
-          label: "Período legal",
-          value: `${legalInicio} – ${legalFin}`,
-        },
-        {
-          label: "Inicio real",
-          value: s.periodoReal?.inicio
-            ? formatDate(s.periodoReal.inicio)
-            : null,
-        },
-        {
-          label: "Cese",
-          value: s.periodoReal?.fin
-            ? formatDate(s.periodoReal.fin)
-            : isSenadorActivo(s)
-              ? "En funciones"
-              : null,
-        },
-      ],
-    },
-    {
-      title: "Contacto",
-      items: [
-        {
-          label: "Email",
-          value: s.email || null,
-          href: s.email ? `mailto:${s.email}` : null,
-        },
-      ],
-    },
-    {
-      title: "Notas",
-      items: [
-        { label: "Reemplazo", value: s.reemplazo || null },
-        { label: "Observaciones", value: s.observaciones || null },
-      ],
-    },
-  ];
+  };
 });
 </script>
 
 <template>
-  <div class="page-container flex flex-col gap-10">
-    <AppDataSkeleton v-if="pending && !senador" variant="member" />
-
-    <UCard v-else-if="!senador">
-      <template #header>
-        <h1 class="text-xl font-semibold">Senador no encontrado</h1>
-      </template>
-      <p class="text-gray-600 dark:text-gray-300">
-        No se pudo encontrar información para el senador solicitado.
-      </p>
-    </UCard>
-
-    <template v-else>
-    <UCard :ui="{ body: 'p-0!' }" class="overflow-hidden">
-      <div class="flex flex-col md:flex-row md:items-start">
-        <div
-          class="w-40 sm:w-48 md:w-52 shrink-0 mx-auto md:mx-0 aspect-square overflow-hidden bg-elevated self-center md:self-start"
-        >
-          <NuxtImg
-            :src="senador.foto || '/placeholder-user.jpg'"
-            :alt="senador.nombreCompleto || senador.nombre"
-            width="208"
-            height="208"
-            sizes="160px sm:192px md:208px"
-            densities="x1"
-            class="w-full h-full object-cover object-top"
-            loading="eager"
-          />
-        </div>
-
-        <div class="flex flex-col gap-5 flex-1 p-6">
-          <div
-            class="flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap"
-          >
-            <h1 class="text-2xl font-bold min-w-0">
-              {{ senador.nombreCompleto || senador.nombre }}
-            </h1>
-            <PartidoLogo
-              :partido="senador.partido"
-              img-class="h-10 w-auto max-w-28 object-contain shrink-0"
-            />
-          </div>
-
-          <MemberProfileFacts :sections="profileSections" />
-
-          <MemberCareerTimeline
-            v-if="career.length"
-            :cargos="career"
-            chamber="senadores"
-          />
-        </div>
-      </div>
-    </UCard>
-
+  <div v-if="senador" class="flex flex-col gap-8">
     <div class="flex flex-col gap-3">
       <p class="text-sm text-muted">
         Resumen, charts e historial según el período legislativo seleccionado
@@ -433,26 +242,6 @@ const profileSections = computed<ProfileFactSection[]>(() => {
         No hay votaciones de este senador en el período seleccionado.
       </p>
     </UCard>
-
-    <ClientOnly>
-      <AppDataSkeleton v-if="peersPending" variant="affinity" />
-      <AnalisisMemberAffinityPanel
-        v-else-if="affinityPeers.length"
-        :member-id="senador.id"
-        :member-name="senador.nombreCompleto || senador.nombre"
-        group-label="partido"
-        :group-name="senador.partido"
-        member-base-path="/senadores"
-        :peers="affinityPeers"
-        :group-peers="affinityGroupPeers"
-        :actas="actasMeta"
-        :mandatos="mandatoRanges"
-        :detail-to="`/senadores/${senador.id}/afinidad`"
-      />
-      <template #fallback>
-        <AppDataSkeleton variant="affinity" />
-      </template>
-    </ClientOnly>
 
     <DataTableCard title="Sus votos">
       <template #filters>
@@ -506,6 +295,5 @@ const profileSections = computed<ProfileFactSection[]>(() => {
         </UTable>
       </InfiniteScrollArea>
     </DataTableCard>
-    </template>
   </div>
 </template>

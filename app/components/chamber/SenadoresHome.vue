@@ -42,6 +42,7 @@ const { data: membersData, pending: pendingMembers } = useAsyncData(
       nombreCompleto: m.nombreCompleto,
       provincia: m.provincia,
       partido: m.partido,
+      bloque: m.bloque,
       foto: m.foto,
       periodoMandato: m.periodoMandato,
       periodoReal: (m as any).periodoReal,

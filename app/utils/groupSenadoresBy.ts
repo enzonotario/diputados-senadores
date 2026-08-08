@@ -16,6 +16,7 @@ function labelForKey(
   if (key === "sin-dato") {
     if (field === "provincia") return "Sin provincia";
     if (field === "partido") return "Sin partido";
+    if (field === "bloque") return "Sin bloque";
     return "Sin dato";
   }
   if (kind === "resultado") {

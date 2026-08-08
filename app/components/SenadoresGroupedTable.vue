@@ -12,39 +12,76 @@ export type SenadoresGroupedTableRow = SenadoresGroup & {
   count: number;
   presentismo: number | null;
   color?: string;
+  donacionSi?: number;
+  renunciaSi?: number;
+  aportesSi?: number;
 };
 
 const props = withDefaults(
   defineProps<{
     groups: SenadoresGroup[];
-    /** 'partido' | 'provincia' — define columnas del grupo y de la tabla anidada */
-    groupBy: "partido" | "provincia";
+    /** 'partido' | 'bloque' | 'provincia' — define columnas del grupo y de la tabla anidada */
+    groupBy: "partido" | "bloque" | "provincia";
     accentColors?: Record<string, string>;
     groupTo?: (group: SenadoresGroup) => string | null | undefined;
     showPresentismo?: boolean;
     /** Columna de voto en la tabla anidada (detalle de acta). */
     showTipoVoto?: boolean;
+    /** Columnas de mecanismos de dieta (agrupado + anidado). */
+    showDieta?: boolean;
+    /** Columna Viajes 12m en anidada (default on salvo con showDieta). */
+    showViajes?: boolean;
     emptyMessage?: string;
   }>(),
   {
     showPresentismo: true,
     showTipoVoto: false,
+    showDieta: false,
+    showViajes: undefined,
     emptyMessage: "No se encontraron grupos con los filtros aplicados.",
   },
 );
 
-const rows = computed<SenadoresGroupedTableRow[]>(() =>
-  props.groups.map((g) => ({
-    ...g,
-    count: g.senadores.length,
-    presentismo: props.showPresentismo
-      ? averagePresentismo(g.senadores)
-      : null,
-    color: props.accentColors?.[g.key],
-  })),
+function countDietaSi(senadores: Senador[]) {
+  let donacion = 0;
+  let renuncia = 0;
+  let aportes = 0;
+  for (const s of senadores) {
+    const d = s.meta?.dieta;
+    if (!d) continue;
+    if (d.donacion) donacion += 1;
+    if (d.renunciaAlAumento) renuncia += 1;
+    if (d.aportesPartidarios) aportes += 1;
+  }
+  return { donacion, renuncia, aportes };
+}
+
+const showViajesCol = computed(() =>
+  props.showViajes != null ? props.showViajes : !props.showDieta,
 );
 
-const { sorting } = useTableSorting("count", true, { syncQuery: false });
+const rows = computed<SenadoresGroupedTableRow[]>(() =>
+  props.groups.map((g) => {
+    const dieta = props.showDieta ? countDietaSi(g.senadores) : null;
+    return {
+      ...g,
+      count: g.senadores.length,
+      presentismo: props.showPresentismo
+        ? averagePresentismo(g.senadores)
+        : null,
+      color: props.accentColors?.[g.key],
+      donacionSi: dieta?.donacion,
+      renunciaSi: dieta?.renuncia,
+      aportesSi: dieta?.aportes,
+    };
+  }),
+);
+
+const { sorting } = useTableSorting(
+  props.showDieta ? "donacionSi" : "count",
+  true,
+  { syncQuery: false },
+);
 const expanded = ref<Record<string, boolean>>({});
 
 watch(
@@ -54,9 +91,11 @@ watch(
   },
 );
 
-const groupLabel = computed(() =>
-  props.groupBy === "partido" ? "Partido" : "Provincia",
-);
+const groupLabel = computed(() => {
+  if (props.groupBy === "partido") return "Partido";
+  if (props.groupBy === "bloque") return "Bloque";
+  return "Provincia";
+});
 
 const groupColumns = computed(() => {
   const cols: TableColumn<SenadoresGroupedTableRow>[] = [
@@ -144,6 +183,35 @@ const groupColumns = computed(() => {
     });
   }
 
+  if (props.showDieta) {
+    const dietaMeta = {
+      class: {
+        th: "text-right whitespace-nowrap",
+        td: "text-right tabular-nums whitespace-nowrap",
+      },
+    };
+    cols.push(
+      {
+        id: "donacionSi",
+        accessorKey: "donacionSi",
+        header: sortableHeader("Donación"),
+        meta: dietaMeta,
+      },
+      {
+        id: "renunciaSi",
+        accessorKey: "renunciaSi",
+        header: sortableHeader("Renuncia"),
+        meta: dietaMeta,
+      },
+      {
+        id: "aportesSi",
+        accessorKey: "aportesSi",
+        header: sortableHeader("Aportes"),
+        meta: dietaMeta,
+      },
+    );
+  }
+
   return cols;
 });
 
@@ -190,6 +258,52 @@ const nestedColumns = computed(() => {
     });
   }
 
+  if (props.showDieta) {
+    const center = {
+      class: {
+        th: "text-center whitespace-nowrap",
+        td: "text-center",
+      },
+    };
+    cols.push(
+      {
+        id: "donacion",
+        accessorFn: (row: Senador) =>
+          row.meta?.dieta ? (row.meta.dieta.donacion ? 1 : 0) : -1,
+        header: sortableHeader("Donación"),
+        meta: center,
+      },
+      {
+        id: "renunciaAlAumento",
+        accessorFn: (row: Senador) =>
+          row.meta?.dieta ? (row.meta.dieta.renunciaAlAumento ? 1 : 0) : -1,
+        header: sortableHeader("Renuncia"),
+        meta: center,
+      },
+      {
+        id: "aportesPartidarios",
+        accessorFn: (row: Senador) =>
+          row.meta?.dieta ? (row.meta.dieta.aportesPartidarios ? 1 : 0) : -1,
+        header: sortableHeader("Aportes"),
+        meta: center,
+      },
+    );
+  }
+
+  if (showViajesCol.value) {
+    cols.push({
+      id: "viajesUltimos12Meses",
+      accessorKey: "viajesUltimos12Meses",
+      header: sortableHeader("Viajes 12m"),
+      meta: {
+        class: {
+          th: "text-right whitespace-nowrap",
+          td: "text-right tabular-nums whitespace-nowrap",
+        },
+      },
+    });
+  }
+
   if (props.showPresentismo) {
     cols.push({
       id: "presentismo",
@@ -214,6 +328,13 @@ function onSenadorSelect(_e: Event, row: { original: Senador }) {
 
 function hrefForGroup(group: SenadoresGroupedTableRow) {
   return props.groupTo?.(group) ?? null;
+}
+
+function dietaBoolBadge(value: boolean | null | undefined) {
+  if (value == null) return { label: "—", color: "neutral" as const };
+  return value
+    ? { label: "Sí", color: "success" as const }
+    : { label: "No", color: "neutral" as const };
 }
 </script>
 
@@ -266,6 +387,16 @@ function hrefForGroup(group: SenadoresGroupedTableRow) {
 
         <template #count-cell="{ row }">
           {{ (row.original as SenadoresGroupedTableRow).count }}
+        </template>
+
+        <template v-if="showDieta" #donacionSi-cell="{ row }">
+          {{ (row.original as SenadoresGroupedTableRow).donacionSi ?? 0 }}
+        </template>
+        <template v-if="showDieta" #renunciaSi-cell="{ row }">
+          {{ (row.original as SenadoresGroupedTableRow).renunciaSi ?? 0 }}
+        </template>
+        <template v-if="showDieta" #aportesSi-cell="{ row }">
+          {{ (row.original as SenadoresGroupedTableRow).aportesSi ?? 0 }}
         </template>
 
         <template #presentismo-cell="{ row }">
@@ -426,6 +557,79 @@ function hrefForGroup(group: SenadoresGroupedTableRow) {
                   <TipoVotoLabel
                     :tipo="(nested.original as Senador).tipoVoto"
                   />
+                </template>
+                <template v-if="showDieta" #donacion-cell="{ row: nested }">
+                  <UBadge
+                    :color="
+                      dietaBoolBadge(
+                        (nested.original as Senador).meta?.dieta?.donacion,
+                      ).color
+                    "
+                    variant="soft"
+                  >
+                    {{
+                      dietaBoolBadge(
+                        (nested.original as Senador).meta?.dieta?.donacion,
+                      ).label
+                    }}
+                  </UBadge>
+                </template>
+                <template
+                  v-if="showDieta"
+                  #renunciaAlAumento-cell="{ row: nested }"
+                >
+                  <UBadge
+                    :color="
+                      dietaBoolBadge(
+                        (nested.original as Senador).meta?.dieta
+                          ?.renunciaAlAumento,
+                      ).color
+                    "
+                    variant="soft"
+                  >
+                    {{
+                      dietaBoolBadge(
+                        (nested.original as Senador).meta?.dieta
+                          ?.renunciaAlAumento,
+                      ).label
+                    }}
+                  </UBadge>
+                </template>
+                <template
+                  v-if="showDieta"
+                  #aportesPartidarios-cell="{ row: nested }"
+                >
+                  <UBadge
+                    :color="
+                      dietaBoolBadge(
+                        (nested.original as Senador).meta?.dieta
+                          ?.aportesPartidarios,
+                      ).color
+                    "
+                    variant="soft"
+                  >
+                    {{
+                      dietaBoolBadge(
+                        (nested.original as Senador).meta?.dieta
+                          ?.aportesPartidarios,
+                      ).label
+                    }}
+                  </UBadge>
+                </template>
+                <template
+                  v-if="showViajesCol"
+                  #viajesUltimos12Meses-cell="{ row: nested }"
+                >
+                  <NuxtLink
+                    :to="`/senadores/${(nested.original as Senador).id}/viajes`"
+                    class="tabular-nums hover:underline"
+                    title="Viajes en los últimos 12 meses"
+                    @click.stop
+                  >
+                    {{
+                      (nested.original as Senador).viajesUltimos12Meses ?? 0
+                    }}
+                  </NuxtLink>
                 </template>
                 <template
                   v-if="showPresentismo"

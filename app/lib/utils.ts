@@ -28,6 +28,13 @@ const ARGENTINA_DATETIME_FORMATTER = new Intl.DateTimeFormat("es-AR", {
   timeZone: "America/Argentina/Buenos_Aires",
 });
 
+const ARGENTINA_TIME_FORMATTER = new Intl.DateTimeFormat("es-AR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "America/Argentina/Buenos_Aires",
+});
+
 /** Fecha visible en toda la UI: `dd/MM/yyyy` (calendario argentino). */
 export function formatDate(
   dateString: string | null | undefined,
@@ -87,6 +94,38 @@ export function formatDateTime(
   const d = `${get("day")}/${get("month")}/${get("year")}`;
   const t = `${get("hour")}:${get("minute")}:${get("second")}`;
   return t.includes(":") ? `${d} ${t}` : d;
+}
+
+/** Hora argentina: `HH:mm`. Vacío/`fallback` si no hay componente de hora. */
+export function formatTime(
+  dateString: string | null | undefined,
+  fallback = "",
+): string {
+  const raw = String(dateString || "").trim();
+  if (!raw) return fallback;
+
+  const ar = raw.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
+  );
+  if (ar) {
+    if (!ar[4]) return fallback;
+    return `${ar[4]!.padStart(2, "0")}:${ar[5]!}`;
+  }
+
+  // Solo fecha civil (sin hora): no inventar 00:00.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return fallback;
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(raw)) return fallback;
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  const parts = ARGENTINA_TIME_FORMATTER.formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value || "";
+  const hh = get("hour");
+  const mm = get("minute");
+  if (!hh || !mm) return fallback;
+  return `${hh.padStart(2, "0")}:${mm.padStart(2, "0")}`;
 }
 
 export function formatDateRange(

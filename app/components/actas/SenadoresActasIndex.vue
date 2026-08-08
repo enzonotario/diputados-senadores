@@ -4,6 +4,7 @@ import type { Acta, FilterConfig } from "@/lib/types";
 import {
   filterActas as applyActaFilters,
   formatDate,
+  formatTime,
   getUniqueValues,
 } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
@@ -78,6 +79,15 @@ const tableColumns = [
     meta: {
       class: {
         td: "whitespace-normal",
+      },
+    },
+  },
+  {
+    accessorKey: "descripcion",
+    header: sortableHeader("Descripción"),
+    meta: {
+      class: {
+        td: "whitespace-normal max-w-[9rem]",
       },
     },
   },
@@ -171,10 +181,27 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
             </NuxtLink>
           </template>
           <template #fecha-cell="{ row }">
-            <div class="flex items-center gap-1">
-              <span>{{ formatDate((row.original as Acta).fecha) }}</span>
+            <div class="flex items-start gap-1">
+              <div class="flex flex-col leading-tight">
+                <span class="tabular-nums">{{
+                  formatDate((row.original as Acta).fecha)
+                }}</span>
+                <span
+                  v-if="formatTime((row.original as Acta).fecha, '')"
+                  class="text-xs text-muted tabular-nums"
+                >
+                  {{ formatTime((row.original as Acta).fecha) }}
+                </span>
+              </div>
               <FuentePdfButton :href="actaPdf((row.original as Acta).id)" />
             </div>
+          </template>
+          <template #descripcion-cell="{ row }">
+            <span
+              class="block max-w-[9rem] text-xs text-toned leading-snug whitespace-normal break-words"
+            >
+              {{ (row.original as Acta).descripcion || "—" }}
+            </span>
           </template>
           <template #resultado-cell="{ row }">
             <ResultadoBadge :resultado="(row.original as Acta).resultado" />

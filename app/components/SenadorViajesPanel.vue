@@ -163,11 +163,15 @@ const trailViajes = computed(() => {
   return list.slice(Math.max(0, i - 2), i);
 });
 
+/** Mapa + lista lado a lado (`sm:`). Solo ahí tiene sentido scroll-spy / scrollIntoView. */
+const sideBySide = useMediaQuery("(min-width: 640px)");
+
 /**
  * Scroll-spy: última fila cuyo centro ya pasó el marker.
  * Evita el salto de 2–3 ítems del “más cercano” + throttle.
  */
 function computeScrollTarget() {
+  if (!sideBySide.value) return null;
   if (tab.value !== "nacionales" || !rowEls.length) return null;
   const marker = window.innerHeight * 0.28;
   let target = 0;
@@ -188,7 +192,7 @@ let catchupRaf = 0;
 let pinnedByClick = false;
 
 function syncActiveFromScroll() {
-  if (pinnedByClick) return;
+  if (!sideBySide.value || pinnedByClick) return;
   const target = computeScrollTarget();
   if (target == null) return;
   const cur = activeIndex.value;
@@ -202,6 +206,7 @@ function syncActiveFromScroll() {
 }
 
 function onScrollFrame() {
+  if (!sideBySide.value) return;
   // Con pin (clic / anterior-siguiente) ignorar scroll, incluido scrollIntoView.
   if (pinnedByClick) return;
   if (scrollRaf) return;
@@ -213,6 +218,7 @@ function onScrollFrame() {
 
 /** El usuario vuelve a navegar con scroll → soltar pin y sincronizar. */
 function unlockPinFromUserScroll() {
+  if (!sideBySide.value) return;
   if (!pinnedByClick) return;
   pinnedByClick = false;
   onScrollFrame();
@@ -223,7 +229,7 @@ function selectRow(index: number) {
   cancelAnimationFrame(catchupRaf);
   scrollRaf = 0;
   catchupRaf = 0;
-  pinnedByClick = true;
+  pinnedByClick = sideBySide.value;
   activeIndex.value = index;
 }
 
@@ -231,10 +237,13 @@ function stepViaje(delta: number) {
   const next = activeIndex.value + delta;
   if (next < 0 || next >= nacionalesSorted.value.length) return;
   selectRow(next);
-  rowEls[next]?.scrollIntoView({
-    behavior: "smooth",
-    block: "nearest",
-  });
+  // En mobile el mapa está arriba: no mover el scroll de la página.
+  if (sideBySide.value) {
+    rowEls[next]?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }
 }
 
 function toggleNacSort() {
@@ -265,6 +274,18 @@ watch(tab, (t) => {
     pinnedByClick = false;
     nextTick(() => syncActiveFromScroll());
   }
+});
+
+watch(sideBySide, (enabled) => {
+  if (!enabled) {
+    pinnedByClick = false;
+    cancelAnimationFrame(scrollRaf);
+    cancelAnimationFrame(catchupRaf);
+    scrollRaf = 0;
+    catchupRaf = 0;
+    return;
+  }
+  nextTick(() => syncActiveFromScroll());
 });
 
 onMounted(() => {

@@ -97,10 +97,16 @@ const porAnioOption = computed(() => {
 });
 
 const viaticosUsdOption = computed(() => {
-  const rows = byAnio.value.filter((r) => r.usd > 0);
-  if (!rows.length) return null;
+  // Mismos años que el chart de volumen (aunque algún año tenga USD = 0).
+  const rows = byAnio.value;
+  const positive = rows.filter((r) => r.usd > 0);
+  if (!positive.length) return null;
   const p = palette.value;
   const chrome = baseChartChrome(p);
+  const max = Math.max(...positive.map((r) => r.usd));
+  const min = Math.min(...positive.map((r) => r.usd));
+  // Si no, 2026 (U$S 1k) queda invisible frente a años de seis cifras.
+  const useLog = max / min >= 40;
 
   return {
     ...chrome,
@@ -111,6 +117,9 @@ const viaticosUsdOption = computed(() => {
         const item = Array.isArray(params) ? params[0] : params;
         const anio = item?.axisValue ?? item?.name;
         const val = Number(item?.value || 0);
+        if (!val) {
+          return `${anio}<br/>${item?.marker || ""} Sin viáticos USD declarados`;
+        }
         return `${anio}<br/>${item?.marker || ""} Viáticos: <b>${formatMisionMontoCompact(val, "USD")}</b>`;
       },
     },
@@ -132,7 +141,8 @@ const viaticosUsdOption = computed(() => {
       axisTick: { show: false },
     },
     yAxis: {
-      type: "value",
+      type: useLog ? ("log" as const) : ("value" as const),
+      ...(useLog ? { min: 1 } : {}),
       axisLabel: {
         color: p.textMuted,
         formatter: (v: number) =>
@@ -145,7 +155,8 @@ const viaticosUsdOption = computed(() => {
       {
         name: "Viáticos USD",
         type: "bar",
-        data: rows.map((r) => r.usd),
+        // Log scale no admite 0: usar null para años sin USD.
+        data: rows.map((r) => (r.usd > 0 ? r.usd : null)),
         barMaxWidth: 28,
         itemStyle: {
           color: p.primary,

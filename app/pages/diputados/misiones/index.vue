@@ -80,23 +80,6 @@ const misionesDisplayed = computed(() => {
 
 const chartMisiones = computed(() => data.value?.misiones || []);
 
-const stats = computed(() => {
-  const ranking = data.value?.ranking || [];
-  const list = data.value?.misiones || [];
-  let usd = 0;
-  let ars = 0;
-  for (const m of list) {
-    if (m.viaticosUsd != null) usd += m.viaticosUsd;
-    if (m.viaticosArs != null) ars += m.viaticosArs;
-  }
-  return {
-    total: list.length,
-    conMisiones: ranking.filter((r) => r.misionesCount > 0).length,
-    usd,
-    ars,
-  };
-});
-
 const hasActiveFilters = computed(() => !!searchQuery.value.trim());
 function clearFilters() {
   searchQuery.value = "";
@@ -288,38 +271,6 @@ useChamberSeo(() => ({
     </div>
 
     <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
-
-    <div
-      v-if="!pending && data"
-      class="grid grid-cols-2 sm:grid-cols-4 gap-3"
-    >
-      <div class="rounded-lg border border-default p-3">
-        <p class="text-xs text-muted">Total misiones oficiales</p>
-        <p class="text-2xl font-semibold tabular-nums">{{ stats.total }}</p>
-      </div>
-      <div class="rounded-lg border border-default p-3">
-        <p class="text-xs text-muted">Diputados con misiones oficiales</p>
-        <p class="text-2xl font-semibold tabular-nums">
-          {{ stats.conMisiones }}
-        </p>
-      </div>
-      <div class="rounded-lg border border-default p-3">
-        <p class="text-xs text-muted">Viáticos USD</p>
-        <p class="text-xl sm:text-2xl font-semibold tabular-nums">
-          {{
-            stats.usd > 0 ? formatMisionMontoCompact(stats.usd, "USD") : "—"
-          }}
-        </p>
-      </div>
-      <div class="rounded-lg border border-default p-3">
-        <p class="text-xs text-muted">Viáticos ARS</p>
-        <p class="text-xl sm:text-2xl font-semibold tabular-nums">
-          {{
-            stats.ars > 0 ? formatMisionMontoCompact(stats.ars, "ARS") : "—"
-          }}
-        </p>
-      </div>
-    </div>
 
     <AppDataSkeleton v-if="pending" variant="home" />
     <DiputadoMisionesCharts

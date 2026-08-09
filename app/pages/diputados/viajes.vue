@@ -29,7 +29,7 @@ const vistaItems = computed(() => [
     value: "nacionales",
   },
   {
-    label: `Internacionales (${data.value?.internacionales.length ?? "…"})`,
+    label: `Misiones oficiales (${data.value?.internacionales.length ?? "…"})`,
     value: "internacionales",
   },
 ]);
@@ -282,7 +282,7 @@ useChamberSeo(() => ({
           variant="link"
           size="sm"
           class="px-0"
-          label="Fuente nacionales"
+          label="Fuente"
         />
       </p>
     </div>
@@ -304,7 +304,7 @@ useChamberSeo(() => ({
         </p>
       </div>
       <div class="rounded-lg border border-default p-3">
-        <p class="text-xs text-muted">Internacionales</p>
+        <p class="text-xs text-muted">Misiones oficiales</p>
         <p class="text-2xl font-semibold tabular-nums">
           {{ stats.internacionales }}
         </p>
@@ -334,7 +334,9 @@ useChamberSeo(() => ({
         :placeholder="
           vista === 'ranking'
             ? 'Nombre, provincia, bloque...'
-            : 'Diputado, destino, origen...'
+            : vista === 'nacionales'
+              ? 'Diputado, destino, origen...'
+              : 'Diputado, destino, motivo, expediente...'
         "
       />
     </div>
@@ -518,9 +520,6 @@ useChamberSeo(() => ({
             }}
           </template>
         </UTable>
-        <p class="px-4 sm:px-6 py-3 text-xs text-muted border-t border-default">
-          Misiones oficiales internacionales según datos publicados por la HCDN.
-        </p>
       </DataTableCard>
     </template>
   </div>

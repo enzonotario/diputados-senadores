@@ -13,3 +13,12 @@ export function viajesFuenteUrl(chamber: "senadores" | "diputados") {
     ? VIAJES_FUENTE_URL_DIPUTADOS
     : VIAJES_FUENTE_URL_SENADO;
 }
+
+/** URL externa del registro (HCDN misiones oficiales). */
+export function viajeIntlDocumentoUrl(v: {
+  documentoUrl?: string | null;
+  recursoUrl?: string | null;
+}) {
+  const url = String(v.documentoUrl || v.recursoUrl || "").trim();
+  return url || null;
+}

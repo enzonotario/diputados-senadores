@@ -7,6 +7,7 @@ import {
   getDiputadoConActasById,
   getDiputados,
   getDiputadosConActas,
+  getDiputadosPeriodosOficiales,
   getDiputadosViajesExplore,
   getDiputadoViajes,
   getActaWithDiputadosById,
@@ -44,6 +45,7 @@ import {
 } from "../../app/utils/votingAffinity";
 import {
   buildPeriodosCatalog,
+  buildPeriodosCatalogFromOfficial,
   filterActasByPeriodo,
   normalizePeriodoKeys,
   type PeriodosCatalog,
@@ -550,11 +552,23 @@ export async function buildSlimActas(chamber: ChamberId) {
 export async function buildPeriodos(
   chamber: ChamberId,
 ): Promise<PeriodosCatalog & { chamber: ChamberId }> {
-  const actas =
-    chamber === "diputados"
-      ? await getActasDiputados()
-      : await getActasSenadores();
-  return { chamber, ...buildPeriodosCatalog(actas, chamber) };
+  if (chamber === "diputados") {
+    const [actas, official] = await Promise.all([
+      getActasDiputados(),
+      getDiputadosPeriodosOficiales(),
+    ]);
+    if (official.length) {
+      return {
+        chamber,
+        ...buildPeriodosCatalogFromOfficial(official, actas, "diputados"),
+      };
+    }
+    // Fallback mientras prod no tenga /v1/diputados/periodos.
+    return { chamber, ...buildPeriodosCatalog(actas, "diputados") };
+  }
+
+  const actas = await getActasSenadores();
+  return { chamber, ...buildPeriodosCatalog(actas, "senadores") };
 }
 
 export async function buildMembersList(chamber: ChamberId) {

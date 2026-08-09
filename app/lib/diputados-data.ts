@@ -61,6 +61,9 @@ let _actas = createSingleflight<Acta[]>();
 let _diputadosConActas = createSingleflight<Diputado[]>();
 let _viajesConteo12m = createSingleflight<Record<string, number>>();
 let _viajesExplore = createSingleflight<DiputadosViajesExplorePayload>();
+let _periodosOficiales = createSingleflight<
+  Array<{ periodo: string; inicio: string; fin: string; sesiones: string | null }>
+>();
 const _viajesById = new Map<string, Promise<import("./types").DiputadoViajes>>();
 
 function assertServerData() {
@@ -79,6 +82,7 @@ export function clearDiputadosDataCache() {
   _diputadosConActas.clear();
   _viajesConteo12m.clear();
   _viajesExplore.clear();
+  _periodosOficiales.clear();
   _viajesById.clear();
   clearDiputadosAliasMapCache();
 }
@@ -536,6 +540,35 @@ export type DiputadosViajesExplorePayload = {
   nacionales: DiputadosViajesExploreNacional[];
   internacionales: [];
 };
+
+export async function getDiputadosPeriodosOficiales(): Promise<
+  Array<{ periodo: string; inicio: string; fin: string; sesiones: string | null }>
+> {
+  assertServerData();
+  return _periodosOficiales.get(async () => {
+    const origin = getApiOrigin();
+    try {
+      const raw = await $fetch<any>(`${origin}/v1/diputados/periodos`);
+      const list = Array.isArray(raw?.periodos)
+        ? raw.periodos
+        : Array.isArray(raw)
+          ? raw
+          : [];
+      return list
+        .map((p: any) => ({
+          periodo: String(p?.periodo || "").trim(),
+          inicio: String(p?.inicio || "").slice(0, 10),
+          fin: String(p?.fin || "").slice(0, 10),
+          sesiones: p?.sesiones ? String(p.sesiones).slice(0, 10) : null,
+        }))
+        .filter((p: { periodo: string; inicio: string; fin: string }) =>
+          Boolean(p.periodo && p.inicio && p.fin),
+        );
+    } catch {
+      return [];
+    }
+  });
+}
 
 export async function getViajesConteo12mByDiputadoId(): Promise<
   Record<string, number>

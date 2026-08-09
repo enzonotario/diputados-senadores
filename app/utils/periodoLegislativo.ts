@@ -1,7 +1,8 @@
 /**
  * Períodos legislativos para filtrar actas / miembros / charts.
  *
- * - Diputados: `acta.periodo` tal cual viene de la API (p. ej. "144").
+ * - Diputados: catálogo oficial HCDN (`/v1/diputados/periodos`); la clave
+ *   coincide con `acta.periodo` (p. ej. "144"). Fallback: se deriva de actas.
  * - Senadores: la API no manda período → se deriva un “período ordinario”
  *   por fecha (1 mar Y → fin feb Y+1), clave = año de inicio (`"2025"`).
  *
@@ -214,6 +215,103 @@ export function buildPeriodosCatalog(
       minFecha: sin.min || "0000-01-01",
       maxFecha: sin.max || "9999-12-31",
       count: sin.count,
+    });
+  }
+
+  return {
+    periods,
+    hasSin,
+    defaultKey: pickDefaultPeriodoKey(periods),
+  };
+}
+
+/**
+ * Catálogo de períodos a partir de la fuente oficial HCDN (`/v1/diputados/periodos`).
+ * Los conteos de votaciones se cruzan con las actas (misma clave `acta.periodo`).
+ */
+export function buildPeriodosCatalogFromOfficial(
+  official: Array<{
+    periodo: string;
+    inicio: string;
+    fin: string;
+  }>,
+  actas: ActaPeriodoRow[],
+  chamber: "diputados" | "senadores" = "diputados",
+): PeriodosCatalog {
+  const countByKey = new Map<string, number>();
+  let sinCount = 0;
+  let sinMin = "";
+  let sinMax = "";
+
+  for (const a of actas || []) {
+    const key = resolveActaPeriodoKey(a, chamber);
+    const iso = toIsoDateAr(a.fecha);
+    if (key === SIN_PERIODO_KEY) {
+      sinCount += 1;
+      if (iso) {
+        if (!sinMin || iso < sinMin) sinMin = iso;
+        if (!sinMax || iso > sinMax) sinMax = iso;
+      }
+      continue;
+    }
+    countByKey.set(key, (countByKey.get(key) || 0) + 1);
+  }
+
+  const knownKeys = new Set<string>();
+  const periods: PeriodoInfo[] = [];
+
+  for (const p of official || []) {
+    const key = String(p.periodo || "").trim();
+    if (!key) continue;
+    knownKeys.add(key);
+    const minFecha = toIsoDateAr(p.inicio) || String(p.inicio || "").slice(0, 10);
+    const maxFecha = toIsoDateAr(p.fin) || String(p.fin || "").slice(0, 10);
+    if (!minFecha || !maxFecha) continue;
+    periods.push({
+      key,
+      label: formatPeriodoLabel(key, chamber),
+      minFecha,
+      maxFecha,
+      count: countByKey.get(key) || 0,
+    });
+  }
+
+  // Actas con período no listado en HCDN: se agregan con rango derivado de fechas.
+  for (const [key, count] of countByKey) {
+    if (knownKeys.has(key)) continue;
+    let min = "";
+    let max = "";
+    for (const a of actas || []) {
+      if (resolveActaPeriodoKey(a, chamber) !== key) continue;
+      const iso = toIsoDateAr(a.fecha);
+      if (!iso) continue;
+      if (!min || iso < min) min = iso;
+      if (!max || iso > max) max = iso;
+    }
+    periods.push({
+      key,
+      label: formatPeriodoLabel(key, chamber),
+      minFecha: min || "0000-01-01",
+      maxFecha: max || "9999-12-31",
+      count,
+    });
+  }
+
+  periods.sort((a, b) => {
+    const an = Number(a.key);
+    const bn = Number(b.key);
+    if (Number.isFinite(an) && Number.isFinite(bn)) return bn - an;
+    return b.maxFecha.localeCompare(a.maxFecha);
+  });
+
+  const hasSin = sinCount > 0;
+  if (hasSin) {
+    periods.push({
+      key: SIN_PERIODO_KEY,
+      label: formatPeriodoLabel(SIN_PERIODO_KEY, chamber),
+      minFecha: sinMin || "0000-01-01",
+      maxFecha: sinMax || "9999-12-31",
+      count: sinCount,
     });
   }
 

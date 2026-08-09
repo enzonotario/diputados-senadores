@@ -21,8 +21,8 @@ function withPeriodo(path: string) {
 }
 
 /**
- * Desktop: Inicio / Votaciones / Poroteo / Senadores / Partidos / Explorar▾
- * Explorar agrupa Viajes, Dietas, Comisiones (solo senadores).
+ * Desktop: Inicio / Votaciones / Poroteo / Miembros / Grupos / Explorar▾
+ * Explorar: Viajes (ambas cámaras); Dietas/Comisiones solo senadores por ahora.
  */
 const desktopNavItems = computed<NavigationMenuItem[]>(() => {
   const c = legislative.value;
@@ -36,7 +36,8 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
   const exploreActive =
     path.startsWith("/senadores/viajes") ||
     path.startsWith("/senadores/dietas") ||
-    path.startsWith("/senadores/comisiones");
+    path.startsWith("/senadores/comisiones") ||
+    path.startsWith("/diputados/viajes");
   const membersActive =
     !groupsActive &&
     !exploreActive &&
@@ -105,6 +106,20 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
         },
       ],
     });
+  } else if (chamberId.value === "diputados") {
+    items.push({
+      label: "Explorar",
+      active: path.startsWith("/diputados/viajes"),
+      children: [
+        {
+          label: "Viajes",
+          description: "Viajes nacionales de diputados (datos abiertos HCDN).",
+          icon: "i-lucide-plane",
+          to: withPeriodo("/diputados/viajes"),
+          active: path.startsWith("/diputados/viajes"),
+        },
+      ],
+    });
   }
 
   return items;
@@ -131,7 +146,8 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
   const exploreActive =
     path.startsWith("/senadores/viajes") ||
     path.startsWith("/senadores/dietas") ||
-    path.startsWith("/senadores/comisiones");
+    path.startsWith("/senadores/comisiones") ||
+    path.startsWith("/diputados/viajes");
   const membersActive =
     !groupsActive &&
     !exploreActive &&
@@ -199,6 +215,20 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
           icon: "i-lucide-users-round",
           to: "/senadores/comisiones",
           active: path.startsWith("/senadores/comisiones"),
+        },
+      ],
+    });
+  } else if (chamberId.value === "diputados") {
+    items.push({
+      label: "Explorar",
+      icon: "i-lucide-compass",
+      defaultOpen: exploreActive,
+      children: [
+        {
+          label: "Viajes",
+          icon: "i-lucide-plane",
+          to: "/diputados/viajes",
+          active: path.startsWith("/diputados/viajes"),
         },
       ],
     });

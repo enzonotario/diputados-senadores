@@ -24,11 +24,14 @@ const props = withDefaults(
     showPresentismo?: boolean;
     /** Columna de voto en la tabla anidada (detalle de acta). */
     showTipoVoto?: boolean;
+    /** Columna Viajes 12m en anidada. */
+    showViajes?: boolean;
     emptyMessage?: string;
   }>(),
   {
     showPresentismo: true,
     showTipoVoto: false,
+    showViajes: true,
     emptyMessage: "No se encontraron grupos con los filtros aplicados.",
   },
 );
@@ -187,6 +190,20 @@ const nestedColumns = computed(() => {
       id: "tipoVoto",
       accessorKey: "tipoVoto",
       header: sortableHeader("Voto"),
+    });
+  }
+
+  if (props.showViajes) {
+    cols.push({
+      id: "viajesUltimos12Meses",
+      accessorKey: "viajesUltimos12Meses",
+      header: sortableHeader("Viajes 12m"),
+      meta: {
+        class: {
+          th: "text-right whitespace-nowrap",
+          td: "text-right tabular-nums whitespace-nowrap",
+        },
+      },
     });
   }
 
@@ -427,6 +444,21 @@ function hrefForGroup(group: DiputadosGroupedTableRow) {
                   <TipoVotoLabel
                     :tipo="(nested.original as Diputado).tipoVoto"
                   />
+                </template>
+                <template
+                  v-if="showViajes"
+                  #viajesUltimos12Meses-cell="{ row: nested }"
+                >
+                  <NuxtLink
+                    :to="`/diputados/${(nested.original as Diputado).id}/viajes`"
+                    class="tabular-nums hover:underline"
+                    title="Viajes 12m"
+                    @click.stop
+                  >
+                    {{
+                      (nested.original as Diputado).viajesUltimos12Meses ?? 0
+                    }}
+                  </NuxtLink>
                 </template>
                 <template
                   v-if="showPresentismo"

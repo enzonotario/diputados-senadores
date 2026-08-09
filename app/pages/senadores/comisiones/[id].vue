@@ -272,7 +272,7 @@ useChamberSeo(() => {
               v-if="(row.original as IntegranteRow).senadorId"
               :to="`/senadores/${(row.original as IntegranteRow).senadorId}/viajes`"
               class="tabular-nums hover:underline"
-              title="Viajes en los últimos 12 meses"
+              title="Viajes 12m"
               @click.stop
             >
               {{

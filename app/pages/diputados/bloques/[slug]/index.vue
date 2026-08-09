@@ -132,6 +132,17 @@ const tableColumns = [
   },
   { accessorKey: "provincia", header: sortableHeader("Provincia") },
   {
+    id: "viajesUltimos12Meses",
+    accessorKey: "viajesUltimos12Meses",
+    header: sortableHeader("Viajes 12m"),
+    meta: {
+      class: {
+        th: "text-right whitespace-nowrap",
+        td: "text-right tabular-nums whitespace-nowrap",
+      },
+    },
+  },
+  {
     id: "presentismo",
     accessorKey: "estadisticas.presentismo",
     header: sortableHeader("Asistencia"),
@@ -322,6 +333,16 @@ useChamberSeo(() => {
                   (row.original as Diputado).nombreCompleto ||
                   `${(row.original as Diputado).apellido}, ${(row.original as Diputado).nombre}`
                 }}
+              </NuxtLink>
+            </template>
+            <template #viajesUltimos12Meses-cell="{ row }">
+              <NuxtLink
+                :to="`/diputados/${(row.original as Diputado).id}/viajes`"
+                class="tabular-nums hover:underline"
+                title="Viajes 12m"
+                @click.stop
+              >
+                {{ (row.original as Diputado).viajesUltimos12Meses ?? 0 }}
               </NuxtLink>
             </template>
             <template #presentismo-cell="{ row }">

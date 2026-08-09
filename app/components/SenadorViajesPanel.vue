@@ -2,7 +2,7 @@
 import type { SenadorViajes, ViajeInternacional, ViajeNacional } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
-import { VIAJES_FUENTE_URL } from "@/utils/viajes";
+import { viajesFuenteUrl } from "@/utils/viajes";
 import { viajePdfUrl } from "@/utils/staticPdf";
 import SenadorViajesMap from "@/components/SenadorViajesMap.vue";
 
@@ -11,22 +11,41 @@ const props = withDefaults(
     viajes: SenadorViajes | null;
     /** Mostrar la tarjeta aunque no haya viajes (página dedicada). */
     showEmpty?: boolean;
+    chamber?: "senadores" | "diputados";
   }>(),
-  { showEmpty: false },
+  { showEmpty: false, chamber: "senadores" },
+);
+
+const fuenteUrl = computed(() => viajesFuenteUrl(props.chamber));
+const fuenteLabel = computed(() =>
+  props.chamber === "diputados"
+    ? "viajes nacionales (HCDN)"
+    : "viajes del Senado",
 );
 
 const tab = ref<"nacionales" | "internacionales">("nacionales");
 
-const tabItems = computed(() => [
-  {
-    label: `Nacionales (${props.viajes?.nacionales.length || 0})`,
-    value: "nacionales" as const,
-  },
-  {
-    label: `Internacionales (${props.viajes?.internacionales.length || 0})`,
-    value: "internacionales" as const,
-  },
-]);
+const showInternacionales = computed(
+  () =>
+    props.chamber !== "diputados" ||
+    (props.viajes?.internacionales.length || 0) > 0,
+);
+
+const tabItems = computed(() => {
+  const items = [
+    {
+      label: `Nacionales (${props.viajes?.nacionales.length || 0})`,
+      value: "nacionales" as const,
+    },
+  ];
+  if (showInternacionales.value) {
+    items.push({
+      label: `Internacionales (${props.viajes?.internacionales.length || 0})`,
+      value: "internacionales" as const,
+    });
+  }
+  return items;
+});
 
 const { sorting: sortingNac } = useTableSorting("periodo", true, {
   syncQuery: false,
@@ -73,7 +92,8 @@ function fechasIntl(v: ViajeInternacional) {
 }
 
 function viajeNacKey(v: ViajeNacional, index: number) {
-  return `${v.documentoId}-${v.anio}-${v.mes}-${v.origenCodigo}-${v.destinoCodigo}-${index}`;
+  const doc = v.documentoId || v.recursoId || "x";
+  return `${doc}-${v.anio}-${v.mes}-${v.origenCodigo}-${v.destinoCodigo}-${index}`;
 }
 
 const nacionalesSorted = computed(() => {
@@ -305,7 +325,7 @@ onBeforeUnmount(() => {
       >
         <h2 class="text-lg font-semibold">Viajes</h2>
         <SegmentedTabs
-          v-if="hasAny"
+          v-if="hasAny && tabItems.length > 1"
           v-model="tab"
           :items="tabItems"
           :center="false"
@@ -314,7 +334,13 @@ onBeforeUnmount(() => {
     </template>
 
     <p v-if="!hasAny" class="px-4 sm:px-6 py-6 text-sm text-muted">
-      No hay viajes nacionales ni internacionales registrados para este senador.
+      <template v-if="props.chamber === 'diputados'">
+        No hay viajes nacionales registrados para este diputado.
+      </template>
+      <template v-else>
+        No hay viajes nacionales ni internacionales registrados para este
+        senador.
+      </template>
     </p>
 
     <template v-else-if="tab === 'nacionales'">
@@ -393,7 +419,11 @@ onBeforeUnmount(() => {
                   </p>
                 </div>
                 <FuentePdfButton
-                  :href="viajePdfUrl(viaje.ambito, viaje.documentoId)"
+                  :href="
+                    viaje.documentoId
+                      ? viajePdfUrl(viaje.ambito, viaje.documentoId)
+                      : null
+                  "
                 />
               </div>
               <div class="min-w-0 text-sm truncate">
@@ -464,12 +494,12 @@ onBeforeUnmount(() => {
     <p class="px-4 sm:px-6 py-3 text-xs text-muted border-t border-default">
       Fuente:
       <a
-        :href="VIAJES_FUENTE_URL"
+        :href="fuenteUrl"
         target="_blank"
         rel="noopener noreferrer"
         class="underline hover:text-highlighted"
       >
-        viajes del Senado
+        {{ fuenteLabel }}
       </a>
     </p>
   </DataTableCard>

@@ -399,14 +399,19 @@ async function computeViajesConteo12mFromYearIndexes(
   return out;
 }
 
-/** Explorador de viajes (últimos 12 meses) para todos los senadores. */
+/** Explorador de viajes (histórico completo; ranking ordena por conteo 12m). */
 export async function getViajesExplore(): Promise<ViajesExplorePayload> {
   assertServerData();
   return _viajesExplore.get(async () => {
     const origin = getApiOrigin();
-    const [senadores, raw] = await Promise.all([
+    const [senadores, nacRaw, intlRaw] = await Promise.all([
       getSenadores(),
-      getViajes12mRaw(origin),
+      $fetch<any[]>(`${origin}/v1/senado/viajes/nacionales`).catch(
+        () => [] as any[],
+      ),
+      $fetch<any[]>(`${origin}/v1/senado/viajes/internacionales`).catch(
+        () => [] as any[],
+      ),
     ]);
 
     const byId = new Map(senadores.map((s) => [String(s.id), s]));
@@ -434,7 +439,7 @@ export async function getViajesExplore(): Promise<ViajesExplorePayload> {
           a.nombreCompleto.localeCompare(b.nombreCompleto, "es"),
       );
 
-    const nacionales: ViajesExploreNacional[] = raw.nacionales
+    const nacionales: ViajesExploreNacional[] = (nacRaw || [])
       .map((v) => ({
         senadorId: v?.senadorId != null ? String(v.senadorId) : null,
         senadorNombre: nameOf(v?.senadorId, String(v?.nombre || "")),
@@ -455,7 +460,7 @@ export async function getViajesExplore(): Promise<ViajesExplorePayload> {
         return kb.localeCompare(ka);
       });
 
-    const internacionales: ViajesExploreInternacional[] = raw.internacionales
+    const internacionales: ViajesExploreInternacional[] = (intlRaw || [])
       .map((v) => ({
         senadorId: v?.senadorId != null ? String(v.senadorId) : null,
         senadorNombre: nameOf(v?.senadorId, String(v?.nombre || "")),
@@ -480,10 +485,11 @@ export async function getViajesExplore(): Promise<ViajesExplorePayload> {
         return kb.localeCompare(ka);
       });
 
+    const w = viajes12mWindow();
     return {
       ventana: {
-        desde: { anio: raw.window.desdeAnio, mes: raw.window.desdeMes },
-        hasta: { anio: raw.window.hastaAnio, mes: raw.window.hastaMes },
+        desde: { anio: w.desdeAnio, mes: w.desdeMes },
+        hasta: { anio: w.hastaAnio, mes: w.hastaMes },
       },
       ranking,
       nacionales,

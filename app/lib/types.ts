@@ -70,14 +70,22 @@ export interface ViajeNacional {
   anio: number
   mes: number
   mesNombre: string
-  documentoId: string
-  documentoUrl: string
+  /** Senado (PDF). */
+  documentoId?: string
+  documentoUrl?: string
+  /** Diputados (CSV HCDN). */
+  recursoId?: string
+  recursoUrl?: string
   nombre: string
-  senadorId: string | null
+  senadorId?: string | null
+  diputadoId?: string | null
+  tipoSolicitud?: string | null
   origen: string
   origenCodigo: string | null
   destino: string
   destinoCodigo: string | null
+  provincia?: string | null
+  bloque?: string | null
 }
 
 export interface ViajeInternacional {
@@ -105,6 +113,12 @@ export interface ViajeInternacional {
 
 export interface SenadorViajes {
   senadorId: string
+  nacionales: ViajeNacional[]
+  internacionales: ViajeInternacional[]
+}
+
+export interface DiputadoViajes {
+  diputadoId: string
   nacionales: ViajeNacional[]
   internacionales: ViajeInternacional[]
 }

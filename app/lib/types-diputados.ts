@@ -18,6 +18,8 @@ export interface Diputado {
     fin: string;
   };
   foto: string;
+  /** Tramos nacionales en los últimos 12 meses (HCDN). */
+  viajesUltimos12Meses?: number;
   estadisticas?: {
     totalVotaciones: number;
     presentismo: number;

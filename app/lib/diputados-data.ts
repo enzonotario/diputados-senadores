@@ -59,6 +59,9 @@ let _diputadosRaw = createSingleflight<any[]>();
 let _diputados = createSingleflight<Diputado[]>();
 let _actas = createSingleflight<Acta[]>();
 let _diputadosConActas = createSingleflight<Diputado[]>();
+let _viajesConteo12m = createSingleflight<Record<string, number>>();
+let _viajesExplore = createSingleflight<DiputadosViajesExplorePayload>();
+const _viajesById = new Map<string, Promise<import("./types").DiputadoViajes>>();
 
 function assertServerData() {
   if (import.meta.client) {
@@ -74,6 +77,9 @@ export function clearDiputadosDataCache() {
   _diputados.clear();
   _actas.clear();
   _diputadosConActas.clear();
+  _viajesConteo12m.clear();
+  _viajesExplore.clear();
+  _viajesById.clear();
   clearDiputadosAliasMapCache();
 }
 
@@ -108,11 +114,14 @@ export async function getDiputados(): Promise<Diputado[]> {
       if (!byId.has(id)) byId.set(id, d);
     });
 
+    const conteo = await getViajesConteo12mByDiputadoId();
+
     return Array.from(byId.values())
       .sort((a, b) => String(a.id).localeCompare(String(b.id)))
       .map((d) => ({
         ...d,
         nombreCompleto: `${d.apellido}, ${d.nombre}`,
+        viajesUltimos12Meses: conteo[String(d.id)] ?? 0,
       })) as Diputado[];
   });
 }
@@ -490,4 +499,192 @@ export async function getBloqueBySlug(slugParam: string) {
     inactivos,
     presentismo: averagePresentismo(activos.length ? activos : delBloque),
   };
+}
+
+export type DiputadosViajesExploreNacional = {
+  anio: number;
+  mes: number;
+  mesNombre: string;
+  nombre: string;
+  diputadoId: string | null;
+  tipoSolicitud: string | null;
+  origen: string;
+  origenCodigo: string | null;
+  destino: string;
+  destinoCodigo: string | null;
+  recursoId: string;
+  recursoUrl: string;
+};
+
+export type DiputadosViajesExploreRankingRow = {
+  id: string;
+  nombreCompleto: string;
+  nombre: string;
+  apellido: string;
+  foto: string | null;
+  provincia: string;
+  bloque: string;
+  viajesUltimos12Meses: number;
+};
+
+export type DiputadosViajesExplorePayload = {
+  ventana: {
+    desde: { anio: number; mes: number };
+    hasta: { anio: number; mes: number };
+  };
+  ranking: DiputadosViajesExploreRankingRow[];
+  nacionales: DiputadosViajesExploreNacional[];
+  internacionales: [];
+};
+
+export async function getViajesConteo12mByDiputadoId(): Promise<
+  Record<string, number>
+> {
+  assertServerData();
+  return _viajesConteo12m.get(async () => {
+    const origin = getApiOrigin();
+    try {
+      const raw = await $fetch<any>(`${origin}/v1/diputados/viajes/conteo-12m`);
+      const por = raw?.porDiputado;
+      if (por && typeof por === "object") {
+        const out: Record<string, number> = {};
+        for (const [id, value] of Object.entries(por)) {
+          if (typeof value === "number") {
+            out[String(id)] = value;
+            continue;
+          }
+          if (value && typeof value === "object") {
+            const total = (value as any).total;
+            out[String(id)] =
+              typeof total === "number"
+                ? total
+                : Number((value as any).nacionales || 0);
+          }
+        }
+        return out;
+      }
+    } catch {
+      // endpoint aún no en prod
+    }
+    return {};
+  });
+}
+
+export async function getDiputadosViajesExplore(): Promise<DiputadosViajesExplorePayload> {
+  assertServerData();
+  return _viajesExplore.get(async () => {
+    const origin = getApiOrigin();
+    const [conteo, diputados, nacRaw] = await Promise.all([
+      getViajesConteo12mByDiputadoId(),
+      getDiputados(),
+      $fetch<any[]>(`${origin}/v1/diputados/viajes/nacionales`).catch(
+        () => [] as any[],
+      ),
+    ]);
+
+    const now = new Date();
+    const hastaAnio = now.getUTCFullYear();
+    const hastaMes = now.getUTCMonth() + 1;
+    const hastaIdx = hastaAnio * 12 + hastaMes;
+    const desdeIdx = hastaIdx - 11;
+    const desdeAnio = Math.floor((desdeIdx - 1) / 12);
+    const desdeMes = ((desdeIdx - 1) % 12) + 1;
+
+    const nacionales: DiputadosViajesExploreNacional[] = [];
+    for (const v of nacRaw || []) {
+      const anio = Number(v?.anio);
+      const mes = Number(v?.mes);
+      if (!anio || mes < 1 || mes > 12) continue;
+      nacionales.push({
+        anio,
+        mes,
+        mesNombre: String(v?.mesNombre || ""),
+        nombre: String(v?.nombre || ""),
+        diputadoId: v?.diputadoId ? String(v.diputadoId) : null,
+        tipoSolicitud: v?.tipoSolicitud != null ? String(v.tipoSolicitud) : null,
+        origen: String(v?.origen || ""),
+        origenCodigo: v?.origenCodigo != null ? String(v.origenCodigo) : null,
+        destino: String(v?.destino || ""),
+        destinoCodigo: v?.destinoCodigo != null ? String(v.destinoCodigo) : null,
+        recursoId: String(v?.recursoId || ""),
+        recursoUrl: String(v?.recursoUrl || ""),
+      });
+    }
+    nacionales.sort((a, b) => {
+      const ka = `${a.anio}-${String(a.mes).padStart(2, "0")}`;
+      const kb = `${b.anio}-${String(b.mes).padStart(2, "0")}`;
+      return kb.localeCompare(ka);
+    });
+
+    const byId = new Map(diputados.map((d) => [String(d.id), d]));
+    const ranking: DiputadosViajesExploreRankingRow[] = Object.entries(conteo)
+      .map(([id, n]) => {
+        const d = byId.get(id);
+        if (!d) return null;
+        return {
+          id,
+          nombreCompleto: diputadoNombreCompleto(d),
+          nombre: d.nombre,
+          apellido: d.apellido,
+          foto: d.foto || null,
+          provincia: d.provincia,
+          bloque: d.bloque,
+          viajesUltimos12Meses: n,
+        };
+      })
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          b!.viajesUltimos12Meses - a!.viajesUltimos12Meses ||
+          a!.nombreCompleto.localeCompare(b!.nombreCompleto, "es"),
+      ) as DiputadosViajesExploreRankingRow[];
+
+    return {
+      ventana: {
+        desde: { anio: desdeAnio, mes: desdeMes },
+        hasta: { anio: hastaAnio, mes: hastaMes },
+      },
+      ranking,
+      nacionales,
+      internacionales: [],
+    };
+  });
+}
+
+export async function getDiputadoViajes(
+  id: string,
+): Promise<import("./types").DiputadoViajes> {
+  assertServerData();
+  const key = String(id || "").trim();
+  if (!key) {
+    return { diputadoId: "", nacionales: [], internacionales: [] };
+  }
+  const existing = _viajesById.get(key);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const origin = getApiOrigin();
+    try {
+      const raw = await $fetch<any>(
+        `${origin}/v1/diputados/diputados/${encodeURIComponent(key)}/viajes`,
+      );
+      return {
+        diputadoId: String(raw?.diputadoId || key),
+        nacionales: Array.isArray(raw?.nacionales) ? raw.nacionales : [],
+        internacionales: Array.isArray(raw?.internacionales)
+          ? raw.internacionales
+          : [],
+      };
+    } catch {
+      return { diputadoId: key, nacionales: [], internacionales: [] };
+    }
+  })();
+
+  _viajesById.set(key, promise);
+  try {
+    return await promise;
+  } catch (e) {
+    _viajesById.delete(key);
+    throw e;
+  }
 }

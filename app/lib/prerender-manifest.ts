@@ -97,6 +97,7 @@ export async function collectChamberPrerenderRoutes(
   if (chamber === "diputados") {
     routes.add("/diputados");
     routes.add("/diputados/bloques");
+    routes.add("/diputados/viajes");
 
     const [rawDiputados, rawActas] = await Promise.all([
       fetchJson<any[]>("/v1/diputados/diputados"),

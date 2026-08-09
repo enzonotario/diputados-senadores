@@ -118,6 +118,14 @@ const pageItems = computed<SearchItem[]>(() => {
       icon: "i-lucide-users-round",
       to: "/senadores/comisiones",
     });
+  } else if (chamber.value.id === "diputados") {
+    items.push({
+      id: "page-viajes",
+      label: "Viajes",
+      suffix: "Página",
+      icon: "i-lucide-plane",
+      to: "/diputados/viajes",
+    });
   }
 
   items.push({

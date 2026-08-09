@@ -383,7 +383,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
             <NuxtLink
               :to="`/senadores/${(row.original as Senador).id}/viajes`"
               class="tabular-nums hover:underline"
-              title="Viajes en los últimos 12 meses"
+              title="Viajes 12m"
               @click.stop
             >
               {{ (row.original as Senador).viajesUltimos12Meses ?? 0 }}
@@ -578,7 +578,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                       <NuxtLink
                         :to="`/senadores/${(row.original as Senador).id}/viajes`"
                         class="tabular-nums hover:underline"
-                        title="Viajes en los últimos 12 meses"
+                        title="Viajes 12m"
                         @click.stop
                       >
                         {{ (row.original as Senador).viajesUltimos12Meses ?? 0 }}

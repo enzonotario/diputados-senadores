@@ -45,20 +45,6 @@ const { sorting: sortingIntl } = useTableSorting("periodo", true, {
   syncQuery: false,
 });
 
-function mesLabel(anio: number, mes: number) {
-  const fallback = new Date(anio, mes - 1, 1).toLocaleDateString("es-AR", {
-    month: "long",
-    year: "numeric",
-  });
-  return fallback.charAt(0).toUpperCase() + fallback.slice(1);
-}
-
-const ventanaLabel = computed(() => {
-  const v = data.value?.ventana;
-  if (!v) return null;
-  return `${mesLabel(v.desde.anio, v.desde.mes)} – ${mesLabel(v.hasta.anio, v.hasta.mes)}`;
-});
-
 function periodoKey(anio: number, mes: number | null | undefined) {
   if (mes != null && mes >= 1 && mes <= 12) {
     return `${anio}-${String(mes).padStart(2, "0")}`;
@@ -187,7 +173,7 @@ const rankingColumns = [
   {
     id: "viajesUltimos12Meses",
     accessorKey: "viajesUltimos12Meses",
-    header: sortableHeader("Viajes (12 m)"),
+    header: sortableHeader("Viajes 12m"),
     meta: {
       class: {
         th: "text-right",
@@ -280,7 +266,7 @@ function onIntlSelect(
 useChamberSeo(() => ({
   title: "Viajes",
   description:
-    "Viajes nacionales e internacionales de los senadores en los últimos 12 meses.",
+    "Viajes nacionales e internacionales declarados por los senadores.",
   og: { kind: "list", eyebrow: "viajes", badge: "Viajes" },
 }));
 </script>
@@ -291,8 +277,7 @@ useChamberSeo(() => ({
       <h1 class="text-3xl font-bold">Viajes del Senado</h1>
       <p class="text-muted max-w-3xl">
         Explorá los viajes nacionales e internacionales declarados por los
-        senadores en los últimos 12 meses
-        <template v-if="ventanaLabel"> ({{ ventanaLabel }})</template>.
+        senadores.
       </p>
     </div>
 

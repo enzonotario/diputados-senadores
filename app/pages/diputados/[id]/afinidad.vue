@@ -34,7 +34,7 @@ const { localFetch } = useLocalApi();
 const { filterActas: filterByPeriodo } = usePeriodoFilter();
 
 const { data, pending } = await useAsyncData(
-  () => `diputado-afinidad-${id.value}`,
+  () => `diputado-${id.value}`,
   () => localFetch<MemberProfileResponse>(`/api/members/${id.value}`),
   { watch: [id] },
 );
@@ -133,21 +133,10 @@ useChamberSeo(() => {
 </script>
 
 <template>
-  <div class="page-container">
-    <AppDataSkeleton v-if="pending" variant="member" />
-
-    <UCard v-else-if="!diputado">
-      <template #header>
-        <h1 class="text-xl font-semibold">Diputado no encontrado</h1>
-      </template>
-      <p class="text-gray-600 dark:text-gray-300">
-        No se pudo encontrar información para el diputado solicitado.
-      </p>
-    </UCard>
-
-    <ClientOnly v-else>
+  <div v-if="diputado">
+    <ClientOnly>
       <FilterPeriodo class="mb-6" />
-      <AppDataSkeleton v-if="peersPending" variant="affinity" />
+      <AppDataSkeleton v-if="pending || peersPending" variant="affinity" />
       <AnalisisMemberAffinityDetail
         v-else
         :member-id="diputado.id"

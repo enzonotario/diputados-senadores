@@ -261,8 +261,7 @@ export function rewritePathForChamber(
       return path
         .replace(/^\/senadores/, "/diputados")
         .replace(/\/partidos\b/, "/bloques")
-        // Tabs / secciones solo de senadores (ficha o explorar).
-        .replace(/\/viajes$/, "")
+        // Secciones solo de senadores (ficha o explorar).
         .replace(/\/comisiones(\/[^/]+)?$/, "")
         .replace(/\/dietas$/, "");
     }

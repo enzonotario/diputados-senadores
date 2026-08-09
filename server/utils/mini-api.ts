@@ -7,6 +7,8 @@ import {
   getDiputadoConActasById,
   getDiputados,
   getDiputadosConActas,
+  getDiputadosViajesExplore,
+  getDiputadoViajes,
   getActaWithDiputadosById,
 } from "../../app/lib/diputados-data";
 import { getMemberCareerCargos } from "../../app/lib/member-career-data";
@@ -488,6 +490,7 @@ export async function buildMemberProfile(
       actasMeta,
       career,
       history: { page, limit, total, items },
+      viajes: await getDiputadoViajes(String(member.id)),
     };
   }
 
@@ -660,12 +663,13 @@ export async function buildComisionesList() {
   };
 }
 
-export async function buildViajesExplore() {
+export async function buildViajesExploreForChamber(chamber: ChamberId) {
+  if (chamber === "diputados") {
+    const data = await getDiputadosViajesExplore();
+    return { chamber, ...data };
+  }
   const data = await getViajesExplore();
-  return {
-    chamber: "senadores" as const,
-    ...data,
-  };
+  return { chamber: "senadores" as const, ...data };
 }
 
 export async function buildComisionById(id: string) {

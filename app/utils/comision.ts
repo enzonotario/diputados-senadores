@@ -1,8 +1,11 @@
-/** Ruta canónica de una comisión del Senado. */
-export function comisionPath(id: string | number | null | undefined) {
+/** Ruta canónica de una comisión según cámara. */
+export function comisionPath(
+  id: string | number | null | undefined,
+  chamber: "senadores" | "diputados" = "senadores",
+) {
   const raw = String(id || "").trim();
   if (!raw) return null;
-  return `/senadores/comisiones/${raw}`;
+  return `/${chamber}/comisiones/${raw}`;
 }
 
 const CARGO_RANK: Record<string, number> = {

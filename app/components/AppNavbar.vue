@@ -22,7 +22,7 @@ function withPeriodo(path: string) {
 
 /**
  * Desktop: Inicio / Votaciones / Poroteo / Miembros / Grupos / Explorar▾
- * Explorar: Viajes (ambas cámaras); Dietas/Comisiones solo senadores por ahora.
+ * Explorar: Viajes y Comisiones (ambas cámaras); Dietas solo senadores.
  */
 const desktopNavItems = computed<NavigationMenuItem[]>(() => {
   const c = legislative.value;
@@ -37,7 +37,8 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
     path.startsWith("/senadores/viajes") ||
     path.startsWith("/senadores/dietas") ||
     path.startsWith("/senadores/comisiones") ||
-    path.startsWith("/diputados/viajes");
+    path.startsWith("/diputados/viajes") ||
+    path.startsWith("/diputados/comisiones");
   const membersActive =
     !groupsActive &&
     !exploreActive &&
@@ -109,14 +110,24 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
   } else if (chamberId.value === "diputados") {
     items.push({
       label: "Explorar",
-      active: path.startsWith("/diputados/viajes"),
+      active:
+        path.startsWith("/diputados/viajes") ||
+        path.startsWith("/diputados/comisiones"),
       children: [
         {
           label: "Viajes",
-          description: "Viajes nacionales de diputados (datos abiertos HCDN).",
+          description:
+            "Viajes nacionales y misiones internacionales de diputados (HCDN).",
           icon: "i-lucide-plane",
           to: withPeriodo("/diputados/viajes"),
           active: path.startsWith("/diputados/viajes"),
+        },
+        {
+          label: "Comisiones",
+          description: "Comisiones de Diputados e integrantes.",
+          icon: "i-lucide-users-round",
+          to: withPeriodo("/diputados/comisiones"),
+          active: path.startsWith("/diputados/comisiones"),
         },
       ],
     });
@@ -147,7 +158,8 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
     path.startsWith("/senadores/viajes") ||
     path.startsWith("/senadores/dietas") ||
     path.startsWith("/senadores/comisiones") ||
-    path.startsWith("/diputados/viajes");
+    path.startsWith("/diputados/viajes") ||
+    path.startsWith("/diputados/comisiones");
   const membersActive =
     !groupsActive &&
     !exploreActive &&
@@ -229,6 +241,12 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
           icon: "i-lucide-plane",
           to: "/diputados/viajes",
           active: path.startsWith("/diputados/viajes"),
+        },
+        {
+          label: "Comisiones",
+          icon: "i-lucide-users-round",
+          to: "/diputados/comisiones",
+          active: path.startsWith("/diputados/comisiones"),
         },
       ],
     });

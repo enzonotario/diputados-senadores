@@ -4,6 +4,8 @@ import {
   getBloqueBySlug,
   getBloqueSlugs,
   getBloquesIndex,
+  getComisionById as getDiputadoComisionById,
+  getComisiones as getDiputadoComisiones,
   getDiputadoConActasById,
   getDiputados,
   getDiputadosConActas,
@@ -15,8 +17,8 @@ import {
 import { getMemberCareerCargos } from "../../app/lib/member-career-data";
 import {
   getActas as getActasSenadores,
-  getComisionById,
-  getComisiones,
+  getComisionById as getSenadoComisionById,
+  getComisiones as getSenadoComisiones,
   getPartidoBySlug,
   getPartidoSlugs,
   getPartidosIndex,
@@ -92,10 +94,11 @@ function sortActasByFechaDesc<T extends { fecha?: string | null }>(list: T[]) {
 
 export async function buildSearchCatalog(chamber: ChamberId) {
   if (chamber === "diputados") {
-    const [diputados, bloques, listaActas] = await Promise.all([
+    const [diputados, bloques, listaActas, listaComisiones] = await Promise.all([
       getDiputados(),
       getBloqueSlugs(),
       getActasDiputados(),
+      getDiputadoComisiones(),
     ]);
 
     const members: SearchCatalogItem[] = [...diputados]
@@ -134,6 +137,15 @@ export async function buildSearchCatalog(chamber: ChamberId) {
       })
       .filter(Boolean) as SearchCatalogItem[];
 
+    const comisiones: SearchCatalogItem[] = listaComisiones.map((c) => ({
+      id: `comision-${c.id}`,
+      label: c.nombre,
+      suffix: "Comisión",
+      description: c.tipo || undefined,
+      icon: "i-lucide-users-round",
+      to: comisionPath(c.id, "diputados") || undefined,
+    }));
+
     const actas: SearchCatalogItem[] = [...listaActas]
       .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
       .map((a) => ({
@@ -146,14 +158,14 @@ export async function buildSearchCatalog(chamber: ChamberId) {
         to: `/actas/${a.id}`,
       }));
 
-    return { chamber, members, groups, comisiones: [] as SearchCatalogItem[], actas };
+    return { chamber, members, groups, comisiones, actas };
   }
 
   const [senadores, partidos, listaActas, listaComisiones] = await Promise.all([
     getSenadores(),
     getPartidoSlugs(),
     getActasSenadores(),
-    getComisiones(),
+    getSenadoComisiones(),
   ]);
 
   const members: SearchCatalogItem[] = [...senadores]
@@ -200,7 +212,7 @@ export async function buildSearchCatalog(chamber: ChamberId) {
     suffix: "Comisión",
     description: c.tipo || undefined,
     icon: "i-lucide-users-round",
-    to: comisionPath(c.id) || undefined,
+    to: comisionPath(c.id, "senadores") || undefined,
   }));
 
   const actas: SearchCatalogItem[] = [...listaActas]
@@ -662,8 +674,23 @@ export async function buildActaDetail(chamber: ChamberId, id: string) {
   return getActaWithSenadoresById(id);
 }
 
-export async function buildComisionesList() {
-  const list = await getComisiones();
+export async function buildComisionesList(chamber: ChamberId) {
+  if (chamber === "diputados") {
+    const list = await getDiputadoComisiones();
+    return {
+      chamber,
+      comisiones: list.map((c) => ({
+        id: c.id,
+        nombre: c.nombre,
+        tipo: c.tipo,
+        url: c.url,
+        integrantesCount: c.integrantes.length,
+        diputadosCount: c.integrantes.filter((i) => i.diputadoId).length,
+      })),
+    };
+  }
+
+  const list = await getSenadoComisiones();
   return {
     chamber: "senadores" as const,
     comisiones: list.map((c) => ({
@@ -686,8 +713,46 @@ export async function buildViajesExploreForChamber(chamber: ChamberId) {
   return { chamber: "senadores" as const, ...data };
 }
 
-export async function buildComisionById(id: string) {
-  const comision = await getComisionById(id);
+export async function buildComisionById(chamber: ChamberId, id: string) {
+  if (chamber === "diputados") {
+    const comision = await getDiputadoComisionById(id);
+    if (!comision) return null;
+
+    const integrantes = sortComisionIntegrantes(comision.integrantes).map(
+      (i) => ({
+        nombre: i.nombre,
+        cargo: i.cargo,
+        camara: i.camara,
+        diputadoId: i.diputadoId,
+        diputado: i.diputado
+          ? slimMemberStats({
+              id: i.diputado.id,
+              nombre: i.diputado.nombre,
+              apellido: i.diputado.apellido,
+              nombreCompleto: i.diputado.nombreCompleto,
+              provincia: i.diputado.provincia,
+              bloque: i.diputado.bloque,
+              foto: i.diputado.foto,
+              periodoMandato: i.diputado.periodoMandato,
+              estadisticas: i.diputado.estadisticas,
+              estadisticasPorPeriodo: i.diputado.estadisticasPorPeriodo,
+              viajesUltimos12Meses: i.diputado.viajesUltimos12Meses,
+            })
+          : null,
+      }),
+    );
+
+    return {
+      chamber,
+      id: comision.id,
+      nombre: comision.nombre,
+      tipo: comision.tipo,
+      url: comision.url,
+      integrantes,
+    };
+  }
+
+  const comision = await getSenadoComisionById(id);
   if (!comision) return null;
 
   const integrantes = sortComisionIntegrantes(comision.integrantes).map(

@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { Diputado } from "@/lib/types-diputados";
-import type { DiputadoViajes, SenadorViajes } from "@/lib/types";
 
 type MemberProfileResponse = {
   member: Diputado;
-  viajes?: DiputadoViajes | null;
 };
 
 const route = useRoute();
@@ -18,32 +16,24 @@ const { data } = await useAsyncData(
 );
 
 const diputado = computed(() => data.value?.member || null);
-const viajes = computed<SenadorViajes | null>(() => {
-  const v = data.value?.viajes;
-  if (!v) return null;
-  return {
-    senadorId: v.diputadoId,
-    nacionales: v.nacionales || [],
-    internacionales: v.internacionales || [],
-  };
-});
+const comisiones = computed(() => diputado.value?.meta?.comisiones || []);
 
 useChamberSeo(() => {
   const d = diputado.value;
   if (!d) {
     return {
-      title: "Viajes",
-      description: "Viajes nacionales y misiones oficiales de diputados.",
-      og: { kind: "member", eyebrow: "viajes" },
+      title: "Comisiones",
+      description: "Comisiones de la Cámara de Diputados de la Nación Argentina.",
+      og: { kind: "member", eyebrow: "comisiones" },
     };
   }
   const name = d.nombreCompleto || `${d.apellido}, ${d.nombre}`;
   return {
-    title: `Viajes · ${name}`,
-    description: `Viajes nacionales y misiones oficiales internacionales de ${name} según datos abiertos de la HCDN.`,
+    title: `Comisiones · ${name}`,
+    description: `Comisiones de Diputados en las que participa ${name}.`,
     og: {
       kind: "member",
-      eyebrow: "viajes",
+      eyebrow: "comisiones",
       badge: d.bloque || undefined,
       photoSrc: d.foto || "/placeholder-user.jpg",
     },
@@ -52,9 +42,9 @@ useChamberSeo(() => {
 </script>
 
 <template>
-  <SenadorViajesPanel
+  <SenadorComisionesCard
     v-if="diputado"
-    :viajes="viajes"
+    :comisiones="comisiones"
     chamber="diputados"
     show-empty
   />

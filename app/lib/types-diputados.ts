@@ -1,3 +1,9 @@
+export interface DiputadoComisionMeta {
+  id: string;
+  nombre: string;
+  cargo: string;
+}
+
 export interface Diputado {
   id: string;
   nombre: string;
@@ -6,6 +12,9 @@ export interface Diputado {
   nombreSlug?: string;
   genero: string;
   provincia: string;
+  meta?: {
+    comisiones?: DiputadoComisionMeta[];
+  };
   periodoMandato: {
     inicio: string;
     fin: string;

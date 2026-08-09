@@ -17,18 +17,20 @@ const props = withDefaults(
 );
 
 const fuenteUrl = computed(() => viajesFuenteUrl(props.chamber));
-const fuenteLabel = computed(() =>
-  props.chamber === "diputados"
-    ? "viajes nacionales (HCDN)"
-    : "viajes del Senado",
-);
+const fuenteLabel = computed(() => {
+  if (props.chamber === "diputados") {
+    const hasIntl = (props.viajes?.internacionales.length || 0) > 0;
+    return hasIntl
+      ? "viajes nacionales y misiones oficiales (HCDN)"
+      : "viajes nacionales (HCDN)";
+  }
+  return "viajes del Senado";
+});
 
 const tab = ref<"nacionales" | "internacionales">("nacionales");
 
 const showInternacionales = computed(
-  () =>
-    props.chamber !== "diputados" ||
-    (props.viajes?.internacionales.length || 0) > 0,
+  () => (props.viajes?.internacionales.length || 0) > 0,
 );
 
 const tabItems = computed(() => {

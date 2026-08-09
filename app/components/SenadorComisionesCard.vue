@@ -7,12 +7,21 @@ const props = withDefaults(
     comisiones: SenadorComisionMeta[];
     /** Mostrar la tarjeta aunque no haya comisiones (página dedicada). */
     showEmpty?: boolean;
+    chamber?: "senadores" | "diputados";
   }>(),
-  { showEmpty: false },
+  { showEmpty: false, chamber: "senadores" },
 );
 
 const visible = computed(
   () => props.showEmpty || props.comisiones.length > 0,
+);
+
+const listTo = computed(() => `/${props.chamber}/comisiones`);
+
+const emptyCopy = computed(() =>
+  props.chamber === "diputados"
+    ? "No hay comisiones registradas para este diputado."
+    : "No hay comisiones registradas para este senador.",
 );
 </script>
 
@@ -27,7 +36,7 @@ const visible = computed(
             {{ comisiones.length === 1 ? "comisión" : "comisiones" }}
           </span>
           <UButton
-            to="/senadores/comisiones"
+            :to="listTo"
             size="xs"
             color="neutral"
             variant="ghost"
@@ -38,7 +47,7 @@ const visible = computed(
     </template>
 
     <p v-if="!comisiones.length" class="text-sm text-muted">
-      No hay comisiones registradas para este senador.
+      {{ emptyCopy }}
     </p>
 
     <ul v-else class="divide-y divide-default">
@@ -49,7 +58,7 @@ const visible = computed(
       >
         <div class="min-w-0">
           <NuxtLink
-            :to="comisionPath(c.id) || '#'"
+            :to="comisionPath(c.id, chamber) || '#'"
             class="text-sm font-medium text-highlighted hover:underline"
           >
             {{ c.nombre }}

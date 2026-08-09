@@ -93,10 +93,13 @@ export interface ViajeInternacional {
   anio: number
   mes: number | null
   mesNombre: string | null
-  documentoId: string
-  documentoUrl: string
+  documentoId?: string
+  documentoUrl?: string
+  recursoId?: string
+  recursoUrl?: string
   nombre: string
-  senadorId: string | null
+  senadorId?: string | null
+  diputadoId?: string | null
   expediente: string
   destino: string
   fechaInicio: string | null
@@ -128,8 +131,11 @@ export interface ComisionIntegrante {
   cargo: string
   camara: 'senado' | 'diputados' | null
   senadorId: string | null
-  /** Senador resuelto desde el catálogo (solo cámara senado). */
+  diputadoId: string | null
+  /** Senador resuelto desde el catálogo (cámara senado). */
   senador?: Senador | null
+  /** Diputado resuelto desde el catálogo (cámara diputados). */
+  diputado?: import("./types-diputados").Diputado | null
 }
 
 export interface Comision {

@@ -809,7 +809,9 @@ function mapComision(raw: any): import("./types").Comision {
               ? i.camara
               : null,
           senadorId: i?.senadorId != null ? String(i.senadorId) : null,
+          diputadoId: i?.diputadoId != null ? String(i.diputadoId) : null,
           senador: null,
+          diputado: null,
         }))
       : [],
   };

@@ -49,6 +49,7 @@ const exploreItems = computed<NavigationMenuItem[]>(() => {
     items.push({ label: "Comisiones", to: "/senadores/comisiones" });
   } else if (c.id === "diputados") {
     items.push({ label: "Viajes", to: "/diputados/viajes" });
+    items.push({ label: "Comisiones", to: "/diputados/comisiones" });
   }
   return items;
 });

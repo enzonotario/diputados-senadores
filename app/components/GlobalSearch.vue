@@ -126,6 +126,13 @@ const pageItems = computed<SearchItem[]>(() => {
       icon: "i-lucide-plane",
       to: "/diputados/viajes",
     });
+    items.push({
+      id: "page-comisiones",
+      label: "Comisiones",
+      suffix: "Página",
+      icon: "i-lucide-users-round",
+      to: "/diputados/comisiones",
+    });
   }
 
   items.push({

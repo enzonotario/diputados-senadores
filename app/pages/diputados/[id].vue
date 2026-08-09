@@ -28,6 +28,7 @@ const { data, pending } = await useAsyncData(
 const diputado = computed(() => data.value?.member || null);
 const career = computed(() => data.value?.career || []);
 const viajes = computed(() => data.value?.viajes || null);
+const comisiones = computed(() => diputado.value?.meta?.comisiones || []);
 
 if (diputado.value && diputado.value.id !== id.value) {
   const tab = diputadoMemberTabFromPath(route.path, id.value);
@@ -48,7 +49,10 @@ const activeTab = computed({
 
 const tabItems = computed(() =>
   diputadoMemberTabItems({
-    viajesCount: viajes.value?.nacionales.length || 0,
+    viajesCount:
+      (viajes.value?.nacionales.length || 0) +
+      (viajes.value?.internacionales.length || 0),
+    comisionesCount: comisiones.value.length,
   }),
 );
 </script>

@@ -98,10 +98,12 @@ export async function collectChamberPrerenderRoutes(
     routes.add("/diputados");
     routes.add("/diputados/bloques");
     routes.add("/diputados/viajes");
+    routes.add("/diputados/comisiones");
 
-    const [rawDiputados, rawActas] = await Promise.all([
+    const [rawDiputados, rawActas, rawComisiones] = await Promise.all([
       fetchJson<any[]>("/v1/diputados/diputados"),
       fetchJson<any[]>("/v1/diputados/actas"),
+      fetchJson<any[]>("/v1/diputados/comisiones").catch(() => [] as any[]),
     ]);
 
     const diputados = dedupeById(rawDiputados);
@@ -127,6 +129,11 @@ export async function collectChamberPrerenderRoutes(
       if (isActaInSsgWindow(a?.fecha, cutoff) && a?.id != null) {
         routes.add(`/actas/${a.id}`);
       }
+    }
+
+    for (const c of Array.isArray(rawComisiones) ? rawComisiones : []) {
+      const cid = String(c?.id || "").trim();
+      if (cid) routes.add(`/diputados/comisiones/${cid}`);
     }
 
     return [...routes];

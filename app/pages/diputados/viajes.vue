@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
-import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { bloquePath } from "@/utils/bloque";
 import type {
-  DiputadosViajesExploreInternacional,
   DiputadosViajesExploreNacional,
   DiputadosViajesExplorePayload,
   DiputadosViajesExploreRankingRow,
@@ -28,10 +26,6 @@ const vistaItems = computed(() => [
     label: `Nacionales (${data.value?.nacionales.length ?? "…"})`,
     value: "nacionales",
   },
-  {
-    label: `Misiones oficiales (${data.value?.internacionales.length ?? "…"})`,
-    value: "internacionales",
-  },
 ]);
 
 const { sorting: sortingRanking } = useTableSorting(
@@ -39,9 +33,6 @@ const { sorting: sortingRanking } = useTableSorting(
   true,
 );
 const { sorting: sortingNac } = useTableSorting("periodo", true, {
-  syncQuery: false,
-});
-const { sorting: sortingIntl } = useTableSorting("periodo", true, {
   syncQuery: false,
 });
 
@@ -77,14 +68,6 @@ function lugarLabel(nombre: string, codigo: string | null) {
   return codigo ? `${nombre} (${codigo})` : nombre;
 }
 
-function fechasIntl(v: DiputadosViajesExploreInternacional) {
-  if (v.fechaTexto) return v.fechaTexto;
-  const a = v.fechaInicio ? formatDate(v.fechaInicio) : null;
-  const b = v.fechaFin ? formatDate(v.fechaFin) : null;
-  if (a && b && a !== b) return `${a} – ${b}`;
-  return a || b || null;
-}
-
 const q = computed(() => searchQuery.value.trim().toLowerCase());
 
 const rankingDisplayed = computed(() => {
@@ -109,25 +92,11 @@ const nacionalesDisplayed = computed(() => {
   );
 });
 
-const internacionalesDisplayed = computed(() => {
-  const list = data.value?.internacionales || [];
-  if (!q.value) return list;
-  return list.filter((v) =>
-    [v.diputadoNombre, v.destino, v.motivo || "", v.expediente || ""]
-      .join(" ")
-      .toLowerCase()
-      .includes(q.value),
-  );
-});
-
 const stats = computed(() => {
   const ranking = data.value?.ranking || [];
   const nac = data.value?.nacionales.length || 0;
-  const intl = data.value?.internacionales.length || 0;
   return {
-    total: nac + intl,
     nacionales: nac,
-    internacionales: intl,
     conViajes: ranking.filter((r) => r.viajesUltimos12Meses > 0).length,
   };
 });
@@ -204,38 +173,6 @@ const nacionalesColumns = [
   },
 ];
 
-const internacionalesColumns = [
-  {
-    id: "periodo",
-    accessorFn: (row: DiputadosViajesExploreInternacional) => {
-      if (row.fechaInicio) return String(row.fechaInicio).slice(0, 10);
-      return periodoKey(row.anio, row.mes);
-    },
-    header: sortableHeader("Fecha"),
-    meta: {
-      class: { th: "whitespace-nowrap", td: "whitespace-nowrap" },
-    },
-  },
-  {
-    id: "diputadoNombre",
-    accessorKey: "diputadoNombre",
-    header: sortableHeader("Diputado/a"),
-  },
-  {
-    id: "destino",
-    accessorKey: "destino",
-    header: sortableHeader("Destino"),
-  },
-  {
-    id: "motivo",
-    accessorKey: "motivo",
-    header: sortableHeader("Motivo"),
-    meta: {
-      class: { td: "max-w-xs whitespace-normal" },
-    },
-  },
-];
-
 function onRankingSelect(
   _e: Event,
   row: { original: DiputadosViajesExploreRankingRow },
@@ -251,18 +188,9 @@ function onNacSelect(
   if (id) void navigateTo(`/diputados/${id}/viajes`);
 }
 
-function onIntlSelect(
-  _e: Event,
-  row: { original: DiputadosViajesExploreInternacional },
-) {
-  const id = row.original.diputadoId;
-  if (id) void navigateTo(`/diputados/${id}/viajes`);
-}
-
 useChamberSeo(() => ({
   title: "Viajes",
-  description:
-    "Viajes nacionales y misiones oficiales internacionales de los diputados.",
+  description: "Viajes nacionales de los diputados publicados por la HCDN.",
   og: { kind: "list", eyebrow: "viajes", badge: "Viajes" },
 }));
 </script>
@@ -272,8 +200,7 @@ useChamberSeo(() => ({
     <div class="space-y-2">
       <h1 class="text-3xl font-bold">Viajes de Diputados</h1>
       <p class="text-muted max-w-3xl">
-        Explorá los viajes nacionales y las misiones oficiales internacionales
-        publicadas por la HCDN.
+        Explorá los viajes nacionales publicados por la HCDN.
         <UButton
           :to="fuenteUrl"
           target="_blank"
@@ -291,22 +218,12 @@ useChamberSeo(() => ({
 
     <div
       v-if="!pending && data"
-      class="grid grid-cols-2 sm:grid-cols-4 gap-3"
+      class="grid grid-cols-2 sm:grid-cols-2 gap-3"
     >
-      <div class="rounded-lg border border-default p-3">
-        <p class="text-xs text-muted">Total viajes</p>
-        <p class="text-2xl font-semibold tabular-nums">{{ stats.total }}</p>
-      </div>
       <div class="rounded-lg border border-default p-3">
         <p class="text-xs text-muted">Nacionales</p>
         <p class="text-2xl font-semibold tabular-nums">
           {{ stats.nacionales }}
-        </p>
-      </div>
-      <div class="rounded-lg border border-default p-3">
-        <p class="text-xs text-muted">Misiones oficiales</p>
-        <p class="text-2xl font-semibold tabular-nums">
-          {{ stats.internacionales }}
         </p>
       </div>
       <div class="rounded-lg border border-default p-3">
@@ -334,9 +251,7 @@ useChamberSeo(() => ({
         :placeholder="
           vista === 'ranking'
             ? 'Nombre, provincia, bloque...'
-            : vista === 'nacionales'
-              ? 'Diputado, destino, origen...'
-              : 'Diputado, destino, motivo, expediente...'
+            : 'Diputado, destino, origen...'
         "
       />
     </div>
@@ -348,16 +263,9 @@ useChamberSeo(() => ({
         {{ rankingDisplayed.length }}
         {{ rankingDisplayed.length === 1 ? "diputado" : "diputados" }}
       </p>
-      <p v-else-if="vista === 'nacionales'" class="text-sm text-muted">
+      <p v-else class="text-sm text-muted">
         {{ nacionalesDisplayed.length }}
         {{ nacionalesDisplayed.length === 1 ? "viaje" : "viajes" }} nacionales
-      </p>
-      <p v-else class="text-sm text-muted">
-        {{ internacionalesDisplayed.length }}
-        {{
-          internacionalesDisplayed.length === 1 ? "misión" : "misiones"
-        }}
-        internacionales
       </p>
 
       <DataTableCard v-if="vista === 'ranking'" :show-periodo-badge="false">
@@ -426,10 +334,7 @@ useChamberSeo(() => ({
         </UTable>
       </DataTableCard>
 
-      <DataTableCard
-        v-else-if="vista === 'nacionales'"
-        :show-periodo-badge="false"
-      >
+      <DataTableCard v-else :show-periodo-badge="false">
         <UTable
           v-model:sorting="sortingNac"
           :data="nacionalesDisplayed"
@@ -472,54 +377,6 @@ useChamberSeo(() => ({
             viajes nacionales (HCDN)
           </a>
         </p>
-      </DataTableCard>
-
-      <DataTableCard v-else :show-periodo-badge="false">
-        <UTable
-          v-model:sorting="sortingIntl"
-          :data="internacionalesDisplayed"
-          :columns="internacionalesColumns"
-          :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-          empty="No se encontraron misiones internacionales."
-          :on-select="onIntlSelect"
-        >
-          <template #periodo-cell="{ row }">
-            {{
-              fechasIntl(row.original as DiputadosViajesExploreInternacional) ||
-              "—"
-            }}
-          </template>
-          <template #diputadoNombre-cell="{ row }">
-            <NuxtLink
-              v-if="
-                (row.original as DiputadosViajesExploreInternacional).diputadoId
-              "
-              :to="`/diputados/${(row.original as DiputadosViajesExploreInternacional).diputadoId}/viajes`"
-              class="hover:underline"
-              @click.stop
-            >
-              {{
-                (row.original as DiputadosViajesExploreInternacional)
-                  .diputadoNombre
-              }}
-            </NuxtLink>
-            <span v-else>
-              {{
-                (row.original as DiputadosViajesExploreInternacional)
-                  .diputadoNombre
-              }}
-            </span>
-          </template>
-          <template #destino-cell="{ row }">
-            {{ (row.original as DiputadosViajesExploreInternacional).destino }}
-          </template>
-          <template #motivo-cell="{ row }">
-            {{
-              (row.original as DiputadosViajesExploreInternacional).motivo ||
-              "—"
-            }}
-          </template>
-        </UTable>
       </DataTableCard>
     </template>
   </div>

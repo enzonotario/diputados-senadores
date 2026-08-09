@@ -12,7 +12,7 @@ type RevalidateBody = {
 };
 
 const SEED_PATHS: Record<ChamberId, string[]> = {
-  diputados: ["/", "/actas", "/diputados", "/diputados/bloques", "/diputados/comisiones", "/diputados/viajes"],
+  diputados: ["/", "/actas", "/diputados", "/diputados/bloques", "/diputados/comisiones", "/diputados/viajes", "/diputados/misiones"],
   senadores: ["/", "/actas", "/senadores", "/senadores/partidos", "/senadores/comisiones", "/senadores/dietas", "/senadores/viajes"],
 };
 

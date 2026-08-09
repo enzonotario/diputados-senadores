@@ -38,6 +38,7 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
     path.startsWith("/senadores/dietas") ||
     path.startsWith("/senadores/comisiones") ||
     path.startsWith("/diputados/viajes") ||
+    path.startsWith("/diputados/misiones") ||
     path.startsWith("/diputados/comisiones");
   const membersActive =
     !groupsActive &&
@@ -112,15 +113,22 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
       label: "Explorar",
       active:
         path.startsWith("/diputados/viajes") ||
+        path.startsWith("/diputados/misiones") ||
         path.startsWith("/diputados/comisiones"),
       children: [
         {
           label: "Viajes",
-          description:
-            "Viajes nacionales y misiones internacionales de diputados (HCDN).",
+          description: "Viajes nacionales de diputados (HCDN).",
           icon: "i-lucide-plane",
           to: withPeriodo("/diputados/viajes"),
           active: path.startsWith("/diputados/viajes"),
+        },
+        {
+          label: "Misiones oficiales",
+          description: "Misiones oficiales al exterior (HCDN).",
+          icon: "i-lucide-globe",
+          to: withPeriodo("/diputados/misiones"),
+          active: path.startsWith("/diputados/misiones"),
         },
         {
           label: "Comisiones",
@@ -159,6 +167,7 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
     path.startsWith("/senadores/dietas") ||
     path.startsWith("/senadores/comisiones") ||
     path.startsWith("/diputados/viajes") ||
+    path.startsWith("/diputados/misiones") ||
     path.startsWith("/diputados/comisiones");
   const membersActive =
     !groupsActive &&
@@ -241,6 +250,12 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
           icon: "i-lucide-plane",
           to: "/diputados/viajes",
           active: path.startsWith("/diputados/viajes"),
+        },
+        {
+          label: "Misiones oficiales",
+          icon: "i-lucide-globe",
+          to: "/diputados/misiones",
+          active: path.startsWith("/diputados/misiones"),
         },
         {
           label: "Comisiones",

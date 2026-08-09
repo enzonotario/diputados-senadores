@@ -123,7 +123,36 @@ export interface SenadorViajes {
 export interface DiputadoViajes {
   diputadoId: string
   nacionales: ViajeNacional[]
-  internacionales: ViajeInternacional[]
+}
+
+export interface MisionOficial {
+  id?: string
+  anio: number
+  mes: number | null
+  mesNombre: string | null
+  recursoId: string
+  recursoUrl: string
+  recursoNombre?: string
+  documentoId: string
+  documentoUrl: string
+  nombre: string
+  diputadoId: string | null
+  destino: string
+  fechaInicio: string | null
+  fechaFin: string | null
+  fechaTexto: string | null
+  institucion: string | null
+  viaticos: boolean | null
+  viaticosUsd: number | null
+  viaticosEuro: number | null
+  viaticosArs: number | null
+  motivo: string | null
+  bloque: string | null
+}
+
+export interface DiputadoMisiones {
+  diputadoId: string
+  misiones: MisionOficial[]
 }
 
 export interface ComisionIntegrante {

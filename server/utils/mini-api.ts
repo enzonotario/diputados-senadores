@@ -11,7 +11,10 @@ import {
   getDiputadosConActas,
   getDiputadosPeriodosOficiales,
   getDiputadosViajesExplore,
+  getDiputadosMisionesExplore,
   getDiputadoViajes,
+  getDiputadoMisiones,
+  getMisionById,
   getActaWithDiputadosById,
 } from "../../app/lib/diputados-data";
 import { getMemberCareerCargos } from "../../app/lib/member-career-data";
@@ -505,6 +508,7 @@ export async function buildMemberProfile(
       career,
       history: { page, limit, total, items },
       viajes: await getDiputadoViajes(String(member.id)),
+      misiones: await getDiputadoMisiones(String(member.id)),
     };
   }
 
@@ -711,6 +715,29 @@ export async function buildViajesExploreForChamber(chamber: ChamberId) {
   }
   const data = await getViajesExplore();
   return { chamber: "senadores" as const, ...data };
+}
+
+export async function buildMisionesExploreForChamber(chamber: ChamberId) {
+  if (chamber !== "diputados") {
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Misiones solo disponibles para diputados",
+    });
+  }
+  const data = await getDiputadosMisionesExplore();
+  return { chamber, ...data };
+}
+
+export async function buildMisionById(chamber: ChamberId, id: string) {
+  if (chamber !== "diputados") {
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Misiones solo disponibles para diputados",
+    });
+  }
+  const mision = await getMisionById(id);
+  if (!mision) return null;
+  return { chamber, mision };
 }
 
 export async function buildComisionById(chamber: ChamberId, id: string) {

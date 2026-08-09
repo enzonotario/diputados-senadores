@@ -24,7 +24,7 @@ const viajes = computed<SenadorViajes | null>(() => {
   return {
     senadorId: v.diputadoId,
     nacionales: v.nacionales || [],
-    internacionales: v.internacionales || [],
+    internacionales: [],
   };
 });
 
@@ -33,14 +33,14 @@ useChamberSeo(() => {
   if (!d) {
     return {
       title: "Viajes",
-      description: "Viajes nacionales y misiones oficiales de diputados.",
+      description: "Viajes nacionales de diputados.",
       og: { kind: "member", eyebrow: "viajes" },
     };
   }
   const name = d.nombreCompleto || `${d.apellido}, ${d.nombre}`;
   return {
     title: `Viajes · ${name}`,
-    description: `Viajes nacionales y misiones oficiales internacionales de ${name} según datos abiertos de la HCDN.`,
+    description: `Viajes nacionales de ${name} según datos abiertos de la HCDN.`,
     og: {
       kind: "member",
       eyebrow: "viajes",

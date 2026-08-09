@@ -4,6 +4,7 @@ import { isChamberId } from "./chamber";
 import { isDiputadoActivo, isSenadorActivo } from "./utils";
 import { bloquePath } from "../utils/bloque";
 import { partidoPath } from "../utils/partido";
+import { buildMisionId } from "../utils/misiones";
 
 /** Actas SSG: fecha >= (fecha de build − N años), rolling. */
 export const ACTAS_SSG_YEARS = 4;
@@ -98,12 +99,15 @@ export async function collectChamberPrerenderRoutes(
     routes.add("/diputados");
     routes.add("/diputados/bloques");
     routes.add("/diputados/viajes");
+    routes.add("/diputados/misiones");
     routes.add("/diputados/comisiones");
 
-    const [rawDiputados, rawActas, rawComisiones] = await Promise.all([
+    const [rawDiputados, rawActas, rawComisiones, rawMisiones] =
+      await Promise.all([
       fetchJson<any[]>("/v1/diputados/diputados"),
       fetchJson<any[]>("/v1/diputados/actas"),
       fetchJson<any[]>("/v1/diputados/comisiones").catch(() => [] as any[]),
+      fetchJson<any>("/v1/diputados/misiones/lista").catch(() => [] as any[]),
     ]);
 
     const diputados = dedupeById(rawDiputados);
@@ -134,6 +138,26 @@ export async function collectChamberPrerenderRoutes(
     for (const c of Array.isArray(rawComisiones) ? rawComisiones : []) {
       const cid = String(c?.id || "").trim();
       if (cid) routes.add(`/diputados/comisiones/${cid}`);
+    }
+
+    const misionesLista = Array.isArray(rawMisiones)
+      ? rawMisiones
+      : Array.isArray(rawMisiones?.misiones)
+        ? rawMisiones.misiones
+        : [];
+    const misionCutoffYear = cutoff.getFullYear();
+    for (const m of misionesLista) {
+      const anio = Number(m?.anio) || 0;
+      if (anio && anio < misionCutoffYear) continue;
+      const mid = buildMisionId({
+        documentoId: m?.documentoId,
+        recursoId: m?.recursoId,
+        fechaInicio: m?.fechaInicio,
+        anio: m?.anio,
+        nombre: m?.nombre,
+        destino: m?.destino,
+      });
+      if (mid) routes.add(`/diputados/misiones/${mid}`);
     }
 
     return [...routes];

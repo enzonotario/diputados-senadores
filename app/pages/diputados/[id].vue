@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Diputado } from "@/lib/types-diputados";
-import type { DiputadoViajes } from "@/lib/types";
+import type { DiputadoMisiones, DiputadoViajes } from "@/lib/types";
 import type { CareerCargo } from "@/utils/memberCareer";
 import {
   diputadoMemberTabFromPath,
@@ -13,6 +13,7 @@ type MemberProfileResponse = {
   member: Diputado;
   career?: CareerCargo[];
   viajes?: DiputadoViajes | null;
+  misiones?: DiputadoMisiones | null;
 };
 
 const route = useRoute();
@@ -28,6 +29,7 @@ const { data, pending } = await useAsyncData(
 const diputado = computed(() => data.value?.member || null);
 const career = computed(() => data.value?.career || []);
 const viajes = computed(() => data.value?.viajes || null);
+const misiones = computed(() => data.value?.misiones || null);
 const comisiones = computed(() => diputado.value?.meta?.comisiones || []);
 
 if (diputado.value && diputado.value.id !== id.value) {
@@ -49,9 +51,8 @@ const activeTab = computed({
 
 const tabItems = computed(() =>
   diputadoMemberTabItems({
-    viajesCount:
-      (viajes.value?.nacionales.length || 0) +
-      (viajes.value?.internacionales.length || 0),
+    viajesCount: viajes.value?.nacionales.length || 0,
+    misionesCount: misiones.value?.misiones.length || 0,
     comisionesCount: comisiones.value.length,
   }),
 );

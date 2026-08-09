@@ -3,7 +3,6 @@ import type { SenadorViajes, ViajeInternacional, ViajeNacional } from "@/lib/typ
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import {
-  viajeIntlDocumentoUrl,
   viajesFuenteUrl,
 } from "@/utils/viajes";
 import { viajePdfUrl } from "@/utils/staticPdf";
@@ -24,16 +23,12 @@ const isDiputados = computed(() => props.chamber === "diputados");
 
 const tab = ref<"nacionales" | "internacionales">("nacionales");
 
+/** Senado: tab intl si hay datos. Diputados: misiones van a /misiones. */
 const showInternacionales = computed(
-  () => isDiputados.value || (props.viajes?.internacionales.length || 0) > 0,
+  () => !isDiputados.value && (props.viajes?.internacionales.length || 0) > 0,
 );
 
 const tabItems = computed(() => {
-  const intlCount = props.viajes?.internacionales.length || 0;
-  const intlLabel = isDiputados.value
-    ? `Misiones oficiales (${intlCount})`
-    : `Internacionales (${intlCount})`;
-
   const items = [
     {
       label: `Nacionales (${props.viajes?.nacionales.length || 0})`,
@@ -42,7 +37,7 @@ const tabItems = computed(() => {
   ];
   if (showInternacionales.value) {
     items.push({
-      label: intlLabel,
+      label: `Internacionales (${props.viajes?.internacionales.length || 0})`,
       value: "internacionales" as const,
     });
   }
@@ -86,17 +81,11 @@ function lugarLabel(nombre: string, codigo: string | null) {
 }
 
 function intlFuenteHref(v: ViajeInternacional) {
-  if (isDiputados.value) {
-    return viajeIntlDocumentoUrl(v);
-  }
   return viajePdfUrl(v.ambito, v.documentoId);
 }
 
-function intlFuenteLabel(v: ViajeInternacional) {
-  if (!isDiputados.value) return "Ver PDF original";
-  const url = viajeIntlDocumentoUrl(v);
-  if (!url) return "Ver fuente";
-  return url.toLowerCase().includes(".csv") ? "Ver CSV" : "Ver fuente";
+function intlFuenteLabel(_v: ViajeInternacional) {
+  return "Ver PDF original";
 }
 
 function fechasIntl(v: ViajeInternacional) {
@@ -165,9 +154,7 @@ const hasAny = computed(
 );
 
 const showTabs = computed(
-  () =>
-    tabItems.value.length > 1 &&
-    (hasAny.value || (isDiputados.value && props.showEmpty)),
+  () => tabItems.value.length > 1 && hasAny.value,
 );
 
 const visible = computed(() => props.showEmpty || hasAny.value);
@@ -285,7 +272,7 @@ function toggleNacSort() {
 watch(
   () => props.viajes,
   (v) => {
-    if (!v) return;
+    if (!v || isDiputados.value) return;
     if (!v.nacionales.length && v.internacionales.length) {
       tab.value = "internacionales";
     }
@@ -356,8 +343,13 @@ onBeforeUnmount(() => {
     </template>
 
     <p v-if="!hasAny && !showTabs" class="px-4 sm:px-6 py-6 text-sm text-muted">
-      No hay viajes nacionales ni internacionales registrados para este
-      senador.
+      <template v-if="isDiputados">
+        No hay viajes nacionales registrados para este diputado.
+      </template>
+      <template v-else>
+        No hay viajes nacionales ni internacionales registrados para este
+        senador.
+      </template>
     </p>
 
     <template v-else-if="tab === 'nacionales'">
@@ -454,13 +446,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <p v-else class="px-4 sm:px-6 py-6 text-sm text-muted">
-        <template v-if="isDiputados">
-          No hay viajes nacionales ni misiones oficiales registrados para este
-          diputado.
-        </template>
-        <template v-else>
-          Sin viajes nacionales registrados.
-        </template>
+        Sin viajes nacionales registrados.
       </p>
     </template>
 
@@ -469,11 +455,7 @@ onBeforeUnmount(() => {
       v-model:sorting="sortingIntl"
       :data="viajes?.internacionales || []"
       :columns="internacionalesColumns"
-      :empty="
-        isDiputados
-          ? 'Sin misiones oficiales registradas.'
-          : 'Sin viajes internacionales registrados.'
-      "
+      empty="Sin viajes internacionales registrados."
     >
       <template #periodo-cell="{ row }">
         <div class="flex items-start gap-1">

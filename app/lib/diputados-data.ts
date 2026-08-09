@@ -9,6 +9,7 @@ import {
   buildDiputadoVotoResolver,
   clearDiputadosAliasMapCache,
 } from "./matchDiputadoNombre";
+import { buildMisionId } from "../utils/misiones";
 
 function slug(value: string) {
   return slugify(value || "", { lower: true, strict: true, trim: true });
@@ -61,11 +62,16 @@ let _actas = createSingleflight<Acta[]>();
 let _diputadosConActas = createSingleflight<Diputado[]>();
 let _viajesConteo12m = createSingleflight<Record<string, number>>();
 let _viajesExplore = createSingleflight<DiputadosViajesExplorePayload>();
+let _misionesExplore = createSingleflight<DiputadosMisionesExplorePayload>();
 let _comisiones = createSingleflight<import("./types").Comision[]>();
 let _periodosOficiales = createSingleflight<
   Array<{ periodo: string; inicio: string; fin: string; sesiones: string | null }>
 >();
 const _viajesById = new Map<string, Promise<import("./types").DiputadoViajes>>();
+const _misionesById = new Map<
+  string,
+  Promise<import("./types").DiputadoMisiones>
+>();
 
 function assertServerData() {
   if (import.meta.client) {
@@ -83,9 +89,11 @@ export function clearDiputadosDataCache() {
   _diputadosConActas.clear();
   _viajesConteo12m.clear();
   _viajesExplore.clear();
+  _misionesExplore.clear();
   _comisiones.clear();
   _periodosOficiales.clear();
   _viajesById.clear();
+  _misionesById.clear();
   clearDiputadosAliasMapCache();
 }
 
@@ -533,23 +541,6 @@ export type DiputadosViajesExploreRankingRow = {
   viajesUltimos12Meses: number;
 };
 
-export type DiputadosViajesExploreInternacional = {
-  diputadoId: string | null;
-  diputadoNombre: string;
-  anio: number;
-  mes: number | null;
-  destino: string;
-  fechaInicio: string | null;
-  fechaFin: string | null;
-  fechaTexto: string | null;
-  motivo: string | null;
-  expediente: string | null;
-  documentoId: string;
-  documentoUrl: string;
-  recursoId?: string;
-  recursoUrl?: string;
-};
-
 export type DiputadosViajesExplorePayload = {
   ventana: {
     desde: { anio: number; mes: number };
@@ -557,7 +548,49 @@ export type DiputadosViajesExplorePayload = {
   };
   ranking: DiputadosViajesExploreRankingRow[];
   nacionales: DiputadosViajesExploreNacional[];
-  internacionales: DiputadosViajesExploreInternacional[];
+};
+
+export type DiputadosMisionesExploreRow = {
+  id: string;
+  diputadoId: string | null;
+  diputadoNombre: string;
+  anio: number;
+  mes: number | null;
+  mesNombre: string | null;
+  destino: string;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  fechaTexto: string | null;
+  motivo: string | null;
+  institucion: string | null;
+  bloque: string | null;
+  recursoNombre: string | null;
+  viaticos: boolean | null;
+  viaticosUsd: number | null;
+  viaticosEuro: number | null;
+  viaticosArs: number | null;
+  documentoId: string;
+  documentoUrl: string;
+  recursoId?: string;
+  recursoUrl?: string;
+};
+
+export type DiputadosMisionesExploreRankingRow = {
+  id: string;
+  nombreCompleto: string;
+  nombre: string;
+  apellido: string;
+  foto: string | null;
+  provincia: string;
+  bloque: string;
+  misionesCount: number;
+  viaticosUsd: number;
+  viaticosArs: number;
+};
+
+export type DiputadosMisionesExplorePayload = {
+  ranking: DiputadosMisionesExploreRankingRow[];
+  misiones: DiputadosMisionesExploreRow[];
 };
 
 export async function getDiputadosPeriodosOficiales(): Promise<
@@ -626,23 +659,13 @@ export async function getDiputadosViajesExplore(): Promise<DiputadosViajesExplor
   assertServerData();
   return _viajesExplore.get(async () => {
     const origin = getApiOrigin();
-    const [conteo, diputados, nacRaw, intlRaw] = await Promise.all([
+    const [conteo, diputados, nacRaw] = await Promise.all([
       getViajesConteo12mByDiputadoId(),
       getDiputados(),
       $fetch<any[]>(`${origin}/v1/diputados/viajes/nacionales`).catch(
         () => [] as any[],
       ),
-      $fetch<any[]>(`${origin}/v1/diputados/viajes/internacionales`).catch(
-        () => [] as any[],
-      ),
     ]);
-
-    const byId = new Map(diputados.map((d) => [String(d.id), d]));
-    const nameOf = (id: unknown, fallback: string) => {
-      if (id == null || id === "") return fallback || "—";
-      const d = byId.get(String(id));
-      return d?.nombreCompleto || `${d?.apellido || ""}, ${d?.nombre || ""}`.trim() || fallback || "—";
-    };
 
     const now = new Date();
     const hastaAnio = now.getUTCFullYear();
@@ -678,35 +701,6 @@ export async function getDiputadosViajesExplore(): Promise<DiputadosViajesExplor
       return kb.localeCompare(ka);
     });
 
-    const internacionales: DiputadosViajesExploreInternacional[] = (
-      intlRaw || []
-    )
-      .map((v) => ({
-        diputadoId: v?.diputadoId != null ? String(v.diputadoId) : null,
-        diputadoNombre: nameOf(v?.diputadoId, String(v?.nombre || "")),
-        anio: Number(v?.anio) || 0,
-        mes: v?.mes != null ? Number(v.mes) : null,
-        destino: String(v?.destino || ""),
-        fechaInicio: v?.fechaInicio != null ? String(v.fechaInicio) : null,
-        fechaFin: v?.fechaFin != null ? String(v.fechaFin) : null,
-        fechaTexto: v?.fechaTexto != null ? String(v.fechaTexto) : null,
-        motivo: v?.motivo != null ? String(v.motivo) : null,
-        expediente: v?.expediente != null ? String(v.expediente) : null,
-        documentoId: String(v?.documentoId || v?.recursoId || ""),
-        documentoUrl: String(v?.documentoUrl || v?.recursoUrl || ""),
-        recursoId: v?.recursoId != null ? String(v.recursoId) : undefined,
-        recursoUrl: v?.recursoUrl != null ? String(v.recursoUrl) : undefined,
-      }))
-      .sort((a, b) => {
-        const ka =
-          (a.fechaInicio && String(a.fechaInicio).slice(0, 10)) ||
-          `${a.anio}-${String(a.mes ?? 0).padStart(2, "0")}`;
-        const kb =
-          (b.fechaInicio && String(b.fechaInicio).slice(0, 10)) ||
-          `${b.anio}-${String(b.mes ?? 0).padStart(2, "0")}`;
-        return kb.localeCompare(ka);
-      });
-
     const byIdForRanking = new Map(diputados.map((d) => [String(d.id), d]));
     const ranking: DiputadosViajesExploreRankingRow[] = Object.entries(conteo)
       .map(([id, n]) => {
@@ -737,9 +731,155 @@ export async function getDiputadosViajesExplore(): Promise<DiputadosViajesExplor
       },
       ranking,
       nacionales,
-      internacionales,
     };
   });
+}
+
+export async function getDiputadosMisionesExplore(): Promise<DiputadosMisionesExplorePayload> {
+  assertServerData();
+  return _misionesExplore.get(async () => {
+    const origin = getApiOrigin();
+    const [diputados, rawLista] = await Promise.all([
+      getDiputados(),
+      $fetch<any>(`${origin}/v1/diputados/misiones/lista`).catch(() => [] as any[]),
+    ]);
+
+    const list = Array.isArray(rawLista)
+      ? rawLista
+      : Array.isArray(rawLista?.misiones)
+        ? rawLista.misiones
+        : [];
+
+    const byId = new Map(diputados.map((d) => [String(d.id), d]));
+    const nameOf = (id: unknown, fallback: string) => {
+      if (id == null || id === "") return fallback || "—";
+      const d = byId.get(String(id));
+      return (
+        d?.nombreCompleto ||
+        `${d?.apellido || ""}, ${d?.nombre || ""}`.trim() ||
+        fallback ||
+        "—"
+      );
+    };
+
+    const counts = new Map<string, number>();
+    const usdById = new Map<string, number>();
+    const arsById = new Map<string, number>();
+    const misiones: DiputadosMisionesExploreRow[] = [];
+    for (const v of list) {
+      const diputadoId = v?.diputadoId != null ? String(v.diputadoId) : null;
+      const viaticosUsd =
+        v?.viaticosUsd != null && Number.isFinite(Number(v.viaticosUsd))
+          ? Number(v.viaticosUsd)
+          : null;
+      const viaticosEuro =
+        v?.viaticosEuro != null && Number.isFinite(Number(v.viaticosEuro))
+          ? Number(v.viaticosEuro)
+          : null;
+      const viaticosArs =
+        v?.viaticosArs != null && Number.isFinite(Number(v.viaticosArs))
+          ? Number(v.viaticosArs)
+          : null;
+      if (diputadoId) {
+        counts.set(diputadoId, (counts.get(diputadoId) || 0) + 1);
+        if (viaticosUsd != null) {
+          usdById.set(diputadoId, (usdById.get(diputadoId) || 0) + viaticosUsd);
+        }
+        if (viaticosArs != null) {
+          arsById.set(diputadoId, (arsById.get(diputadoId) || 0) + viaticosArs);
+        }
+      }
+      const diputadoNombre = nameOf(v?.diputadoId, String(v?.nombre || ""));
+      const documentoId = String(v?.documentoId || v?.recursoId || "");
+      const documentoUrl = String(v?.documentoUrl || v?.recursoUrl || "");
+      const rowBase = {
+        diputadoId,
+        diputadoNombre,
+        anio: Number(v?.anio) || 0,
+        mes: v?.mes != null ? Number(v.mes) : null,
+        mesNombre: v?.mesNombre != null ? String(v.mesNombre) : null,
+        destino: String(v?.destino || ""),
+        fechaInicio: v?.fechaInicio != null ? String(v.fechaInicio) : null,
+        fechaFin: v?.fechaFin != null ? String(v.fechaFin) : null,
+        fechaTexto: v?.fechaTexto != null ? String(v.fechaTexto) : null,
+        motivo: v?.motivo != null ? String(v.motivo) : null,
+        institucion:
+          v?.institucion != null
+            ? String(v.institucion)
+            : v?.expediente != null
+              ? String(v.expediente)
+              : null,
+        bloque: v?.bloque != null ? String(v.bloque) : null,
+        recursoNombre:
+          v?.recursoNombre != null ? String(v.recursoNombre) : null,
+        viaticos: typeof v?.viaticos === "boolean" ? v.viaticos : null,
+        viaticosUsd,
+        viaticosEuro,
+        viaticosArs,
+        documentoId,
+        documentoUrl,
+        recursoId: v?.recursoId != null ? String(v.recursoId) : undefined,
+        recursoUrl: v?.recursoUrl != null ? String(v.recursoUrl) : undefined,
+      };
+      misiones.push({
+        ...rowBase,
+        id: buildMisionId({
+          documentoId,
+          recursoId: rowBase.recursoId,
+          fechaInicio: rowBase.fechaInicio,
+          anio: rowBase.anio,
+          nombre: String(v?.nombre || "").trim() || diputadoNombre,
+          destino: rowBase.destino,
+        }),
+      });
+    }
+    misiones.sort((a, b) => {
+      const ka =
+        (a.fechaInicio && String(a.fechaInicio).slice(0, 10)) ||
+        `${a.anio}-${String(a.mes ?? 0).padStart(2, "0")}`;
+      const kb =
+        (b.fechaInicio && String(b.fechaInicio).slice(0, 10)) ||
+        `${b.anio}-${String(b.mes ?? 0).padStart(2, "0")}`;
+      return kb.localeCompare(ka);
+    });
+
+    const ranking: DiputadosMisionesExploreRankingRow[] = [...counts.entries()]
+      .map(([id, n]) => {
+        const d = byId.get(id);
+        if (!d) return null;
+        return {
+          id,
+          nombreCompleto: diputadoNombreCompleto(d),
+          nombre: d.nombre,
+          apellido: d.apellido,
+          foto: d.foto || null,
+          provincia: d.provincia,
+          bloque: d.bloque,
+          misionesCount: n,
+          viaticosUsd: usdById.get(id) || 0,
+          viaticosArs: arsById.get(id) || 0,
+        };
+      })
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          b!.misionesCount - a!.misionesCount ||
+          b!.viaticosUsd - a!.viaticosUsd ||
+          a!.nombreCompleto.localeCompare(b!.nombreCompleto, "es"),
+      ) as DiputadosMisionesExploreRankingRow[];
+
+    return { ranking, misiones };
+  });
+}
+
+export async function getMisionById(
+  id: string,
+): Promise<DiputadosMisionesExploreRow | null> {
+  assertServerData();
+  const key = String(id || "").trim();
+  if (!key) return null;
+  const { misiones } = await getDiputadosMisionesExplore();
+  return misiones.find((m) => m.id === key) || null;
 }
 
 function mapComision(raw: any): import("./types").Comision {
@@ -822,7 +962,7 @@ export async function getDiputadoViajes(
   assertServerData();
   const key = String(id || "").trim();
   if (!key) {
-    return { diputadoId: "", nacionales: [], internacionales: [] };
+    return { diputadoId: "", nacionales: [] };
   }
   const existing = _viajesById.get(key);
   if (existing) return existing;
@@ -836,12 +976,9 @@ export async function getDiputadoViajes(
       return {
         diputadoId: String(raw?.diputadoId || key),
         nacionales: Array.isArray(raw?.nacionales) ? raw.nacionales : [],
-        internacionales: Array.isArray(raw?.internacionales)
-          ? raw.internacionales
-          : [],
       };
     } catch {
-      return { diputadoId: key, nacionales: [], internacionales: [] };
+      return { diputadoId: key, nacionales: [] };
     }
   })();
 
@@ -850,6 +987,53 @@ export async function getDiputadoViajes(
     return await promise;
   } catch (e) {
     _viajesById.delete(key);
+    throw e;
+  }
+}
+
+export async function getDiputadoMisiones(
+  id: string,
+): Promise<import("./types").DiputadoMisiones> {
+  assertServerData();
+  const key = String(id || "").trim();
+  if (!key) {
+    return { diputadoId: "", misiones: [] };
+  }
+  const existing = _misionesById.get(key);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const origin = getApiOrigin();
+    try {
+      const raw = await $fetch<any>(
+        `${origin}/v1/diputados/diputados/${encodeURIComponent(key)}/misiones`,
+      );
+      return {
+        diputadoId: String(raw?.diputadoId || key),
+        misiones: (Array.isArray(raw?.misiones) ? raw.misiones : []).map(
+          (m: any) => ({
+            ...m,
+            id: buildMisionId({
+              documentoId: m?.documentoId,
+              recursoId: m?.recursoId,
+              fechaInicio: m?.fechaInicio,
+              anio: m?.anio,
+              nombre: m?.nombre,
+              destino: m?.destino,
+            }),
+          }),
+        ),
+      };
+    } catch {
+      return { diputadoId: key, misiones: [] };
+    }
+  })();
+
+  _misionesById.set(key, promise);
+  try {
+    return await promise;
+  } catch (e) {
+    _misionesById.delete(key);
     throw e;
   }
 }

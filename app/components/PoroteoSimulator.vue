@@ -1413,7 +1413,7 @@ const groupsSectionTitle = computed(() => {
                         <div
                           v-for="action in POROTEO_ACTIONS"
                           :key="action.tipo"
-                          class="rounded-md px-1.5 py-2.5 text-center text-[0.65rem] font-bold sm:px-2 sm:py-3 sm:text-sm"
+                          class="rounded-md px-1.5 py-2 text-center sm:px-2 sm:py-2.5"
                           :class="
                             action.tipo === 'indeciso'
                               ? 'text-gray-900'
@@ -1421,8 +1421,16 @@ const groupsSectionTitle = computed(() => {
                           "
                           :style="{ backgroundColor: groupColors[action.tipo] }"
                         >
-                          {{ action.label.toUpperCase() }}:
-                          {{ counts[action.tipo] }}
+                          <p
+                            class="truncate text-[0.55rem] font-semibold uppercase tracking-wide opacity-90 sm:text-[0.65rem]"
+                          >
+                            {{ action.label }}
+                          </p>
+                          <p
+                            class="text-base font-bold tabular-nums leading-tight sm:text-lg"
+                          >
+                            {{ counts[action.tipo] }}
+                          </p>
                         </div>
                       </div>
                       <p

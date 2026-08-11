@@ -36,6 +36,12 @@ const props = withDefaults(
     showPhotos?: boolean;
     /** Tooltip al hover de bancas. Apagar en miniaturas (p. ej. dock del Poroteo). */
     showTooltip?: boolean;
+    /** Apellido debajo de cada banca (truncate). */
+    showSeatApellidos?: boolean;
+    /** Nombre debajo del apellido (requiere showSeatApellidos). */
+    showSeatNombres?: boolean;
+    /** Sin relleno del hemiciclo: deja ver el fondo del contenedor. */
+    transparentFloor?: boolean;
     /**
      * Si true, el click emite `select` en lugar de navegar a la ficha.
      * Útil para el Poroteo (asignar voto).
@@ -53,6 +59,9 @@ const props = withDefaults(
     showLegend: true,
     showPhotos: true,
     showTooltip: true,
+    showSeatApellidos: false,
+    showSeatNombres: false,
+    transparentFloor: false,
     editable: false,
     forcedColorMode: null,
     memberBasePath: "/senadores",
@@ -148,20 +157,73 @@ const isDesktop = computed(() => {
 const geom = computed(() => {
   const n = Math.max(1, items.value.length);
   const desktop = isDesktop.value;
+  const showApellidos = props.showSeatApellidos;
+  const showNombres = showApellidos && props.showSeatNombres;
+  // Bloque de texto bajo cada banca (espacio radial extra entre filas).
+  const labelBlock = showApellidos ? (showNombres ? 38 : 22) : 0;
+  const labelCanvasExtra = showApellidos ? (showNombres ? 120 : 80) : 0;
 
-  // Senado (~72) → pocas filas y bancas grandes; más miembros → más filas
-  const targetRows = n <= 36 ? 3 : n <= 90 ? 4 : n <= 150 ? 6 : n <= 220 ? 7 : 8;
+  // Con labels: más filas y canvas más grande para poder abrir el pitch.
+  const targetRows = showApellidos
+    ? n <= 36
+      ? 4
+      : n <= 90
+        ? 5
+        : n <= 150
+          ? 7
+          : n <= 220
+            ? 9
+            : 10
+    : n <= 36
+      ? 3
+      : n <= 90
+        ? 4
+        : n <= 150
+          ? 6
+          : n <= 220
+            ? 7
+            : 8;
   const compact = n <= 100;
 
-  const W = desktop ? (compact ? 1080 : 1280) : compact ? 880 : 1000;
-  const H = desktop ? (compact ? 580 : 680) : compact ? 440 : 500;
+  const baseW = desktop ? (compact ? 1080 : 1280) : compact ? 880 : 1000;
+  const baseH = desktop ? (compact ? 580 : 680) : compact ? 440 : 500;
+  const W = showApellidos ? Math.round(baseW * 1.22) : baseW;
+  const H = baseH + labelCanvasExtra;
   const cx = W / 2;
 
-  const maxDot = desktop ? (compact ? 30 : 17) : compact ? 22 : 13;
-  const minDot = desktop ? (compact ? 18 : 14) : compact ? 14 : 11;
+  const maxDot = showApellidos
+    ? desktop
+      ? compact
+        ? 22
+        : 14
+      : compact
+        ? 16
+        : 11
+    : desktop
+      ? compact
+        ? 30
+        : 17
+      : compact
+        ? 22
+        : 13;
+  const minDot = showApellidos
+    ? desktop
+      ? compact
+        ? 12
+        : 10
+      : compact
+        ? 10
+        : 9
+    : desktop
+      ? compact
+        ? 18
+        : 14
+      : compact
+        ? 14
+        : 11;
   // cy cerca de H-8 hacía que las bancas del borde inferior pintaran fuera del
   // viewBox (SVG con overflow:visible) y se montaran sobre la leyenda/contadores.
-  const bottomPad = maxDot + 18;
+  const bottomPad = maxDot + 18 + labelBlock;
   const cy = H - bottomPad;
 
   const angleMargin =
@@ -179,26 +241,38 @@ const geom = computed(() => {
     outerR: number;
     numRows: number;
     dotR: number;
+    /** Separación tangencial (arco) entre centros de banca. */
     pitch: number;
+    /** Separación radial entre filas (incluye espacio para labels). */
+    rowPitch: number;
     aLeft: number;
     aRight: number;
     sweep: number;
   };
 
-  function tryGeom(dotR: number, outerScale = 1): Geom | null {
-    const gap = Math.max(3, Math.round(dotR * 0.22));
+  function pitchesFor(dotR: number): { pitch: number; rowPitch: number } {
+    // Sin labels: hueco chico. Con labels: hueco ancho para el texto + bloque vertical.
+    const gap = showApellidos
+      ? Math.max(Math.round(dotR * 1.55), showNombres ? 34 : 28)
+      : Math.max(3, Math.round(dotR * 0.22));
     const pitch = 2 * dotR + gap;
+    const rowPitch = pitch + labelBlock;
+    return { pitch, rowPitch };
+  }
+
+  function tryGeom(dotR: number, outerScale = 1): Geom | null {
+    const { pitch, rowPitch } = pitchesFor(dotR);
     const pad = dotR + 12;
     const outerRMax = Math.min(cx - pad, cy - pad);
     const outerR = outerRMax * outerScale;
 
     let numRows = targetRows;
     // Evitar hemiciclo demasiado "grueso" radialmente
-    while (numRows > 2 && (numRows - 1) * pitch > outerR * 0.5) {
+    while (numRows > 2 && (numRows - 1) * rowPitch > outerR * 0.62) {
       numRows -= 1;
     }
 
-    const innerR = outerR - (numRows - 1) * pitch;
+    const innerR = outerR - (numRows - 1) * rowPitch;
     if (innerR < Math.max(56, pad + 16)) return null;
 
     const radii = Array.from({ length: numRows }, (_, row) =>
@@ -222,6 +296,7 @@ const geom = computed(() => {
       numRows,
       dotR,
       pitch,
+      rowPitch,
       aLeft,
       aRight,
       sweep,
@@ -251,34 +326,35 @@ const geom = computed(() => {
   }
 
   if (best) {
-    // Compactar el radio si sobra mucha capacidad (evita huecos con pocos senadores)
-    const idealCap = Math.ceil(n * 1.1);
-    if (capacityOf(best) > idealCap) {
-      let lo = 0.55;
-      let hi = 1;
-      let tight = best;
-      for (let i = 0; i < 12; i++) {
-        const mid = (lo + hi) / 2;
-        const g = tryGeom(best.dotR, mid);
-        if (g && capacityOf(g) >= n) {
-          tight = g;
-          hi = mid;
-        } else {
-          lo = mid;
+    // Compactar el radio si sobra capacidad — NO con labels (necesitamos aire).
+    if (!showApellidos) {
+      const idealCap = Math.ceil(n * 1.1);
+      if (capacityOf(best) > idealCap) {
+        let lo = 0.55;
+        let hi = 1;
+        let tight = best;
+        for (let i = 0; i < 12; i++) {
+          const mid = (lo + hi) / 2;
+          const g = tryGeom(best.dotR, mid);
+          if (g && capacityOf(g) >= n) {
+            tight = g;
+            hi = mid;
+          } else {
+            lo = mid;
+          }
         }
+        best = tight;
       }
-      best = tight;
     }
     return best;
   }
 
   // Fallback: forzar minDot aunque quede un poco justo
-  const gap = Math.max(3, Math.round(minDot * 0.22));
-  const pitch = 2 * minDot + gap;
+  const { pitch, rowPitch } = pitchesFor(minDot);
   const pad = minDot + 12;
   const outerR = Math.min(cx - pad, cy - pad);
   const numRows = Math.max(2, targetRows);
-  const innerR = Math.max(pad + 24, outerR - (numRows - 1) * pitch);
+  const innerR = Math.max(pad + 24, outerR - (numRows - 1) * rowPitch);
 
   return {
     W,
@@ -290,6 +366,7 @@ const geom = computed(() => {
     numRows,
     dotR: minDot,
     pitch,
+    rowPitch,
     aLeft,
     aRight,
     sweep,
@@ -585,6 +662,30 @@ function tooltipColor(m: HemicicloMember): string {
   }
   return colorFor(m);
 }
+
+const seatLabelColor = computed(() => (isDark.value ? "#e2e8f0" : "#1e293b"));
+const seatSubLabelColor = computed(() =>
+  isDark.value ? "#94a3b8" : "#64748b",
+);
+
+function seatApellido(m: HemicicloMember): string {
+  return (m.apellido || m.nombreCompleto || "").trim();
+}
+
+function seatNombre(m: HemicicloMember): string {
+  return (m.nombre || m.nombreDePila || "").trim();
+}
+
+function clipSeatLabel(text: string): string {
+  const font = Math.max(7, DOT_R.value * 0.42);
+  // Caber en el pitch tangencial (con un poco de margen entre vecinos).
+  const max = Math.max(4, Math.floor((geom.value.pitch * 0.85) / (font * 0.55)));
+  const t = text.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, Math.max(1, max - 1))}…`;
+}
+
+const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
 </script>
 
 <template>
@@ -603,6 +704,7 @@ function tooltipColor(m: HemicicloMember): string {
         @mouseleave="onLeave"
       >
         <path
+          v-if="!transparentFloor"
           :d="bgPath"
           :fill="isDark ? '#1e293b' : '#f1f5f9'"
           stroke="none"
@@ -635,7 +737,15 @@ function tooltipColor(m: HemicicloMember): string {
           :y1="sep.y1"
           :x2="sep.x2"
           :y2="sep.y2"
-          :stroke="isDark ? '#0f172a' : '#ffffff'"
+          :stroke="
+            transparentFloor
+              ? isDark
+                ? 'rgba(255,255,255,0.22)'
+                : 'rgba(0,0,0,0.18)'
+              : isDark
+                ? '#0f172a'
+                : '#ffffff'
+          "
           stroke-width="1.5"
           stroke-linecap="round"
           opacity="0.6"
@@ -693,6 +803,34 @@ function tooltipColor(m: HemicicloMember): string {
             stroke-width="2.5"
             pointer-events="none"
           />
+          <text
+            v-if="showSeatApellidos && seatApellido(p.member)"
+            :x="p.x"
+            :y="p.y + DOT_R + seatLabelFontSize * 0.95"
+            text-anchor="middle"
+            :fill="seatLabelColor"
+            :font-size="seatLabelFontSize"
+            font-weight="600"
+            pointer-events="none"
+          >
+            {{ clipSeatLabel(seatApellido(p.member)) }}
+          </text>
+          <text
+            v-if="
+              showSeatApellidos &&
+              showSeatNombres &&
+              seatNombre(p.member)
+            "
+            :x="p.x"
+            :y="p.y + DOT_R + seatLabelFontSize * 2.05"
+            text-anchor="middle"
+            :fill="seatSubLabelColor"
+            :font-size="seatLabelFontSize * 0.9"
+            font-weight="500"
+            pointer-events="none"
+          >
+            {{ clipSeatLabel(seatNombre(p.member)) }}
+          </text>
         </g>
 
         <!-- Presidente: banca central (podio) -->

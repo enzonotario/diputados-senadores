@@ -60,28 +60,22 @@ const verComo = useLocalStorage<"grid" | "tabla">("poroteo-ver-como", "grid", {
 
 interface PoroteoExportDesign {
   backgroundColor: string;
-  borderWidth: number;
-  borderColor: string;
-  borderRadius: number;
-  padding: number;
   showPhotos: boolean;
   showTitle: boolean;
   showCounters: boolean;
   showFooter: boolean;
-  colorMode: "auto" | "dark" | "light";
+  showSeatApellidos: boolean;
+  showSeatNombres: boolean;
 }
 
 const EXPORT_DESIGN_DEFAULTS: PoroteoExportDesign = {
   backgroundColor: "#0a0a0a",
-  borderWidth: 0,
-  borderColor: "#ffffff",
-  borderRadius: 16,
-  padding: 32,
   showPhotos: true,
   showTitle: true,
   showCounters: true,
   showFooter: true,
-  colorMode: "auto",
+  showSeatApellidos: false,
+  showSeatNombres: false,
 };
 
 const EXPORT_BG_PRESETS = [
@@ -127,28 +121,35 @@ const exportTextColor = computed(() =>
 const exportMutedColor = computed(() =>
   exportIsLightBg.value ? "#6b7280" : "#9ca3af",
 );
-const exportForcedColorMode = computed<"dark" | "light">(() => {
-  if (exportDesign.value.colorMode === "auto") {
-    return exportIsLightBg.value ? "light" : "dark";
-  }
-  return exportDesign.value.colorMode;
-});
-const exportRootStyle = computed(() => {
-  const d = exportDesign.value;
-  return {
-    backgroundColor: d.backgroundColor,
-    color: exportTextColor.value,
-    borderWidth: `${d.borderWidth}px`,
-    borderStyle: d.borderWidth > 0 ? "solid" : "none",
-    borderColor: d.borderColor,
-    borderRadius: `${d.borderRadius}px`,
-    padding: `${d.padding}px`,
-  } as Record<string, string>;
-});
+/** Título siempre legible: chip neutro sobre cualquier fondo. */
+const exportTitleStyle = computed(() => ({
+  color: "#111827",
+  backgroundColor: "rgba(255,255,255,0.92)",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+}));
+const exportForcedColorMode = computed<"dark" | "light">(() =>
+  exportIsLightBg.value ? "light" : "dark",
+);
+const exportRootStyle = computed(
+  () =>
+    ({
+      backgroundColor: exportDesign.value.backgroundColor,
+      color: exportTextColor.value,
+      borderRadius: "16px",
+      padding: "32px",
+    }) as Record<string, string>,
+);
 
 function resetExportDesign() {
   exportDesign.value = { ...EXPORT_DESIGN_DEFAULTS };
 }
+
+watch(
+  () => exportDesign.value.showSeatApellidos,
+  (on) => {
+    if (!on) exportDesign.value.showSeatNombres = false;
+  },
+);
 
 const dockExpanded = ref(false);
 const dockPinned = ref(false);
@@ -1261,100 +1262,6 @@ const groupsSectionTitle = computed(() => {
                       </div>
                     </div>
 
-                    <UFormField
-                      :label="`Borde (${exportDesign.borderWidth}px)`"
-                      class="w-full"
-                    >
-                      <USlider
-                        v-model="exportDesign.borderWidth"
-                        :min="0"
-                        :max="24"
-                        :step="1"
-                        size="sm"
-                      />
-                    </UFormField>
-
-                    <div
-                      v-if="exportDesign.borderWidth > 0"
-                      class="flex items-center justify-between gap-2"
-                    >
-                      <p class="text-xs font-medium text-muted">Color borde</p>
-                      <label
-                        class="relative size-7 cursor-pointer overflow-hidden rounded-md ring-1 ring-default"
-                      >
-                        <span class="sr-only">Color del borde</span>
-                        <input
-                          v-model="exportDesign.borderColor"
-                          type="color"
-                          class="absolute inset-0 size-full cursor-pointer border-0 p-0"
-                        />
-                      </label>
-                    </div>
-
-                    <UFormField
-                      :label="`Esquinas (${exportDesign.borderRadius}px)`"
-                      class="w-full"
-                    >
-                      <USlider
-                        v-model="exportDesign.borderRadius"
-                        :min="0"
-                        :max="40"
-                        :step="1"
-                        size="sm"
-                      />
-                    </UFormField>
-
-                    <UFormField
-                      :label="`Relleno (${exportDesign.padding}px)`"
-                      class="w-full"
-                    >
-                      <USlider
-                        v-model="exportDesign.padding"
-                        :min="12"
-                        :max="56"
-                        :step="2"
-                        size="sm"
-                      />
-                    </UFormField>
-
-                    <UFormField label="Tema hemiciclo" class="w-full">
-                      <div class="flex flex-wrap gap-1">
-                        <UButton
-                          size="xs"
-                          color="neutral"
-                          :variant="
-                            exportDesign.colorMode === 'auto'
-                              ? 'solid'
-                              : 'outline'
-                          "
-                          label="Auto"
-                          @click="exportDesign.colorMode = 'auto'"
-                        />
-                        <UButton
-                          size="xs"
-                          color="neutral"
-                          :variant="
-                            exportDesign.colorMode === 'dark'
-                              ? 'solid'
-                              : 'outline'
-                          "
-                          label="Oscuro"
-                          @click="exportDesign.colorMode = 'dark'"
-                        />
-                        <UButton
-                          size="xs"
-                          color="neutral"
-                          :variant="
-                            exportDesign.colorMode === 'light'
-                              ? 'solid'
-                              : 'outline'
-                          "
-                          label="Claro"
-                          @click="exportDesign.colorMode = 'light'"
-                        />
-                      </div>
-                    </UFormField>
-
                     <div class="flex flex-col gap-2 border-t border-default pt-2">
                       <USwitch
                         v-model="exportDesign.showTitle"
@@ -1365,6 +1272,17 @@ const groupsSectionTitle = computed(() => {
                         v-model="exportDesign.showPhotos"
                         size="sm"
                         label="Fotos"
+                      />
+                      <USwitch
+                        v-model="exportDesign.showSeatApellidos"
+                        size="sm"
+                        label="Apellidos"
+                      />
+                      <USwitch
+                        v-model="exportDesign.showSeatNombres"
+                        size="sm"
+                        label="Nombres"
+                        :disabled="!exportDesign.showSeatApellidos"
                       />
                       <USwitch
                         v-model="exportDesign.showCounters"
@@ -1387,8 +1305,8 @@ const groupsSectionTitle = computed(() => {
                     >
                       <p
                         v-if="exportDesign.showTitle"
-                        class="mb-5 text-center text-lg font-bold tracking-tight sm:mb-6 sm:text-xl"
-                        :style="{ color: exportTextColor }"
+                        class="mx-auto mb-5 max-w-full truncate rounded-full px-4 py-1.5 text-center text-lg font-bold tracking-tight sm:mb-6 sm:text-xl"
+                        :style="exportTitleStyle"
                       >
                         {{ title || "Poroteo" }}
                       </p>
@@ -1402,6 +1320,12 @@ const groupsSectionTitle = computed(() => {
                         :editable="dockExpanded"
                         :clickable="false"
                         :show-photos="exportDesign.showPhotos"
+                        :show-seat-apellidos="exportDesign.showSeatApellidos"
+                        :show-seat-nombres="
+                          exportDesign.showSeatApellidos &&
+                          exportDesign.showSeatNombres
+                        "
+                        transparent-floor
                         :show-legend="false"
                         :forced-color-mode="exportForcedColorMode"
                         @select="onSeatSelect"

@@ -215,7 +215,6 @@ const actasRecientes = computed(() => {
     <section
       class="flex flex-col items-center justify-center space-y-4 text-center"
     >
-      <AppBrand :show-text="false" size="lg" class="justify-center" />
       <h1 class="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
         Votaciones de Senadores
       </h1>

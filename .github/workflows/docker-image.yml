@@ -5,7 +5,8 @@ name: Docker image (Coolify)
 #
 # Datos de la API no viven en el repo → la cache de Docker puede saltarse
 # `pnpm build` (SSG viejo). Para regenerar páginas: Actions → Run workflow →
-# marcar "force_rebuild".
+# marcar "force_rebuild". Opcional: "site" para buildear solo diputados,
+# senadores o congreso (default: los tres).
 on:
   push:
     branches:
@@ -13,6 +14,15 @@ on:
       - feature/diputados-senadores
   workflow_dispatch:
     inputs:
+      site:
+        description: "Sitio a buildear y pushear (all = diputados + senadores + congreso)"
+        type: choice
+        options:
+          - all
+          - diputados
+          - senadores
+          - congreso
+        default: all
       force_rebuild:
         description: "Ignorar cache Docker y re-correr pnpm build (SSG con datos frescos de la API)"
         type: boolean
@@ -27,12 +37,33 @@ env:
   COOLIFY_API_BASE: https://app.coolify.io/api/v1
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      sites: ${{ steps.set-matrix.outputs.sites }}
+    steps:
+      - name: Matrix de sitios
+        id: set-matrix
+        run: |
+          SITE="${{ github.event_name == 'workflow_dispatch' && inputs.site || 'all' }}"
+          case "$SITE" in
+            diputados|senadores|congreso)
+              SITES="[\"$SITE\"]"
+              ;;
+            *)
+              SITES='["diputados","senadores","congreso"]'
+              ;;
+          esac
+          echo "sites=$SITES" >> "$GITHUB_OUTPUT"
+          echo "Build matrix: $SITES"
+
   build-push:
+    needs: prepare
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        site: [diputados, senadores, congreso]
+        site: ${{ fromJSON(needs.prepare.outputs.sites) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -75,17 +106,18 @@ jobs:
           cache-to: type=gha,mode=max,scope=site-${{ matrix.site }}
 
   deploy-coolify:
-    needs: build-push
+    needs: [prepare, build-push]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/diputados-senadores'
     steps:
       # Secrets: COOLIFY_API_TOKEN + COOLIFY_APP_UUID_{DIPUTADOS,SENADORES,CONGRESO}
-      - name: Trigger Coolify deploy (todos los servicios)
+      - name: Trigger Coolify deploy
         env:
           COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
           UUID_DIPUTADOS: ${{ secrets.COOLIFY_APP_UUID_DIPUTADOS }}
           UUID_SENADORES: ${{ secrets.COOLIFY_APP_UUID_SENADORES }}
           UUID_CONGRESO: ${{ secrets.COOLIFY_APP_UUID_CONGRESO }}
+          SITE_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.site || 'all' }}
           # Tras rebuild forzado, forzar redeploy aunque el tag (*-latest) sea el mismo.
           COOLIFY_FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_rebuild && 'true' || 'false' }}
         run: |
@@ -93,9 +125,17 @@ jobs:
             echo "COOLIFY_API_TOKEN no configurado; skip"
             exit 0
           fi
+          should_deploy() {
+            local name="$1"
+            [ "$SITE_FILTER" = "all" ] || [ "$SITE_FILTER" = "$name" ]
+          }
           deploy() {
             local name="$1"
             local uuid="$2"
+            if ! should_deploy "$name"; then
+              echo "skip $name (site=$SITE_FILTER)"
+              return 0
+            fi
             if [ -z "$uuid" ]; then
               echo "skip $name (uuid vacío)"
               return 0

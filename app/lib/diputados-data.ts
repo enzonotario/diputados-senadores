@@ -10,6 +10,7 @@ import {
   clearDiputadosAliasMapCache,
 } from "./matchDiputadoNombre";
 import { buildMisionId } from "../utils/misiones";
+import recintoAsignacion from "../data/diputados-recinto-asignacion.json";
 
 function slug(value: string) {
   return slugify(value || "", { lower: true, strict: true, trim: true });
@@ -67,6 +68,7 @@ let _comisiones = createSingleflight<import("./types").Comision[]>();
 let _periodosOficiales = createSingleflight<
   Array<{ periodo: string; inicio: string; fin: string; sesiones: string | null }>
 >();
+let _recintoBancaById = createSingleflight<Record<string, number>>();
 const _viajesById = new Map<string, Promise<import("./types").DiputadoViajes>>();
 const _misionesById = new Map<
   string,
@@ -92,6 +94,7 @@ export function clearDiputadosDataCache() {
   _misionesExplore.clear();
   _comisiones.clear();
   _periodosOficiales.clear();
+  _recintoBancaById.clear();
   _viajesById.clear();
   _misionesById.clear();
   clearDiputadosAliasMapCache();
@@ -118,6 +121,51 @@ export async function getDiputadosRaw(): Promise<any[]> {
   });
 }
 
+/** Mapa id → banca desde `/v1/diputados/recinto` (fallback: snapshot local). */
+async function getRecintoBancaById(): Promise<Record<string, number>> {
+  return _recintoBancaById.get(async () => {
+    const staticMap = (recintoAsignacion?.bancaById || {}) as Record<
+      string,
+      number
+    >;
+    try {
+      const origin = getApiOrigin();
+      const payload = await $fetch<{
+        asientos?: Array<{
+          diputadoId?: string | null;
+          banca?: number;
+          bloque?: string | null;
+        }>;
+      }>(`${origin}/v1/diputados/recinto`);
+      const byBanca = new Map<
+        number,
+        Array<{ id: string; bloque: string | null }>
+      >();
+      for (const a of payload?.asientos || []) {
+        if (!a?.diputadoId || a.banca == null) continue;
+        const banca = Number(a.banca);
+        const list = byBanca.get(banca) || [];
+        list.push({
+          id: String(a.diputadoId),
+          bloque: a.bloque || null,
+        });
+        byBanca.set(banca, list);
+      }
+      if (!byBanca.size) return { ...staticMap };
+      const map: Record<string, number> = {};
+      for (const [banca, list] of byBanca) {
+        const winner = [...list].sort(
+          (a, b) => Number(Boolean(b.bloque)) - Number(Boolean(a.bloque)),
+        )[0]!;
+        map[winner.id] = banca;
+      }
+      return map;
+    } catch {
+      return { ...staticMap };
+    }
+  });
+}
+
 export async function getDiputados(): Promise<Diputado[]> {
   return _diputados.get(async () => {
     const raw = await getDiputadosRaw();
@@ -128,15 +176,26 @@ export async function getDiputados(): Promise<Diputado[]> {
       if (!byId.has(id)) byId.set(id, d);
     });
 
-    const conteo = await getViajesConteo12mByDiputadoId();
+    const [conteo, bancaMap] = await Promise.all([
+      getViajesConteo12mByDiputadoId(),
+      getRecintoBancaById(),
+    ]);
 
     return Array.from(byId.values())
       .sort((a, b) => String(a.id).localeCompare(String(b.id)))
-      .map((d) => ({
-        ...d,
-        nombreCompleto: `${d.apellido}, ${d.nombre}`,
-        viajesUltimos12Meses: conteo[String(d.id)] ?? 0,
-      })) as Diputado[];
+      .map((d) => {
+        const id = String(d.id);
+        const banca =
+          d.banca != null && Number.isFinite(Number(d.banca))
+            ? Number(d.banca)
+            : (bancaMap[id] ?? null);
+        return {
+          ...d,
+          nombreCompleto: `${d.apellido}, ${d.nombre}`,
+          viajesUltimos12Meses: conteo[id] ?? 0,
+          banca,
+        };
+      }) as Diputado[];
   });
 }
 

@@ -203,6 +203,17 @@ const tableColumns = [
   },
   { id: "bloque", accessorKey: "bloque", header: sortableHeader("Bloque") },
   {
+    id: "banca",
+    accessorKey: "banca",
+    header: sortableHeader("Banca"),
+    meta: {
+      class: {
+        th: "text-right whitespace-nowrap",
+        td: "text-right tabular-nums whitespace-nowrap",
+      },
+    },
+  },
+  {
     id: "inicio",
     accessorKey: "periodoMandato.inicio",
     header: sortableHeader("Inicio Mandato"),
@@ -348,6 +359,15 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
             >
               {{ (row.original as Diputado).bloque || "—" }}
             </UBadge>
+          </template>
+          <template #banca-cell="{ row }">
+            <span class="tabular-nums text-muted">
+              {{
+                (row.original as Diputado).banca != null
+                  ? (row.original as Diputado).banca
+                  : "—"
+              }}
+            </span>
           </template>
           <template #inicio-cell="{ row }">
             <span>{{

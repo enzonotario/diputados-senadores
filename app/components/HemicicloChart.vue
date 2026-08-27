@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { bloquePath } from "@/utils/bloque";
 import { partidoPath } from "@/utils/partido";
+import {
+  RECINTO_SEATS,
+  RECINTO_VIEWBOX,
+} from "@/lib/diputados-recinto-layout";
 
 /** Miembro mínimo para hemiciclo (diputado o senador). */
 export type HemicicloMember = {
@@ -14,6 +18,8 @@ export type HemicicloMember = {
   bloque?: string;
   partido?: string;
   tipoVoto?: string;
+  /** Banca física HCDN (solo diputados con datos de recinto). */
+  banca?: number | null;
 };
 
 const props = withDefaults(
@@ -52,6 +58,14 @@ const props = withDefaults(
     groupTo?: (key: string) => string | null | undefined;
     /** Base path para ficha: /diputados | /senadores */
     memberBasePath?: string;
+    /**
+     * `recinto`: coordenadas oficiales HCDN (requiere `banca`).
+     * `grouped`: empaquetado por bloque/partido/voto.
+     * `auto`: recinto si hay suficientes bancas (default).
+     */
+    seatLayout?: "grouped" | "recinto" | "auto";
+    /** En modo recinto, dibujar bancas vacías en gris. */
+    showVacantSeats?: boolean;
   }>(),
   {
     groupBy: "partido",
@@ -66,6 +80,8 @@ const props = withDefaults(
     forcedColorMode: null,
     memberBasePath: "/senadores",
     president: null,
+    seatLayout: "auto",
+    showVacantSeats: true,
   },
 );
 
@@ -85,7 +101,18 @@ const items = computed(
   () => props.members || props.diputados || props.senadores || [],
 );
 
+/** Layout oficial si hay suficientes `banca` en los miembros. */
+const useRecintoLayout = computed(() => {
+  if (props.seatLayout === "grouped") return false;
+  const withBanca = items.value.filter(
+    (d) => d.banca != null && Number.isFinite(Number(d.banca)),
+  ).length;
+  if (withBanca < 20) return false;
+  return props.seatLayout === "recinto" || props.seatLayout === "auto";
+});
+
 function groupKey(d: HemicicloMember): string {
+  if (d.id.startsWith("vacant-")) return "__vacant__";
   if (typeof props.groupBy === "function") return props.groupBy(d);
   if (props.groupBy === "tipoVoto") {
     return (d.tipoVoto || "ausente").toLowerCase();
@@ -97,6 +124,7 @@ function groupKey(d: HemicicloMember): string {
 }
 
 function colorFor(d: HemicicloMember): string {
+  if (d.id.startsWith("vacant-")) return "#a9a9a9";
   return props.groupColors[groupKey(d)] ?? "#6b7280";
 }
 
@@ -118,6 +146,7 @@ const groupConteo = computed(() => {
   const map: Record<string, number> = {};
   for (const d of items.value) {
     const k = groupKey(d);
+    if (k === "__vacant__") continue;
     map[k] = (map[k] || 0) + 1;
   }
   return map;
@@ -155,6 +184,32 @@ const isDesktop = computed(() => {
 });
 
 const geom = computed(() => {
+  if (useRecintoLayout.value) {
+    const W = RECINTO_VIEWBOX.width;
+    const H = RECINTO_VIEWBOX.height;
+    const dotR = RECINTO_SEATS[1]?.r ?? 15.5;
+    const cx = W / 2;
+    const cy = H - 40;
+    const angleMargin = (4 * Math.PI) / 180;
+    const aLeft = Math.PI - angleMargin;
+    const aRight = angleMargin;
+    return {
+      W,
+      H,
+      cx,
+      cy,
+      innerR: 200,
+      outerR: Math.min(cx, cy) - 24,
+      numRows: 6,
+      dotR,
+      pitch: dotR * 2.4,
+      rowPitch: dotR * 2.4,
+      aLeft,
+      aRight,
+      sweep: aLeft - aRight,
+    };
+  }
+
   const n = Math.max(1, items.value.length);
   const desktop = isDesktop.value;
   const showApellidos = props.showSeatApellidos;
@@ -487,14 +542,55 @@ type Punto = {
   y: number;
   p: number;
   member: HemicicloMember;
+  vacant?: boolean;
+  banca?: number;
 };
 
-const puntos = computed<Punto[]>(() =>
-  allSeats.value.map((s, i) => ({
+const puntos = computed<Punto[]>(() => {
+  if (useRecintoLayout.value) {
+    const byBanca = new Map<number, HemicicloMember>();
+    for (const m of items.value) {
+      if (m.banca == null || !Number.isFinite(Number(m.banca))) continue;
+      const b = Number(m.banca);
+      // Colisión (banca 0): preferir quien tiene bloque.
+      const prev = byBanca.get(b);
+      if (!prev || (!prev.bloque && m.bloque)) byBanca.set(b, m);
+    }
+    const out: Punto[] = [];
+    for (const seat of RECINTO_SEATS) {
+      const member = byBanca.get(seat.banca);
+      if (member) {
+        out.push({
+          x: seat.x,
+          y: seat.y,
+          p: seat.banca / 256,
+          member,
+          banca: seat.banca,
+        });
+        continue;
+      }
+      if (!props.showVacantSeats) continue;
+      out.push({
+        x: seat.x,
+        y: seat.y,
+        p: seat.banca / 256,
+        banca: seat.banca,
+        vacant: true,
+        member: {
+          id: `vacant-${seat.banca}`,
+          nombreCompleto: `Banca ${seat.banca}`,
+          apellido: String(seat.banca),
+        },
+      });
+    }
+    return out;
+  }
+
+  return allSeats.value.map((s, i) => ({
     ...s,
     member: membersSorted.value[i]!,
-  })),
-);
+  }));
+});
 
 const PRESIDENT_GROUP = "presidente";
 const presidentColor = computed(
@@ -505,6 +601,8 @@ const presidentDotR = computed(() => Math.round(DOT_R.value * 1.2));
 
 /** Asiento del presidente en el podio (abajo-centro del hemiciclo). */
 const presidentSeat = computed(() => {
+  // En layout recinto la banca 0 ya es el podio oficial.
+  if (useRecintoLayout.value) return null;
   const member = props.president;
   if (!member) return null;
   const g = geom.value;
@@ -557,6 +655,7 @@ const groupRanges = computed<GroupRange[]>(() => {
 });
 
 const separadores = computed(() => {
+  if (useRecintoLayout.value) return [];
   const g = geom.value;
   const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
   const pts = puntos.value;
@@ -611,6 +710,10 @@ function onLegendLeave() {
 }
 
 function seatOpacity(d: HemicicloMember): number {
+  if (d.id.startsWith("vacant-")) {
+    if (!hoveredGroup.value) return 0.4;
+    return 0.12;
+  }
   if (!hoveredGroup.value) return 1;
   return groupKey(d) === hoveredGroup.value ? 1 : 0.22;
 }
@@ -621,6 +724,7 @@ function presidentOpacity(): number {
 }
 
 function onClick(d: HemicicloMember) {
+  if (d.id.startsWith("vacant-")) return;
   if (props.editable) {
     emit("select", d);
     return;
@@ -650,10 +754,19 @@ function clipId(i: number | string) {
 }
 
 function tooltipRoleLabel(m: HemicicloMember): string {
+  if (m.id.startsWith("vacant-")) return "Vacante";
   if ((m.tipoVoto || "").toLowerCase() === PRESIDENT_GROUP) {
     return "Presidente";
   }
   return labelFor(groupKey(m));
+}
+
+function tooltipBanca(m: HemicicloMember): number | null {
+  if (m.banca != null && Number.isFinite(Number(m.banca))) {
+    return Number(m.banca);
+  }
+  const vacant = /^vacant-(\d+)$/.exec(m.id);
+  return vacant ? Number(vacant[1]) : null;
 }
 
 function tooltipColor(m: HemicicloMember): string {
@@ -704,7 +817,7 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
         @mouseleave="onLeave"
       >
         <path
-          v-if="!transparentFloor"
+          v-if="!transparentFloor && !useRecintoLayout"
           :d="bgPath"
           :fill="isDark ? '#1e293b' : '#f1f5f9'"
           stroke="none"
@@ -753,9 +866,13 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
 
         <g
           v-for="(p, i) in puntos"
-          :key="i"
+          :key="p.banca != null ? `banca-${p.banca}` : i"
           :class="
-            editable || clickable ? 'cursor-pointer' : 'cursor-default'
+            p.vacant
+              ? 'cursor-default'
+              : editable || clickable
+                ? 'cursor-pointer'
+                : 'cursor-default'
           "
           :style="{
             opacity: seatOpacity(p.member),
@@ -771,20 +888,20 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
             :fill="colorFor(p.member)"
           />
           <text
-            v-if="!showPhotos || !p.member.foto"
+            v-if="p.vacant || !showPhotos || !p.member.foto"
             :x="p.x"
             :y="p.y"
             text-anchor="middle"
             dominant-baseline="central"
             fill="white"
-            :font-size="DOT_R * 0.75"
+            :font-size="p.vacant ? DOT_R * 0.55 : DOT_R * 0.75"
             font-weight="700"
             pointer-events="none"
           >
-            {{ initials(p.member) }}
+            {{ p.vacant ? p.banca : initials(p.member) }}
           </text>
           <image
-            v-if="showPhotos && p.member.foto"
+            v-if="!p.vacant && showPhotos && p.member.foto"
             :clip-path="`url(#${clipId(i)})`"
             :href="p.member.foto"
             :x="p.x - DOT_R"
@@ -804,7 +921,9 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
             pointer-events="none"
           />
           <text
-            v-if="showSeatApellidos && seatApellido(p.member)"
+            v-if="
+              !p.vacant && showSeatApellidos && seatApellido(p.member)
+            "
             :x="p.x"
             :y="p.y + DOT_R + seatLabelFontSize * 0.95"
             text-anchor="middle"
@@ -817,6 +936,7 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
           </text>
           <text
             v-if="
+              !p.vacant &&
               showSeatApellidos &&
               showSeatNombres &&
               seatNombre(p.member)
@@ -1011,6 +1131,12 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
                     {{ groupMeta(tooltip.member) }}
                   </NuxtLink>
                   <template v-else>{{ groupMeta(tooltip.member) }}</template>
+                </p>
+                <p
+                  v-if="tooltipBanca(tooltip.member) != null"
+                  class="text-xs text-gray-600 dark:text-gray-400"
+                >
+                  Banca {{ tooltipBanca(tooltip.member) }}
                 </p>
                 <p
                   v-if="tooltip.member.provincia"

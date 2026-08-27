@@ -34,6 +34,13 @@ const profileSections = computed<ProfileFactSection[]>(() => {
       items: [
         { label: "Provincia", value: d.provincia },
         { label: "Género", value: formatGenero(d.genero) },
+        {
+          label: "Banca",
+          value:
+            d.banca != null && Number.isFinite(Number(d.banca))
+              ? String(d.banca)
+              : null,
+        },
       ],
     },
     {

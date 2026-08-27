@@ -27,6 +27,8 @@ export interface Diputado {
     fin: string;
   };
   foto: string;
+  /** Banca física en el recinto HCDN (0–256). */
+  banca?: number | null;
   /** Tramos nacionales en los últimos 12 meses (HCDN). */
   viajesUltimos12Meses?: number;
   estadisticas?: {

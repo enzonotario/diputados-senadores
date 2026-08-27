@@ -23,6 +23,12 @@ const groupColors = computed(() => ({
   ...props.bloqueColores,
   presidente: getVotoTipoConfig("presidente").color,
 }));
+
+const useRecinto = computed(
+  () =>
+    props.diputados.filter((d) => d.banca != null && Number.isFinite(d.banca))
+      .length >= 20,
+);
 </script>
 
 <template>
@@ -34,6 +40,7 @@ const groupColors = computed(() => ({
     member-base-path="/diputados"
     :group-to="(key) => bloquePath(key)"
     :show-photos="showPhotos"
+    seat-layout="auto"
   >
     <template #header>
       <div>
@@ -41,8 +48,14 @@ const groupColors = computed(() => ({
           La Cámara hoy
         </h2>
         <p class="mt-1 text-center text-sm text-gray-600 dark:text-gray-400">
-          {{ diputados.length }} diputados agrupados en
-          {{ bloquesCount }} bloques políticos
+          <template v-if="useRecinto">
+            {{ diputados.length }} diputados en el recinto ·
+            {{ bloquesCount }} bloques
+          </template>
+          <template v-else>
+            {{ diputados.length }} diputados agrupados en
+            {{ bloquesCount }} bloques políticos
+          </template>
         </p>
       </div>
     </template>

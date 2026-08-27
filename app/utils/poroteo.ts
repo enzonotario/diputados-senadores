@@ -15,6 +15,8 @@ export type PoroteoMember = {
   provincia?: string;
   bloque?: string;
   partido?: string;
+  /** Banca física HCDN (solo diputados). */
+  banca?: number | null;
 };
 
 export type PoroteoVotes = Record<string, PoroteoVoto>;

@@ -45,6 +45,7 @@ const { data: membersData, pending: pendingMembers } = useAsyncData(
       provincia: m.provincia,
       bloque: m.bloque,
       foto: m.foto,
+      banca: m.banca ?? null,
       periodoMandato: m.periodoMandato,
       ceseFecha: m.ceseFecha,
       juramentoFecha: m.juramentoFecha,

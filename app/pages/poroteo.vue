@@ -37,6 +37,10 @@ const members = computed<PoroteoMember[]>(() => {
     provincia: m.provincia,
     bloque: "bloque" in m ? m.bloque || undefined : undefined,
     partido: "partido" in m ? m.partido : undefined,
+    banca:
+      "banca" in m && m.banca != null && Number.isFinite(Number(m.banca))
+        ? Number(m.banca)
+        : null,
   }));
 });
 

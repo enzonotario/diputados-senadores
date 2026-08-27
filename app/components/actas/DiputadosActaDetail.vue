@@ -275,6 +275,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           :group-order="votoGroupOrder"
           :group-label="votoLabel"
           member-base-path="/diputados"
+          seat-layout="auto"
         >
           <template #header>
             <div>

@@ -1131,6 +1131,7 @@ const groupsSectionTitle = computed(() => {
                   :group-order="[...POROTEO_VOTO_ORDER]"
                   :group-label="groupLabel"
                   :member-base-path="memberBasePath"
+                  seat-layout="auto"
                   editable
                   :clickable="false"
                   :show-photos="false"
@@ -1317,6 +1318,7 @@ const groupsSectionTitle = computed(() => {
                         :group-order="[...POROTEO_VOTO_ORDER]"
                         :group-label="groupLabel"
                         :member-base-path="memberBasePath"
+                        seat-layout="auto"
                         :editable="dockExpanded"
                         :clickable="false"
                         :show-photos="exportDesign.showPhotos"

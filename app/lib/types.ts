@@ -220,6 +220,8 @@ export interface Acta {
   votacion?: string | null;
   /** Presidente de la sesión según cabecera del PDF. */
   presidente?: string | null;
+  /** Senador resuelto desde `presidente` (para links; null si es VP u otro no-senador). */
+  presidenteObj?: Senador | null;
   votos: Voto[];
   observaciones?: string[];
   votoSenador?: Voto;

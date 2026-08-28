@@ -27,6 +27,8 @@ const { data, pending } = await useAsyncData(
 );
 const acta = computed(() => data.value || null);
 
+const presidenteMember = computed(() => acta.value?.presidenteObj || null);
+
 useChamberSeo(() => {
   const a = acta.value;
   if (!a) {
@@ -256,7 +258,14 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           <div v-if="acta.presidente" class="flex flex-col min-w-0">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Presidente</dt>
             <dd class="text-sm font-medium break-words">
-              {{ acta.presidente }}
+              <NuxtLink
+                v-if="presidenteMember?.id"
+                :to="`/senadores/${presidenteMember.id}`"
+                class="text-primary hover:underline"
+              >
+                {{ acta.presidente }}
+              </NuxtLink>
+              <template v-else>{{ acta.presidente }}</template>
             </dd>
           </div>
           <div class="flex flex-col min-w-0">

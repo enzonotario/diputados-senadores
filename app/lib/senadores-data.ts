@@ -15,6 +15,10 @@ import {
 } from "./matchSenadorNombre";
 import { normalizeResultado, normalizeVotoTipo } from "../utils/votoTipo";
 import {
+  matchMemberByPresidenteNombre,
+  parsePresidenteNombre,
+} from "../utils/actaPresidente";
+import {
   fakeSenadoPeriodoKey,
   SIN_PERIODO_KEY,
 } from "../utils/periodoLegislativo";
@@ -605,32 +609,64 @@ export async function getActaWithSenadoresById(
 
   const senadores = await getSenadores();
 
+  const votos = actaById.votos.map((v) => {
+    const matched = senadores.find((s) => votoMatchesSenador(v, s));
+    const parsed = parseNombreSenador(v.senador);
+
+    return {
+      ...v,
+      senadorObj: {
+        ...(matched || {
+          id: v.senadorSlug || slug(v.senador),
+          nombre: v.senador,
+          apellido: parsed.apellido,
+          nombreDePila: parsed.nombreDePila,
+          nombreCompleto: parsed.nombreCompleto,
+          nombreSlug: v.senadorSlug || slug(v.senador),
+          provincia: "",
+          partido: "",
+          periodoLegal: { inicio: "", fin: null },
+          periodoReal: { inicio: "", fin: null },
+          foto: null,
+        }),
+        tipoVoto: v.tipoVoto,
+      } as Senador,
+    };
+  });
+
+  const presidenteNombre = String(actaById.presidente || "").trim();
+  let presidenteObj: Senador | null = null;
+  if (presidenteNombre) {
+    const matched = matchMemberByPresidenteNombre(senadores, presidenteNombre);
+    if (matched) {
+      presidenteObj = {
+        ...matched,
+        tipoVoto: "presidente",
+      } as Senador;
+    } else {
+      // VP u otro no-senador: sin id (no linkear a ficha inexistente).
+      const parsed = parsePresidenteNombre(presidenteNombre);
+      presidenteObj = {
+        id: "",
+        nombre: parsed.nombre || presidenteNombre,
+        apellido: parsed.apellido,
+        nombreDePila: parsed.nombre,
+        nombreCompleto: parsed.nombreCompleto || presidenteNombre,
+        nombreSlug: slug(presidenteNombre),
+        provincia: "",
+        partido: "",
+        periodoLegal: { inicio: "", fin: null },
+        periodoReal: { inicio: "", fin: null },
+        foto: null,
+        tipoVoto: "presidente",
+      } as Senador;
+    }
+  }
+
   return {
     ...actaById,
-    votos: actaById.votos.map((v) => {
-      const matched = senadores.find((s) => votoMatchesSenador(v, s));
-      const parsed = parseNombreSenador(v.senador);
-
-      return {
-        ...v,
-        senadorObj: {
-          ...(matched || {
-            id: v.senadorSlug || slug(v.senador),
-            nombre: v.senador,
-            apellido: parsed.apellido,
-            nombreDePila: parsed.nombreDePila,
-            nombreCompleto: parsed.nombreCompleto,
-            nombreSlug: v.senadorSlug || slug(v.senador),
-            provincia: "",
-            partido: "",
-            periodoLegal: { inicio: "", fin: null },
-            periodoReal: { inicio: "", fin: null },
-            foto: null,
-          }),
-          tipoVoto: v.tipoVoto,
-        } as Senador,
-      };
-    }),
+    votos,
+    presidenteObj,
   };
 }
 

@@ -6,7 +6,7 @@ import { getBloqueColores } from "@/lib/diputados-data";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { bloqueSlug } from "@/utils/bloque";
 import type { AffinityMemberInput } from "@/utils/votingAffinity";
-import { averagePresentismo, withPeriodPresentismo } from "@/utils/presentismo";
+import { encodeOgHemiciclo } from "@/lib/hemiciclo-layout";
 
 type GroupDetailResponse = {
   nombre: string;
@@ -183,6 +183,7 @@ useChamberSeo(() => {
     };
   }
   const n = displayed.value.length;
+  const color = bloque.value?.color || "#6b7280";
   return {
     title: name,
     description: `Bloque ${name}: ${n} ${
@@ -192,6 +193,8 @@ useChamberSeo(() => {
       kind: "group",
       eyebrow: "bloque",
       badge: `${n} ${n === 1 ? "diputado" : "diputados"}`,
+      accent: color,
+      hemiciclo: encodeOgHemiciclo([{ count: n, color }]),
     },
   };
 });

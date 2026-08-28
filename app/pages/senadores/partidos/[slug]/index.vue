@@ -5,7 +5,7 @@ import type { Senador } from "@/lib/types";
 import { getPartidoColores } from "@/lib/senadores-data";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { partidoSlug } from "@/utils/partido";
-import type { AffinityMemberInput } from "@/utils/votingAffinity";
+import { encodeOgHemiciclo } from "@/lib/hemiciclo-layout";
 import { averagePresentismo, withPeriodPresentismo } from "@/utils/presentismo";
 
 type GroupDetailResponse = {
@@ -170,6 +170,7 @@ useChamberSeo(() => {
     };
   }
   const n = displayed.value.length;
+  const color = partido.value?.color || "#6b7280";
   return {
     title: name,
     description: `Partido ${name}: ${n} ${
@@ -179,6 +180,8 @@ useChamberSeo(() => {
       kind: "group",
       eyebrow: "partido",
       badge: `${n} ${n === 1 ? "senador" : "senadores"}`,
+      accent: color,
+      hemiciclo: encodeOgHemiciclo([{ count: n, color }]),
     },
   };
 });

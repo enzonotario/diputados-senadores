@@ -88,7 +88,11 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
 
   // Takumi via Nuxt OG Image — defineOgImage setea og:image / twitter:image.
   defineOgImage("Chamber.takumi", {
-    title: computed(() => truncateOgText(seo.value.pageTitle, 110)),
+    title: computed(() =>
+      seo.value.og?.kind === "acta"
+        ? seo.value.pageTitle
+        : truncateOgText(seo.value.pageTitle, 110),
+    ),
     description: computed(() => truncateOgText(seo.value.description, 160)),
     brand: computed(() => chamber.value.brand),
     // Path relativo en /public — el island del OG lo resuelve en el mismo server.
@@ -106,6 +110,7 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
       ),
     ),
     footerLeft: computed(() => seo.value.og?.footerLeft || ""),
+    kind: computed(() => seo.value.og?.kind || ""),
     votes: computed(() => encodeOgVotes(seo.value.og)),
     photoSrc: computed(() => seo.value.og?.photoSrc || ""),
     hemiciclo: computed(() => seo.value.og?.hemiciclo || ""),

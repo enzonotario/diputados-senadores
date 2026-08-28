@@ -35,7 +35,7 @@ export function encodeOgHemiciclo(groups: OgHemicicloGroup[]): string {
 /** Parsea `45:14b8a6,30:ef4444`. */
 export function decodeOgHemiciclo(raw?: string | null): OgHemicicloGroup[] {
   const s = String(raw || "").trim();
-  if (!s) return [];
+  if (!s || s.startsWith("r:")) return [];
   const out: OgHemicicloGroup[] = [];
   for (const part of s.split(",")) {
     const [countRaw, hexRaw] = part.split(":");

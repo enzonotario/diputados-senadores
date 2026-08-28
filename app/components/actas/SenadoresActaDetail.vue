@@ -10,7 +10,7 @@ import {
   VOTO_TIPO_ORDER,
 } from "@/utils/votoTipo";
 import { partidoPath } from "@/utils/partido";
-import { resultadoBadgeLabel } from "@/lib/og";
+import { buildActaChamberOg } from "@/lib/og";
 import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
 import { actaPdfUrl } from "@/utils/staticPdf";
 
@@ -20,10 +20,10 @@ const { localFetch } = useLocalApi();
 const { chamberId } = useChamber();
 const pdfHref = computed(() => actaPdfUrl(chamberId.value, id.value));
 
-const { data, pending } = useAsyncData(
+const { data, pending } = await useAsyncData(
   () => `acta-${id.value}`,
   () => localFetch(`/api/actas/${id.value}`),
-  { lazy: true, watch: [id] },
+  { watch: [id] },
 );
 const acta = computed(() => data.value || null);
 
@@ -47,16 +47,7 @@ useChamberSeo(() => {
     description: parts.length
       ? `${parts.join(". ")}.`
       : "Cómo se votó esta iniciativa en el Senado.",
-    og: {
-      kind: "acta",
-      eyebrow: "votación",
-      badge: resultadoBadgeLabel(a.resultado),
-      accent: a.resultado || undefined,
-      footerLeft: fecha || "",
-      votosAfirmativos: a.votosAfirmativos ?? 0,
-      votosNegativos: a.votosNegativos ?? 0,
-      abstenciones: a.abstenciones ?? 0,
-    },
+    og: buildActaChamberOg(a, formatDate),
   };
 });
 

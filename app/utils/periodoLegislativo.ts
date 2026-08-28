@@ -374,6 +374,24 @@ export function normalizePeriodoKeys(
   return [...new Set(keys)];
 }
 
+/** Rutas donde `?periodo=` filtra datos en pantalla (FilterPeriodo). */
+export function routeUsesPeriodoQuery(path: string): boolean {
+  const p = (path.split("?")[0] || "/").replace(/\/+$/, "") || "/";
+
+  if (p === "/") return true;
+  if (p === "/actas") return true;
+  if (p === "/diputados" || p === "/senadores") return true;
+  if (p === "/diputados/bloques" || p === "/senadores/partidos") return true;
+  if (/^\/diputados\/bloques\/[^/]+$/.test(p)) return true;
+  if (/^\/senadores\/partidos\/[^/]+$/.test(p)) return true;
+  if (/^\/diputados\/[^/]+\/afinidad$/.test(p)) return true;
+  if (/^\/senadores\/[^/]+\/afinidad$/.test(p)) return true;
+  if (/^\/diputados\/[^/]+$/.test(p)) return true;
+  if (/^\/senadores\/[^/]+$/.test(p)) return true;
+
+  return false;
+}
+
 export function isTodosPeriodoSelection(
   periodo: string | string[] | null | undefined,
 ): boolean {

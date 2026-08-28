@@ -7,6 +7,7 @@ import {
   isTodosPeriodoSelection,
   normalizePeriodoKeys,
   TODOS_PERIODO_KEY,
+  routeUsesPeriodoQuery,
   type PeriodoInfo,
   type PeriodosCatalog,
 } from "@/utils/periodoLegislativo";
@@ -106,12 +107,30 @@ export function usePeriodoFilter() {
     );
   });
 
-  // Catalog listo + URL sin ?periodo → fijar default (o remembered).
+  // Catalog listo + URL sin ?periodo → fijar default (solo rutas que filtran).
   watch(
-    [catalog, () => route.query.periodo],
+    [catalog, () => route.path, () => route.query.periodo],
     ([c]) => {
-      if (!isLegislative.value || !c?.defaultKey) return;
+      if (!isLegislative.value) return;
       if (import.meta.prerender) return;
+
+      if (!routeUsesPeriodoQuery(route.path)) {
+        const q = route.query.periodo;
+        const hasPeriodo =
+          q != null && String(Array.isArray(q) ? q.join(",") : q).trim() !== "";
+        if (hasPeriodo) {
+          const nextQuery = { ...route.query };
+          delete nextQuery.periodo;
+          router.replace({
+            path: route.path,
+            query: nextQuery,
+            hash: route.hash,
+          });
+        }
+        return;
+      }
+
+      if (!c?.defaultKey) return;
       const q = route.query.periodo;
       const hasQuery =
         q != null &&

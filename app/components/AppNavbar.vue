@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from "@nuxt/ui";
 import { getChamberConfig } from "@/lib/chamber";
+import { routeUsesPeriodoQuery } from "@/utils/periodoLegislativo";
 
 const route = useRoute();
 const {
@@ -16,6 +17,7 @@ const legislative = computed(() =>
 );
 
 function withPeriodo(path: string) {
+  if (!routeUsesPeriodoQuery(path)) return path;
   const periodo = String(route.query.periodo || "").trim();
   return periodo ? { path, query: { periodo } } : path;
 }

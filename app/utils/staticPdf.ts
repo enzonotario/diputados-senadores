@@ -6,16 +6,23 @@ export function senadoActaPdfUrl(actaId: string | number): string {
   return `${STATIC_PUBLIC_BASE}/senado/actas/pdf/${encodeURIComponent(String(actaId))}.pdf`;
 }
 
+/** PDF oficial de votación HCDN (no cacheado en static). */
+export function diputadosActaPdfUrl(actaId: string | number): string {
+  return `https://votaciones.hcdn.gob.ar/pdf/acta/${encodeURIComponent(String(actaId))}`;
+}
+
 /**
- * PDF estático de un acta. Solo el Senado tiene PDFs en `static/`;
- * diputados no publica actas ahí (retorna null).
+ * PDF de un acta. Senado: static ArgentinaDatos.
+ * Diputados: PDF oficial de votaciones.hcdn.gob.ar.
  */
 export function actaPdfUrl(
   chamber: string,
   actaId: string | number | null | undefined,
 ): string | null {
-  if (chamber !== "senadores" || actaId == null || actaId === "") return null;
-  return senadoActaPdfUrl(actaId);
+  if (actaId == null || actaId === "") return null;
+  if (chamber === "senadores") return senadoActaPdfUrl(actaId);
+  if (chamber === "diputados") return diputadosActaPdfUrl(actaId);
+  return null;
 }
 
 /** PDF cacheado de un viaje (`/static/senado/viajes/{ambito}/{id}.pdf`). */

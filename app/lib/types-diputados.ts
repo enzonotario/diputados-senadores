@@ -75,6 +75,18 @@ export interface Acta {
   votos: Voto[];
   votoDiputado?: Voto;
   tipoVotoDiputado?: string;
+  /** Línea de sesión del PDF (p. ej. "144° - Período Ordinario - …"). */
+  sesion?: string | null;
+  /** Nominal, etc. */
+  votacion?: string | null;
+  /** "Más de la mitad — Votos Emitidos". */
+  mayoria?: string | null;
+  baseMayoria?: string | null;
+  tipoMayoria?: string | null;
+  miembros?: number | null;
+  presentes?: number | null;
+  sinVotar?: number | null;
+  ultModVer?: string | null;
 }
 
 export type SortDirection = "asc" | "desc";

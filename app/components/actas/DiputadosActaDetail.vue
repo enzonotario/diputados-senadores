@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Diputado, FilterConfig, Voto } from "@/lib/types-diputados";
-import { filterDiputados, formatDate, getUniqueValues } from "@/lib/utils";
+import {
+  filterDiputados,
+  formatDate,
+  formatDateTime,
+  getUniqueValues,
+} from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { groupDiputadosBy } from "@/utils/groupDiputadosBy";
 import {
@@ -12,10 +17,13 @@ import {
 import { bloquePath } from "@/utils/bloque";
 import { resultadoBadgeLabel } from "@/lib/og";
 import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
+import { actaPdfUrl } from "@/utils/staticPdf";
 
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 const { localFetch } = useLocalApi();
+const { chamberId } = useChamber();
+const pdfHref = computed(() => actaPdfUrl(chamberId.value, id.value));
 
 const { data, pending } = useAsyncData(
   () => `acta-${id.value}`,
@@ -213,46 +221,58 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
         header: 'border-0 p-3! pb-0!'
       }" class="">
         <template #header>
-          <div
-            class="flex flex-col md:flex-row md:justify-between md:items-start gap-3"
-          >
-            <div>
-              <h1 class="text-lg md:text-2xl font-semibold">
-                {{ acta.titulo }}
-              </h1>
-            </div>
-            <div class="flex flex-col justify-center items-center gap-0.5">
-              <span class="text-xs text-gray-600 dark:text-gray-300"
-                >Resultado</span
-              >
-              <ResultadoBadge
-                :resultado="acta.resultado"
-                class="text-base py-1 px-3"
-              />
-            </div>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <h1 class="text-lg md:text-2xl font-semibold">
+              {{ acta.titulo }}
+            </h1>
+            <UButton
+              v-if="pdfHref"
+              :to="pdfHref"
+              target="_blank"
+              external
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-file-text"
+              label="Ver PDF"
+              class="shrink-0 self-start"
+            />
           </div>
         </template>
 
-        <dl class="flex flex-wrap gap-3 sm:gap-6">
-          <div class="flex flex-col">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Acta N°</dt>
-            <dd>{{ acta.numeroActa }}</dd>
+        <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div v-if="acta.sesion" class="flex flex-col min-w-0 sm:col-span-2">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Sesión</dt>
+            <dd class="text-sm font-medium break-words">{{ acta.sesion }}</dd>
           </div>
-          <div class="flex flex-col">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Fecha</dt>
-            <dd>{{ formatDate(acta.fecha) }}</dd>
+          <div
+            v-else-if="acta.periodo || acta.reunion"
+            class="flex flex-col min-w-0"
+          >
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Período / Reunión</dt>
+            <dd class="text-sm font-medium">
+              {{ [acta.periodo, acta.reunion].filter(Boolean).join(" · ") }}
+            </dd>
           </div>
-          <div class="flex flex-col">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Período</dt>
-            <dd>{{ acta.periodo }}</dd>
+          <div v-if="acta.mayoria" class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Mayoría</dt>
+            <dd class="text-sm font-medium">{{ acta.mayoria }}</dd>
           </div>
-          <div class="flex flex-col">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Reunión</dt>
-            <dd>{{ acta.reunion }}</dd>
+          <div v-if="acta.votacion" class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Votación</dt>
+            <dd class="text-sm font-medium">{{ acta.votacion }}</dd>
           </div>
-          <div class="flex flex-col">
+          <div
+            v-if="acta.miembros != null && acta.miembros > 0"
+            class="flex flex-col min-w-0"
+          >
+            <dt class="text-sm text-gray-600 dark:text-gray-300">
+              Miembros del cuerpo
+            </dt>
+            <dd class="text-sm font-medium tabular-nums">{{ acta.miembros }}</dd>
+          </div>
+          <div v-if="acta.presidente" class="flex flex-col min-w-0">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Presidente</dt>
-            <dd>
+            <dd class="text-sm font-medium break-words">
               <NuxtLink
                 v-if="presidenteMember?.id"
                 :to="`/diputados/${presidenteMember.id}`"
@@ -261,6 +281,18 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
                 {{ acta.presidente }}
               </NuxtLink>
               <template v-else>{{ acta.presidente }}</template>
+            </dd>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Fecha</dt>
+            <dd class="text-sm font-medium tabular-nums">
+              {{ formatDateTime(acta.fecha) }}
+            </dd>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">Acta</dt>
+            <dd class="text-sm font-medium tabular-nums">
+              {{ acta.numeroActa || "—" }}
             </dd>
           </div>
         </dl>

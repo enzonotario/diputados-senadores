@@ -296,6 +296,59 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
             </dd>
           </div>
         </dl>
+
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div
+            class="rounded-lg border border-default px-3 py-2 grid grid-cols-3 gap-2 text-center"
+          >
+            <div>
+              <p class="text-xs text-muted">Presentes</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.presentes ?? "—" }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Ausentes</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.ausentes ?? "—" }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Sin votar</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.sinVotar ?? "—" }}
+              </p>
+            </div>
+          </div>
+          <div
+            class="rounded-lg border border-default px-3 py-2 grid grid-cols-4 gap-2 text-center"
+          >
+            <div>
+              <p class="text-xs text-muted">Afirmativos</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.votosAfirmativos }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Negativos</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.votosNegativos }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Abstenciones</p>
+              <p class="text-sm font-semibold tabular-nums">
+                {{ acta.abstenciones }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted">Resultado</p>
+              <div class="flex justify-center pt-0.5">
+                <ResultadoBadge :resultado="acta.resultado" />
+              </div>
+            </div>
+          </div>
+        </div>
       </UCard>
 
       <ClientOnly>

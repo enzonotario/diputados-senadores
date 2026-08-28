@@ -558,7 +558,15 @@ const puntos = computed<Punto[]>(() => {
     }
     const out: Punto[] = [];
     for (const seat of RECINTO_SEATS) {
-      const member = byBanca.get(seat.banca);
+      let member = byBanca.get(seat.banca);
+      // Banca 0 = podio del presidente (no figura en la lista de votos).
+      if (!member && seat.banca === 0 && props.president) {
+        member = {
+          ...props.president,
+          banca: 0,
+          tipoVoto: props.president.tipoVoto || PRESIDENT_GROUP,
+        };
+      }
       if (member) {
         out.push({
           x: seat.x,

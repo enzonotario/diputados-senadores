@@ -1,6 +1,21 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* Marca ArgentinaDatos / HCDN navy (#232D4F) → primary */
+@theme static {
+  --color-argentina-50: #f3f4f7;
+  --color-argentina-100: #e7e9ef;
+  --color-argentina-200: #cfd3de;
+  --color-argentina-300: #a8afc2;
+  --color-argentina-400: #6b7596;
+  --color-argentina-500: #232d4f;
+  --color-argentina-600: #1e2745;
+  --color-argentina-700: #19203a;
+  --color-argentina-800: #14192e;
+  --color-argentina-900: #0f1323;
+  --color-argentina-950: #0a0d18;
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;

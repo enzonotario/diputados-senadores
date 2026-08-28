@@ -1,7 +1,7 @@
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: "teal",
+      primary: "argentina",
       secondary: "cyan",
       neutral: "zinc",
     },
@@ -15,7 +15,7 @@ export default defineAppConfig({
           color: "primary",
           variant: "soft",
           class:
-            "!bg-teal-100 !text-teal-900 dark:!bg-teal-900/50 dark:!text-teal-100",
+            "!bg-argentina-100 !text-argentina-900 dark:!bg-argentina-900/50 dark:!text-argentina-100",
         },
         {
           color: "success",

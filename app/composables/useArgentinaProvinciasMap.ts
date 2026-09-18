@@ -6,7 +6,7 @@ const MAP_NAME = "argentina-provincias";
 export type ProvinciaMapMeta = {
   key: string;
   displayName: string;
-  /** [lon, lat] centroide IGN (útil para pies en geo). */
+  /** [lon, lat] para pies/markers en geo (IGN, o Isla Grande si el IGN cae en Antártida). */
   center: [number, number];
 };
 
@@ -17,8 +17,11 @@ export function getArgentinaProvinciaMetas(): ProvinciaMapMeta[] {
   return metas;
 }
 
+/** Latitud mínima del mapa continental (descarta Antártida del IGN). */
+const CLIP_MIN_LAT = -56.2;
+
 /** Descarta polígonos antárticos (GeoJSON IGN estira el mapa a lat -90). */
-function clipSouthOf(geometry: any, minLat = -56.2): any {
+function clipSouthOf(geometry: any, minLat = CLIP_MIN_LAT): any {
   if (!geometry) return geometry;
 
   const ringOk = (ring: number[][]) =>
@@ -39,6 +42,75 @@ function clipSouthOf(geometry: any, minLat = -56.2): any {
   }
 
   return geometry;
+}
+
+/** Área aproximada (shoelace) del anillo exterior de un Polygon coords. */
+function polygonOuterArea(poly: number[][][]): number {
+  const ring = poly?.[0];
+  if (!Array.isArray(ring) || ring.length < 3) return 0;
+  let area = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [x1, y1] = ring[i]!;
+    const [x2, y2] = ring[i + 1]!;
+    area += x1! * y2! - x2! * y1!;
+  }
+  return Math.abs(area / 2);
+}
+
+/** Media de vértices de un Polygon (coords = rings). */
+function polygonMean(poly: number[][][]): [number, number] | null {
+  const ring = poly?.[0];
+  if (!Array.isArray(ring) || !ring.length) return null;
+  let sx = 0;
+  let sy = 0;
+  let n = 0;
+  for (const p of ring) {
+    if (!Array.isArray(p) || typeof p[0] !== "number") continue;
+    sx += p[0]!;
+    sy += p[1]!;
+    n += 1;
+  }
+  if (!n) return null;
+  return [sx / n, sy / n];
+}
+
+/**
+ * Centroide usable para pies/markers en geo.
+ * El IGN mete Antártida en Tierra del Fuego → centroide ~lat -82, fuera del
+ * viewport. Si el centroide cae al sur del clip, usamos el polígono más
+ * grande que quedó tras el recorte (Isla Grande).
+ */
+function resolveCenter(
+  geometry: any,
+  centroide: { lon?: number; lat?: number } | null | undefined,
+): [number, number] {
+  const lon = Number(centroide?.lon);
+  const lat = Number(centroide?.lat);
+  if (Number.isFinite(lon) && Number.isFinite(lat) && lat > CLIP_MIN_LAT) {
+    return [lon, lat];
+  }
+
+  const polys: number[][][][] =
+    geometry?.type === "Polygon"
+      ? [geometry.coordinates]
+      : geometry?.type === "MultiPolygon"
+        ? geometry.coordinates || []
+        : [];
+
+  let best: [number, number] | null = null;
+  let bestArea = -1;
+  for (const poly of polys) {
+    const area = polygonOuterArea(poly);
+    if (area <= bestArea) continue;
+    const mean = polygonMean(poly);
+    if (!mean) continue;
+    bestArea = area;
+    best = mean;
+  }
+
+  if (best) return best;
+  if (Number.isFinite(lon) && Number.isFinite(lat)) return [lon, lat];
+  return [0, 0];
 }
 
 let ready: Promise<string> | null = null;
@@ -72,15 +144,10 @@ export function ensureArgentinaProvinciasMap(): Promise<string> {
         .filter(Boolean);
 
       metas = features.map((f: any) => {
-        const lon = Number(f.properties?.centroide?.lon);
-        const lat = Number(f.properties?.centroide?.lat);
         return {
           key: String(f.properties.name),
           displayName: String(f.properties.displayName || f.properties.name),
-          center: [
-            Number.isFinite(lon) ? lon : 0,
-            Number.isFinite(lat) ? lat : 0,
-          ] as [number, number],
+          center: resolveCenter(f.geometry, f.properties?.centroide),
         };
       });
 

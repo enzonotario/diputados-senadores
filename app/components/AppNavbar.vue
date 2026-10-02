@@ -38,6 +38,7 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
   const exploreActive =
     path.startsWith("/senadores/viajes") ||
     path.startsWith("/senadores/dietas") ||
+    path === "/senadores/gasto" ||
     path.startsWith("/senadores/comisiones") ||
     path.startsWith("/diputados/viajes") ||
     path.startsWith("/diputados/misiones") ||
@@ -47,12 +48,13 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
     !exploreActive &&
     (path === c.membersPath ||
       path.startsWith(`${c.membersPath}/`) ||
-      // ficha /senadores/:id… pero no explore
+      // ficha /senadores/:id… (incluye /gasto de perfil) pero no explore
       (/^\/senadores\/[^/]+/.test(path) &&
         !path.startsWith("/senadores/viajes") &&
         !path.startsWith("/senadores/dietas") &&
         !path.startsWith("/senadores/comisiones") &&
-        !path.startsWith("/senadores/partidos")));
+        !path.startsWith("/senadores/partidos") &&
+        path !== "/senadores/gasto"));
 
   const items: NavigationMenuItem[] = [
     {
@@ -100,6 +102,13 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
           icon: "i-lucide-wallet",
           to: withPeriodo("/senadores/dietas"),
           active: path.startsWith("/senadores/dietas"),
+        },
+        {
+          label: "Gasto",
+          description: "Gasto estimado por escala salarial (bloques, despachos y dietas).",
+          icon: "i-lucide-banknote",
+          to: withPeriodo("/senadores/gasto"),
+          active: path === "/senadores/gasto",
         },
         {
           label: "Comisiones",
@@ -167,6 +176,7 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
   const exploreActive =
     path.startsWith("/senadores/viajes") ||
     path.startsWith("/senadores/dietas") ||
+    path === "/senadores/gasto" ||
     path.startsWith("/senadores/comisiones") ||
     path.startsWith("/diputados/viajes") ||
     path.startsWith("/diputados/misiones") ||
@@ -180,7 +190,8 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
         !path.startsWith("/senadores/viajes") &&
         !path.startsWith("/senadores/dietas") &&
         !path.startsWith("/senadores/comisiones") &&
-        !path.startsWith("/senadores/partidos")));
+        !path.startsWith("/senadores/partidos") &&
+        path !== "/senadores/gasto"));
 
   const items: NavigationMenuItem[] = [
     {
@@ -232,6 +243,12 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
           icon: "i-lucide-wallet",
           to: "/senadores/dietas",
           active: path.startsWith("/senadores/dietas"),
+        },
+        {
+          label: "Gasto",
+          icon: "i-lucide-banknote",
+          to: "/senadores/gasto",
+          active: path === "/senadores/gasto",
         },
         {
           label: "Comisiones",

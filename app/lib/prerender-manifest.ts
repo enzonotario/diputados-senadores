@@ -167,6 +167,7 @@ export async function collectChamberPrerenderRoutes(
   routes.add("/senadores/partidos");
   routes.add("/senadores/comisiones");
   routes.add("/senadores/dietas");
+  routes.add("/senadores/gasto");
   routes.add("/senadores/viajes");
 
   const [rawSenadores, rawActas, rawComisiones] = await Promise.all([

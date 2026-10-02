@@ -6,7 +6,7 @@ import { filterSenadores, isSenadorActivo } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { groupSenadoresBy } from "@/utils/groupSenadoresBy";
 import { partidoPath } from "@/utils/partido";
-import { DIETAS_MECANISMOS_PDF_URL } from "@/utils/dieta";
+import { DIETAS_MECANISMOS_PDF_URL, DIETAS_PAGE_URL } from "@/utils/dieta";
 
 const { localFetch } = useLocalApi();
 const { sorting } = useTableSorting("donacion", true);
@@ -214,7 +214,15 @@ useChamberSeo(() => ({
       <h1 class="text-3xl font-bold">Dietas del Senado</h1>
       <p class="text-muted max-w-3xl">
         Detalle de los mecanismos declarados por cada senador respecto de la
-        dieta: renuncia al aumento, donación y aportes partidarios.
+        dieta: renuncia al aumento, donación y aportes partidarios. La fórmula
+        de la dieta (4000 módulos) está en
+        <a
+          :href="DIETAS_PAGE_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline underline-offset-2"
+          >senado.gob.ar/dietas</a
+        >.
       </p>
     </div>
 
@@ -420,14 +428,23 @@ useChamberSeo(() => ({
       />
 
       <p class="text-xs text-muted">
-        Fuente:
+        Fuentes:
+        <a
+          :href="DIETAS_PAGE_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline hover:text-highlighted"
+        >
+          dietas y gastos de representación
+        </a>
+        ·
         <a
           :href="DIETAS_MECANISMOS_PDF_URL"
           target="_blank"
           rel="noopener noreferrer"
           class="underline hover:text-highlighted"
         >
-          mecanismos de dieta (PDF del Senado)
+          mecanismos (PDF)
         </a>
         <template v-if="stats.actualizado">
           · actualizado

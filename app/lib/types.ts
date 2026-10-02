@@ -52,6 +52,24 @@ export interface SenadorDietaMeta {
   aportesPartidarios: boolean
   fuente?: string
   actualizado?: string
+  /** Bruto estimado (4000 módulos × valor módulo), si está disponible. */
+  brutoEstimado?: number
+  valorModulo?: number
+}
+
+export interface SenadorDietaEstimadaMeta {
+  brutoEstimado: number
+  valorModulo: number
+  totalModulos: number
+  fuente: string
+  nota: string
+}
+
+export interface SenadorPersonalMeta {
+  agentes: number
+  brutoMensualEstimado: number
+  brutoMensualConAdicionalFuncion: number
+  fuente: string
 }
 
 export interface SenadorComisionMeta {
@@ -62,7 +80,108 @@ export interface SenadorComisionMeta {
 
 export interface SenadorMeta {
   dieta?: SenadorDietaMeta
+  dietaEstimada?: SenadorDietaEstimadaMeta
+  personal?: SenadorPersonalMeta
   comisiones?: SenadorComisionMeta[]
+}
+
+export interface GastoPersonalResumen {
+  agentes: number
+  brutoMensualEstimado: number
+  brutoMensualConAdicionalFuncion: number
+  sinCategoriaMatch: number
+  porCategoria: Array<{
+    categoria: string
+    cantidad: number
+    montoUnitario: number
+    montoUnitarioConAdicionalFuncion: number
+    subtotal: number
+    subtotalConAdicionalFuncion: number
+  }>
+  metodo: string
+}
+
+export interface BloqueSenadoGasto {
+  id: string
+  nombre: string
+  presidente?: string | null
+  integrantes: number
+  senadores?: Array<{ id: string, nombre: string }>
+  personal?: Array<{ nombre: string, categoria: string }>
+  gasto: GastoPersonalResumen
+  fuente?: string
+}
+
+export interface GastoSenadoSenadorRow {
+  senadorId: string
+  nombre: string
+  bloque: string | null
+  dietaBrutoEstimado: number | null
+  renunciaAlAumento: boolean | null
+  personalAgentes: number
+  personalBrutoEstimado: number
+  personalBrutoConAdicionalFuncion: number
+  totalEstimado: number
+}
+
+export interface SenadorPersonalAgente {
+  nombre: string
+  categoria: string
+  brutoBase?: number | null
+  brutoConAdicionalFuncion?: number | null
+}
+
+export interface SenadorPersonalDetalle {
+  senadorId: string
+  personal: Array<{ nombre: string, categoria: string }>
+  personalDetalle?: SenadorPersonalAgente[]
+  gasto?: GastoPersonalResumen
+  fuente: string
+}
+
+export interface GastoSenado {
+  fuenteEscala: string
+  fuenteBloques: string
+  fuenteDietas: string
+  scrapedAt: string
+  valorModulo: number
+  vigenciaEscala: string | null
+  dietaSenadorBrutoEstimado: number
+  notas: string[]
+  totales: {
+    bloquesPersonalBruto: number
+    despachosPersonalBruto: number
+    dietasSenadoresBruto: number
+    grandTotalEstimado: number
+  }
+  bloques: Array<{
+    id: string
+    nombre: string
+    integrantes: number
+    gasto: GastoPersonalResumen
+  }>
+  senadores: GastoSenadoSenadorRow[]
+}
+
+export interface EscalaSalarialSenado {
+  fuente: string
+  vigencia: string | null
+  valorModulo: number
+  scrapedAt: string
+  categorias: Array<{
+    categoria: number
+    codigo: string
+    totalEnPesos: number
+    rc: number
+    brutoBase: number
+    brutoConAdicionalFuncion: number
+  }>
+  dietaSenador: {
+    totalModulos: number
+    brutoEstimado: number
+    nota: string
+  }
+  notas: string[]
 }
 
 export interface ViajeNacional {

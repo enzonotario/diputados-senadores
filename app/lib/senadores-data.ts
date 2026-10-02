@@ -116,6 +116,13 @@ let _viajes12mRaw = createSingleflight<Viajes12mRaw>();
 let _viajesExplore = createSingleflight<ViajesExplorePayload>();
 let _comisiones = createSingleflight<import("./types").Comision[]>();
 let _presidencia = createSingleflight<import("./types").PresidenciaSenado | null>();
+let _gasto = createSingleflight<import("./types").GastoSenado | null>();
+let _bloques = createSingleflight<import("./types").BloqueSenadoGasto[]>();
+let _escala = createSingleflight<import("./types").EscalaSalarialSenado | null>();
+const _personalById = new Map<
+  string,
+  Promise<import("./types").SenadorPersonalDetalle | null>
+>();
 
 function assertServerData() {
   if (import.meta.client) {
@@ -137,6 +144,10 @@ export function clearSenadoresDataCache() {
   _viajesExplore.clear();
   _comisiones.clear();
   _presidencia.clear();
+  _gasto.clear();
+  _bloques.clear();
+  _escala.clear();
+  _personalById.clear();
 }
 
 function votoMatchesSenador(voto: Voto, senador: Senador): boolean {
@@ -942,5 +953,94 @@ export async function getPresidencia(): Promise<
       return null;
     }
   });
+}
+
+/** Gasto estimado: dietas + personal de bloques + personal de despachos. */
+export async function getGastoSenado(): Promise<
+  import("./types").GastoSenado | null
+> {
+  assertServerData();
+  return _gasto.get(async () => {
+    const origin = getApiOrigin();
+    try {
+      const raw = await $fetch<any>(`${origin}/v1/senado/gasto`);
+      if (!raw?.totales) return null;
+      return raw as import("./types").GastoSenado;
+    } catch {
+      return null;
+    }
+  });
+}
+
+/** Bloques con personal y gasto estimado. */
+export async function getBloquesSenado(): Promise<
+  import("./types").BloqueSenadoGasto[]
+> {
+  assertServerData();
+  return _bloques.get(async () => {
+    const origin = getApiOrigin();
+    try {
+      const raw = await $fetch<any[]>(`${origin}/v1/senado/bloques`);
+      return Array.isArray(raw) ? (raw as import("./types").BloqueSenadoGasto[]) : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
+/** Escala salarial A-1..A-14 + fórmula de dieta. */
+export async function getEscalaSalarialSenado(): Promise<
+  import("./types").EscalaSalarialSenado | null
+> {
+  assertServerData();
+  return _escala.get(async () => {
+    const origin = getApiOrigin();
+    try {
+      const raw = await $fetch<any>(`${origin}/v1/senado/escala-salarial`);
+      if (!raw?.valorModulo) return null;
+      return raw as import("./types").EscalaSalarialSenado;
+    } catch {
+      return null;
+    }
+  });
+}
+
+/** Personal del despacho de un senador (`/v1/senado/senadores/{id}/personal`). */
+export async function getSenadorPersonal(
+  id: string,
+): Promise<import("./types").SenadorPersonalDetalle | null> {
+  assertServerData();
+  const key = String(id).trim();
+  if (!key) return null;
+
+  let pending = _personalById.get(key);
+  if (!pending) {
+    pending = (async () => {
+      const origin = getApiOrigin();
+      try {
+        const raw = await $fetch<any>(
+          `${origin}/v1/senado/senadores/${key}/personal`,
+        );
+        if (!raw || typeof raw !== "object") return null;
+        return raw as import("./types").SenadorPersonalDetalle;
+      } catch {
+        return null;
+      }
+    })();
+    _personalById.set(key, pending);
+  }
+  return pending;
+}
+
+/** Fila de gasto agregado para un senador (desde `/v1/senado/gasto`). */
+export async function getSenadorGastoResumen(
+  id: string,
+): Promise<import("./types").GastoSenadoSenadorRow | null> {
+  assertServerData();
+  const key = String(id).trim();
+  if (!key) return null;
+  const gasto = await getGastoSenado();
+  if (!gasto) return null;
+  return gasto.senadores.find((s) => String(s.senadorId) === key) || null;
 }
 

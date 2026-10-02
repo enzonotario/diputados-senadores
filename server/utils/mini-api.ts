@@ -26,6 +26,8 @@ import {
   getPartidoSlugs,
   getPartidosIndex,
   getSenadorConActasById,
+  getSenadorGastoResumen,
+  getSenadorPersonal,
   getSenadorViajes,
   getSenadores,
   getSenadoresConActas,
@@ -546,13 +548,24 @@ export async function buildMemberProfile(
     genero: null,
   });
   const viajes = await getSenadorViajes(String(member.id));
+  const [gasto, personal] = await Promise.all([
+    getSenadorGastoResumen(String(member.id)),
+    getSenadorPersonal(String(member.id)),
+  ]);
+  // Preferir bloque del gasto (listado oficial por bloques) si el índice aún no lo trae.
+  const slim = slimMemberStats(member);
+  if (!slim.bloque && gasto?.bloque) {
+    slim.bloque = gasto.bloque;
+  }
   return {
     chamber,
-    member: slimMemberStats(member),
+    member: slim,
     chartActas,
     actasMeta,
     career,
     viajes,
+    gasto,
+    personal,
     history: { page, limit, total, items },
   };
 }

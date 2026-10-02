@@ -4,6 +4,11 @@ import { formatDate, isSenadorActivo } from "@/lib/utils";
 import { partidoPath } from "@/utils/partido";
 import { type ProfileFactSection } from "@/utils/memberProfile";
 import type { CareerCargo } from "@/utils/memberCareer";
+import {
+  SENADO_DIETAS_MECANISMOS_PDF_URL,
+  SENADO_DIETAS_URL,
+  SENADO_ESCALA_SALARIAL_URL,
+} from "@/utils/senadoFuentes";
 
 const props = defineProps<{
   senador: Senador;
@@ -77,21 +82,70 @@ const profileSections = computed<ProfileFactSection[]>(() => {
           label: "Donación",
           value: dieta.donacion ? "Sí" : "No",
           hideEmpty: false,
+          href: SENADO_DIETAS_MECANISMOS_PDF_URL,
         },
         {
           label: "Renuncia al aumento",
           value: dieta.renunciaAlAumento ? "Sí" : "No",
           hideEmpty: false,
+          href: SENADO_DIETAS_MECANISMOS_PDF_URL,
         },
         {
           label: "Aportes partidarios",
           value: dieta.aportesPartidarios ? "Sí" : "No",
           hideEmpty: false,
+          href: SENADO_DIETAS_MECANISMOS_PDF_URL,
         },
         {
           label: "Ver listado",
           value: "Todas las dietas",
           to: "/senadores/dietas",
+          hideEmpty: false,
+        },
+      ],
+    });
+  }
+
+  const personal = s.meta?.personal;
+  const dietaEst = s.meta?.dietaEstimada || (dieta?.brutoEstimado != null
+    ? {
+        brutoEstimado: dieta.brutoEstimado,
+        valorModulo: dieta.valorModulo,
+      }
+    : null);
+  if (personal || dietaEst) {
+    sections.push({
+      title: "Gasto estimado",
+      items: [
+        {
+          label: "Dieta bruta",
+          value: dietaEst?.brutoEstimado != null
+            ? dietaEst.brutoEstimado.toLocaleString("es-AR", {
+                style: "currency",
+                currency: "ARS",
+                maximumFractionDigits: 0,
+              })
+            : null,
+          href: SENADO_DIETAS_URL,
+        },
+        {
+          label: "Personal despacho",
+          value: personal
+            ? `${personal.agentes} · ${personal.brutoMensualEstimado.toLocaleString(
+                "es-AR",
+                {
+                  style: "currency",
+                  currency: "ARS",
+                  maximumFractionDigits: 0,
+                },
+              )}`
+            : null,
+          href: SENADO_ESCALA_SALARIAL_URL,
+        },
+        {
+          label: "Detalle",
+          value: "Ver gasto",
+          to: `/senadores/${s.id}/gasto`,
           hideEmpty: false,
         },
       ],

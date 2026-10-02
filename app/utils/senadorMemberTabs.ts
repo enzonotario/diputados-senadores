@@ -4,7 +4,8 @@ export type SenadorMemberTab =
   | "votaciones"
   | "afinidad"
   | "viajes"
-  | "comisiones";
+  | "comisiones"
+  | "gasto";
 
 export function senadorMemberBasePath(id: string | number) {
   return `/senadores/${id}`;
@@ -27,12 +28,14 @@ export function senadorMemberTabFromPath(
   if (path.startsWith(`${base}/afinidad`)) return "afinidad";
   if (path.startsWith(`${base}/viajes`)) return "viajes";
   if (path.startsWith(`${base}/comisiones`)) return "comisiones";
+  if (path.startsWith(`${base}/gasto`)) return "gasto";
   return "votaciones";
 }
 
 export function senadorMemberTabItems(options?: {
   viajesCount?: number;
   comisionesCount?: number;
+  personalCount?: number;
 }): TabsItem[] {
   const viajes =
     options?.viajesCount != null && options.viajesCount > 0
@@ -41,6 +44,10 @@ export function senadorMemberTabItems(options?: {
   const comisiones =
     options?.comisionesCount != null && options.comisionesCount > 0
       ? options.comisionesCount
+      : undefined;
+  const personal =
+    options?.personalCount != null && options.personalCount > 0
+      ? options.personalCount
       : undefined;
 
   return [
@@ -65,6 +72,12 @@ export function senadorMemberTabItems(options?: {
       value: "comisiones",
       icon: "i-lucide-users",
       ...(comisiones != null ? { badge: comisiones } : {}),
+    },
+    {
+      label: "Gasto",
+      value: "gasto",
+      icon: "i-lucide-banknote",
+      ...(personal != null ? { badge: personal } : {}),
     },
   ];
 }

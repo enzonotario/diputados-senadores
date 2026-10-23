@@ -22,20 +22,24 @@ const visibleSections = computed(() =>
 <template>
   <div
     v-if="visibleSections.length"
-    class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
+    class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 xl:grid-cols-3"
   >
     <section
       v-for="section in visibleSections"
       :key="section.title"
-      class="rounded-lg border border-default bg-elevated/30 p-4 space-y-3"
+      class="min-w-0 space-y-3"
     >
       <h2 class="text-xs font-semibold uppercase tracking-wider text-muted">
         {{ section.title }}
       </h2>
-      <dl class="space-y-3">
-        <div v-for="item in section.items" :key="item.label" class="min-w-0">
-          <dt class="text-xs text-muted">{{ item.label }}</dt>
-          <dd class="text-sm text-highlighted break-words">
+      <dl class="space-y-2">
+        <div
+          v-for="item in section.items"
+          :key="item.label"
+          class="flex min-w-0 items-baseline justify-between gap-4"
+        >
+          <dt class="shrink-0 text-sm text-muted">{{ item.label }}</dt>
+          <dd class="min-w-0 text-end text-sm text-highlighted break-words">
             <NuxtLink
               v-if="item.to"
               :to="item.to"

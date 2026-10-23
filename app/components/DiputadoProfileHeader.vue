@@ -2,7 +2,14 @@
 import type { Diputado } from "@/lib/types-diputados";
 import { formatDate, isDiputadoActivo } from "@/lib/utils";
 import { bloquePath } from "@/utils/bloque";
-import { formatGenero, type ProfileFactSection } from "@/utils/memberProfile";
+import { diputadoMemberTabPath } from "@/utils/diputadoMemberTabs";
+import {
+  careerHighlights,
+  comisionesHighlight,
+  formatGenero,
+  type ProfileFactSection,
+  type ProfileHighlight,
+} from "@/utils/memberProfile";
 import type { CareerCargo } from "@/utils/memberCareer";
 
 const props = defineProps<{
@@ -10,71 +17,57 @@ const props = defineProps<{
   career?: CareerCargo[];
 }>();
 
+const activo = computed(() => isDiputadoActivo(props.diputado));
+
+const cargo = computed(() =>
+  formatGenero(props.diputado.genero) === "Femenino"
+    ? "Diputada Nacional"
+    : "Diputado Nacional",
+);
+
+const highlights = computed<ProfileHighlight[]>(() => {
+  const d = props.diputado;
+  const comisiones = comisionesHighlight(
+    d.meta?.comisiones,
+    diputadoMemberTabPath(d.id, "comisiones"),
+  );
+  const banca =
+    d.banca != null && Number.isFinite(Number(d.banca))
+      ? { label: "Banca", value: String(d.banca) }
+      : null;
+  return [
+    ...(comisiones ? [comisiones] : []),
+    ...careerHighlights(props.career || []),
+    ...(banca ? [banca] : []),
+  ];
+});
+
 const profileSections = computed<ProfileFactSection[]>(() => {
   const d = props.diputado;
-
-  const mandatoFin = d.periodoMandato?.fin
-    ? formatDate(d.periodoMandato.fin)
-    : "—";
-  const mandatoInicio = d.periodoMandato?.inicio
-    ? formatDate(d.periodoMandato.inicio)
-    : "—";
-
   const bloqueInicio = d.periodoBloque?.inicio
     ? formatDate(d.periodoBloque.inicio)
-    : "";
-  const bloqueFin = d.periodoBloque?.fin
-    ? formatDate(d.periodoBloque.fin)
-    : "hoy";
-  const periodoBloque = bloqueInicio && `${bloqueInicio} – ${bloqueFin}`;
+    : null;
+  const finMandato = d.periodoMandato?.fin;
+  // El cese solo aporta si difiere del fin natural del mandato.
+  const ceseAnticipado =
+    d.ceseFecha && finMandato && d.ceseFecha.slice(0, 10) !== finMandato.slice(0, 10);
 
   return [
     {
-      title: "Identidad",
+      title: "Datos",
       items: [
-        { label: "Provincia", value: d.provincia },
         { label: "Género", value: formatGenero(d.genero) },
-        {
-          label: "Banca",
-          value:
-            d.banca != null && Number.isFinite(Number(d.banca))
-              ? String(d.banca)
-              : null,
-        },
-      ],
-    },
-    {
-      title: "Bloque",
-      items: [
-        {
-          label: "Bloque",
-          value: d.bloque || "—",
-          to: bloquePath(d.bloque),
-        },
-        {
-          label: "En el bloque",
-          value: periodoBloque || null,
-        },
-      ],
-    },
-    {
-      title: "Mandato",
-      items: [
-        {
-          label: "Período",
-          value: `${mandatoInicio} – ${mandatoFin}`,
-        },
         {
           label: "Juramento",
           value: d.juramentoFecha ? formatDate(d.juramentoFecha) : null,
         },
         {
+          label: "En el bloque desde",
+          value: bloqueInicio,
+        },
+        {
           label: "Cese",
-          value: d.ceseFecha
-            ? formatDate(d.ceseFecha)
-            : isDiputadoActivo(d)
-              ? "En funciones"
-              : null,
+          value: ceseAnticipado ? formatDate(d.ceseFecha!) : null,
         },
       ],
     },
@@ -83,36 +76,21 @@ const profileSections = computed<ProfileFactSection[]>(() => {
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-0!' }" class="overflow-hidden">
-    <div class="flex flex-col md:flex-row md:items-start">
-      <div
-        class="w-40 sm:w-48 md:w-52 shrink-0 mx-auto md:mx-0 aspect-square overflow-hidden bg-elevated self-center md:self-start"
-      >
-        <NuxtImg
-          :src="diputado.foto || '/placeholder-user.jpg'"
-          :alt="`${diputado.nombre} ${diputado.apellido}`"
-          width="208"
-          height="208"
-          sizes="160px sm:192px md:208px"
-          densities="x1"
-          class="w-full h-full object-cover object-top"
-          loading="eager"
-        />
-      </div>
-
-      <div class="flex flex-col gap-5 flex-1 p-6">
-        <h1 class="text-2xl font-bold">
-          {{ diputado.nombre }} {{ diputado.apellido }}
-        </h1>
-
-        <MemberProfileFacts :sections="profileSections" />
-
-        <MemberCareerTimeline
-          v-if="career?.length"
-          :cargos="career"
-          chamber="diputados"
-        />
-      </div>
-    </div>
-  </UCard>
+  <MemberProfileCard
+    :name="`${diputado.nombre} ${diputado.apellido}`"
+    :foto="diputado.foto"
+    :cargo="cargo"
+    :provincia="diputado.provincia"
+    :group="
+      diputado.bloque
+        ? { label: diputado.bloque, to: bloquePath(diputado.bloque) }
+        : null
+    "
+    :activo="activo"
+    :mandato="diputado.periodoMandato"
+    :highlights="highlights"
+    :sections="profileSections"
+    :career="career"
+    chamber="diputados"
+  />
 </template>

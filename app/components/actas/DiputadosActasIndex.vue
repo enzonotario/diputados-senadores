@@ -4,6 +4,7 @@ import type { Acta, FilterConfig } from "@/lib/types-diputados";
 import {
   filterActas as applyActaFilters,
   formatDate,
+  formatTime,
   getUniqueValues,
 } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
@@ -159,7 +160,17 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
             </NuxtLink>
           </template>
           <template #fecha-cell="{ row }">
-            <span>{{ formatDate((row.original as Acta).fecha) }}</span>
+            <div class="flex flex-col leading-tight">
+              <span class="tabular-nums">{{
+                formatDate((row.original as Acta).fecha)
+              }}</span>
+              <span
+                v-if="formatTime((row.original as Acta).fecha, '')"
+                class="text-xs text-muted tabular-nums"
+              >
+                {{ formatTime((row.original as Acta).fecha) }}
+              </span>
+            </div>
           </template>
           <template #resultado-cell="{ row }">
             <ResultadoBadge :resultado="(row.original as Acta).resultado" />

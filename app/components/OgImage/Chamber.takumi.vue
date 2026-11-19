@@ -4,10 +4,14 @@
  *
  * `votes` es `afirmativos:negativos:abstenciones:ausentes`.
  * `hemiciclo` agrupado: `45:14b8a6,30:ef4444` o recinto diputados: `r:aann...`.
+ *
+ * Lienzo 1200×600 (2:1, X). X superpone el dominio abajo a la izquierda
+ * (~480×70 px): esa zona queda siempre vacía; la marca va abajo a la derecha.
  */
 import {
   decodeOgHemiciclo,
   layoutOgHemiciclo,
+  type OgHemicicloLayout,
 } from "@/lib/hemiciclo-layout";
 import {
   isOgRecintoHemiciclo,
@@ -49,6 +53,17 @@ const props = withDefaults(
 const CELESTE = "#75AADB";
 const INK = "#111111";
 
+/**
+ * `#rrggbb` con opacidad `alpha`, ya mezclado sobre blanco → `rgb()` sólido.
+ * Takumi con devicePixelRatio 2 pinta mal los colores con alpha (hex de 8
+ * dígitos o rgba) en gradientes y texto: usar siempre colores opacos.
+ */
+function rgba(hex: string, alpha: number): string {
+  const n = Number.parseInt(hex.replace("#", ""), 16);
+  const mix = (c: number) => Math.round(255 - (255 - c) * alpha);
+  return `rgb(${mix((n >> 16) & 255)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
+}
+
 const VOTE_COLORS = {
   afirmativo: "#14b8a6",
   negativo: "#ef4444",
@@ -71,14 +86,35 @@ const resolvedLogo = computed(() => {
 
 const resolvedPhoto = computed(() => (props.photoSrc || "").trim());
 
+/** Escala el layout para que entre en `maxW × maxH` (sin deformar). */
+function fitLayout(
+  layout: OgHemicicloLayout | null,
+  maxW: number,
+  maxH: number,
+): OgHemicicloLayout | null {
+  if (!layout?.seats.length) return null;
+  const k = Math.min(maxW / layout.width, maxH / layout.height);
+  return {
+    width: Math.round(layout.width * k),
+    height: Math.round(layout.height * k),
+    seats: layout.seats.map((seat) => ({
+      ...seat,
+      x: seat.x * k,
+      y: seat.y * k,
+      r: seat.r * k,
+    })),
+  };
+}
+
 const hemicicloLayout = computed(() => {
   const raw = props.hemiciclo;
+  const [maxW, maxH] = isActa.value ? [520, 250] : [440, 260];
   if (isOgRecintoHemiciclo(raw)) {
-    return layoutOgRecintoHemiciclo(raw, isActa.value ? 248 : 280);
+    return fitLayout(layoutOgRecintoHemiciclo(raw, maxH), maxW, maxH);
   }
   const groups = decodeOgHemiciclo(raw);
   if (!groups.length) return null;
-  return layoutOgHemiciclo(groups);
+  return fitLayout(layoutOgHemiciclo(groups), maxW, maxH);
 });
 
 const showHemiciclo = computed(() => Boolean(hemicicloLayout.value?.seats.length));
@@ -120,7 +156,7 @@ const voteRows = computed(() => {
 const showVotes = computed(() => voteRows.value.length > 0);
 
 const actaTitleLines = computed(() =>
-  isActa.value ? wrapOgActaTitle(props.title) : [props.title],
+  isActa.value ? wrapOgActaTitle(props.title, 3, 58) : [props.title],
 );
 </script>
 
@@ -128,7 +164,7 @@ const actaTitleLines = computed(() =>
   <div
     class="relative flex h-full w-full overflow-hidden"
     :style="{
-      background: `linear-gradient(135deg, #ffffff 0%, #ffffff 42%, ${CELESTE}14 72%, ${CELESTE}28 100%)`,
+      background: `linear-gradient(135deg, #ffffff 0%, #ffffff 45%, ${rgba(CELESTE, 0.08)} 75%, ${rgba(CELESTE, 0.18)} 100%)`,
       color: INK,
     }"
   >
@@ -137,63 +173,94 @@ const actaTitleLines = computed(() =>
       :style="{ background: accent }"
     />
 
-    <!-- Layout acta: columna (título ancho completo + hemiciclo abajo) -->
+    <!-- Marca: siempre abajo a la derecha (abajo-izq. lo tapa X) -->
+    <div
+      class="absolute bottom-9 right-14 flex items-baseline text-[26px] font-semibold"
+    >
+      <span :style="{ color: INK }">{{ brand }}</span>
+      <span :style="{ color: `${rgba(INK, 0.5)}` }">.argentinadatos.com</span>
+    </div>
+
+    <!-- Acta: título arriba, conteos a la izquierda, hemiciclo a la derecha -->
     <div
       v-if="isActa"
-      class="relative flex h-full w-full flex-col pl-[4.25rem] pr-14 py-7"
+      class="relative flex h-full w-full flex-col pb-[92px] pl-[4.25rem] pr-14 pt-10"
     >
       <div class="flex w-full items-center justify-between">
         <div class="flex items-center gap-4">
           <img
             :src="resolvedLogo"
             :alt="brand"
-            width="72"
-            height="72"
-            class="h-[72px] w-[72px] object-contain"
+            width="64"
+            height="64"
+            class="h-16 w-16 object-contain"
           />
           <div
             v-if="eyebrow"
             class="text-[22px] font-semibold uppercase tracking-[0.08em]"
-            :style="{ color: `${INK}99` }"
+            :style="{ color: `${rgba(INK, 0.6)}` }"
           >
             {{ eyebrow }}
           </div>
         </div>
         <div
           v-if="badge"
-          class="rounded-full px-4 py-2 text-[22px] font-bold tracking-wide text-white"
+          class="rounded-full px-5 py-2 text-[24px] font-bold tracking-wide text-white"
           :style="{ background: accent }"
         >
           {{ badge }}
         </div>
       </div>
 
-      <div class="mt-3 w-full">
-        <div class="flex w-full flex-col gap-0.5">
-          <div
-            v-for="(line, i) in actaTitleLines"
-            :key="i"
-            class="w-full text-[20px] font-bold leading-[1.2] tracking-tight"
-            :style="{ color: INK }"
-          >
-            {{ line }}
-          </div>
+      <div class="mt-5 flex w-full flex-col">
+        <div
+          v-for="(line, i) in actaTitleLines"
+          :key="i"
+          class="w-full text-[30px] font-bold leading-[1.18] tracking-tight"
+          :style="{ color: INK }"
+        >
+          {{ line }}
         </div>
         <div
           v-if="footerLeft"
-          class="mt-1.5 text-[16px] font-semibold tabular-nums"
-          :style="{ color: `${INK}99` }"
+          class="mt-2 text-[20px] font-semibold tabular-nums"
+          :style="{ color: `${rgba(INK, 0.6)}` }"
         >
           {{ footerLeft }}
         </div>
       </div>
 
-      <div
-        v-if="hemicicloLayout"
-        class="mt-2 flex w-full flex-1 items-center justify-center"
-      >
+      <div class="mt-4 flex w-full flex-1 items-center justify-between gap-8">
+        <div v-if="showVotes" class="flex w-[460px] flex-wrap gap-x-8 gap-y-4">
+          <div
+            v-for="row in voteRows"
+            :key="row.key"
+            class="flex w-[200px] items-center gap-3"
+          >
+            <div
+              class="h-5 w-5 shrink-0 rounded-full"
+              :style="{ background: row.color }"
+            />
+            <div class="flex flex-col">
+              <div
+                class="text-[44px] font-extrabold leading-none tabular-nums"
+                :style="{ color: row.color }"
+              >
+                {{ row.count }}
+              </div>
+              <div
+                class="mt-1 text-[15px] font-semibold uppercase tracking-[0.06em]"
+                :style="{ color: `${rgba(INK, 0.6)}` }"
+              >
+                {{ row.label }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div
-          class="relative"
+          v-if="hemicicloLayout"
+          class="relative shrink-0"
           :style="{
             width: `${hemicicloLayout.width}px`,
             height: `${hemicicloLayout.height}px`,
@@ -209,188 +276,129 @@ const actaTitleLines = computed(() =>
               width: `${seat.r * 2}px`,
               height: `${seat.r * 2}px`,
               backgroundColor: seat.color,
-              boxShadow: `0 0 0 0.5px ${INK}1a`,
             }"
           />
-        </div>
-      </div>
-
-      <div class="mt-auto flex w-full flex-col gap-4">
-        <div v-if="showVotes" class="flex items-end gap-7">
-          <div
-            v-for="row in voteRows"
-            :key="row.key"
-            class="flex items-center gap-2.5"
-          >
-            <div
-              class="h-4 w-4 rounded-full"
-              :style="{ background: row.color }"
-            />
-            <div class="flex flex-col">
-              <div
-                class="text-[28px] font-extrabold leading-none tabular-nums"
-                :style="{ color: row.color }"
-              >
-                {{ row.count }}
-              </div>
-              <div
-                class="mt-0.5 text-[14px] font-semibold uppercase tracking-[0.05em]"
-                :style="{ color: `${INK}99` }"
-              >
-                {{ row.label }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex w-full justify-end">
-          <div
-            class="flex items-baseline gap-0 text-[24px] font-semibold"
-          >
-            <span :style="{ color: INK }">{{ brand }}</span>
-            <span :style="{ color: `${INK}80` }">.argentinadatos.com</span>
-          </div>
         </div>
       </div>
     </div>
 
-    <!-- Layout general (home, miembro, listado, …) -->
+    <!-- General (home, miembro, listado, …) -->
     <div
       v-else
-      class="relative flex h-full w-full flex-col justify-between px-16 py-10 pl-[4.25rem]"
+      class="relative flex h-full w-full items-center justify-between gap-10 pb-[92px] pl-[4.25rem] pr-14 pt-10"
     >
-      <div class="flex w-full flex-col gap-6">
-        <div class="flex w-full items-center justify-between">
-          <div class="flex items-center gap-5">
-            <img
-              :src="resolvedLogo"
-              :alt="brand"
-              width="96"
-              height="96"
-              class="h-24 w-24 object-contain"
-            />
-            <div
-              v-if="eyebrow"
-              class="text-[26px] font-semibold uppercase tracking-[0.08em]"
-              :style="{ color: `${INK}99` }"
-            >
-              {{ eyebrow }}
-            </div>
-          </div>
+      <div class="flex h-full min-w-0 flex-1 flex-col">
+        <div class="flex items-center gap-4">
+          <img
+            :src="resolvedLogo"
+            :alt="brand"
+            width="72"
+            height="72"
+            class="h-[72px] w-[72px] object-contain"
+          />
           <div
-            v-if="badge"
-            class="rounded-full px-5 py-2.5 text-[24px] font-bold tracking-wide text-white"
-            :style="{ background: accent }"
+            v-if="eyebrow"
+            class="text-[24px] font-semibold uppercase tracking-[0.08em]"
+            :style="{ color: `${rgba(INK, 0.6)}` }"
           >
-            {{ badge }}
+            {{ eyebrow }}
           </div>
         </div>
 
-        <div
-          class="flex w-full items-start gap-10"
-          :class="resolvedPhoto || showHemiciclo ? 'justify-between' : ''"
-        >
+        <div class="flex flex-1 flex-col justify-center gap-4">
           <div
-            class="flex min-w-0 flex-col gap-4"
-            :class="
-              resolvedPhoto || showHemiciclo ? 'max-w-[520px]' : 'max-w-[1020px]'
-            "
+            class="text-[54px] font-extrabold leading-[1.08] tracking-tight"
+            :style="{ color: INK }"
           >
-            <div
-              class="text-[48px] font-extrabold leading-[1.12] tracking-tight"
-              :style="{ color: INK }"
-            >
-              {{ title }}
-            </div>
+            {{ title }}
+          </div>
 
+          <div v-if="badge" class="flex">
             <div
-              v-if="!showVotes && description"
-              class="text-[24px] font-medium leading-snug"
-              :style="{ color: `${INK}b3` }"
+              class="rounded-full px-5 py-2 text-[24px] font-bold tracking-wide text-white"
+              :style="{ background: accent }"
             >
-              {{ description }}
+              {{ badge }}
             </div>
           </div>
 
-          <img
-            v-if="resolvedPhoto"
-            :src="resolvedPhoto"
-            :alt="title"
-            width="280"
-            height="280"
-            class="h-[280px] w-[280px] shrink-0 rounded-full object-cover"
-            :style="{
-              border: `6px solid ${INK}1a`,
-              boxShadow: `0 18px 40px ${INK}26`,
-            }"
-          />
+          <div v-if="showVotes" class="mt-2 flex items-end gap-9">
+            <div
+              v-for="row in voteRows"
+              :key="row.key"
+              class="flex items-center gap-3"
+            >
+              <div
+                class="h-5 w-5 rounded-full"
+                :style="{ background: row.color }"
+              />
+              <div class="flex flex-col">
+                <div
+                  class="text-[40px] font-extrabold leading-none tabular-nums"
+                  :style="{ color: row.color }"
+                >
+                  {{ row.count }}
+                </div>
+                <div
+                  class="mt-1 text-[16px] font-semibold uppercase tracking-[0.06em]"
+                  :style="{ color: `${rgba(INK, 0.6)}` }"
+                >
+                  {{ row.label }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            v-else-if="description && !resolvedPhoto"
+            class="text-[24px] font-medium leading-snug"
+            :style="{ color: `${rgba(INK, 0.7)}` }"
+          >
+            {{ description }}
+          </div>
 
           <div
-            v-else-if="hemicicloLayout"
-            class="relative shrink-0"
-            :style="{
-              width: `${hemicicloLayout.width}px`,
-              height: `${hemicicloLayout.height}px`,
-            }"
+            v-if="footerLeft"
+            class="text-[22px] font-semibold"
+            :style="{ color: `${rgba(INK, 0.6)}` }"
           >
-            <div
-              v-for="(seat, i) in hemicicloLayout.seats"
-              :key="i"
-              class="absolute rounded-full"
-              :style="{
-                left: `${seat.x - seat.r}px`,
-                top: `${seat.y - seat.r}px`,
-                width: `${seat.r * 2}px`,
-                height: `${seat.r * 2}px`,
-                backgroundColor: seat.color,
-              }"
-            />
+            {{ footerLeft }}
           </div>
         </div>
       </div>
 
-      <div class="flex w-full flex-col gap-7">
-        <div v-if="showVotes" class="flex items-end gap-10">
-          <div
-            v-for="row in voteRows"
-            :key="row.key"
-            class="flex items-center gap-3"
-          >
-            <div
-              class="h-5 w-5 rounded-full"
-              :style="{ background: row.color }"
-            />
-            <div class="flex flex-col">
-              <div
-                class="text-[40px] font-extrabold leading-none tracking-tight tabular-nums"
-                :style="{ color: row.color }"
-              >
-                {{ row.count }}
-              </div>
-              <div
-                class="mt-1 text-[18px] font-semibold uppercase tracking-[0.06em]"
-                :style="{ color: `${INK}99` }"
-              >
-                {{ row.label }}
-              </div>
-            </div>
-          </div>
-        </div>
+      <img
+        v-if="resolvedPhoto"
+        :src="resolvedPhoto"
+        :alt="title"
+        width="380"
+        height="380"
+        class="mb-[-52px] h-[380px] w-[380px] shrink-0 rounded-full object-cover"
+        :style="{
+          border: `8px solid #ffffff`,
+          boxShadow: `0 24px 60px ${rgba(INK, 0.18)}`,
+        }"
+      />
 
-        <div class="flex w-full items-baseline justify-between gap-8">
-          <div
-            class="min-w-0 text-[26px] font-semibold"
-            :style="{ color: `${INK}b3` }"
-          >
-            {{ footerLeft }}
-          </div>
-          <div
-            class="flex shrink-0 items-baseline gap-0 text-[28px] font-semibold"
-          >
-            <span :style="{ color: INK }">{{ brand }}</span>
-            <span :style="{ color: `${INK}80` }">.argentinadatos.com</span>
-          </div>
-        </div>
+      <div
+        v-else-if="hemicicloLayout"
+        class="relative mb-[-52px] shrink-0"
+        :style="{
+          width: `${hemicicloLayout.width}px`,
+          height: `${hemicicloLayout.height}px`,
+        }"
+      >
+        <div
+          v-for="(seat, i) in hemicicloLayout.seats"
+          :key="i"
+          class="absolute rounded-full"
+          :style="{
+            left: `${seat.x - seat.r}px`,
+            top: `${seat.y - seat.r}px`,
+            width: `${seat.r * 2}px`,
+            height: `${seat.r * 2}px`,
+            backgroundColor: seat.color,
+          }"
+        />
       </div>
     </div>
   </div>

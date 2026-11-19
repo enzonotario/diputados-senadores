@@ -173,9 +173,15 @@ export default defineNuxtConfig({
   // Node/Docker: el optionalDependency nativo no entra en .output (ver Dockerfile.build).
   ogImage: {
     defaults: {
+      // X/Twitter: 2:1 (1200×600 lógico) renderizado a 2x para retina.
+      // X pinta el dominio abajo a la izquierda: el template deja esa zona libre.
       width: 1200,
-      height: 630,
-      // Embebido en meta; absolute URL vía site.url / request origin.
+      height: 600,
+      takumi: { devicePixelRatio: 2 },
+    },
+    security: {
+      maxDimension: 2400,
+      maxDpr: 2,
     },
   },
 

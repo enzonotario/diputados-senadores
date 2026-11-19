@@ -124,6 +124,7 @@ useChamberSeo(() => {
       kind: "afinidad",
       eyebrow: "afinidad",
       badge: affinityGroupName.value || undefined,
+      photoSrc: senador.value.foto || "/placeholder-user.jpg",
     },
   };
 });

@@ -127,6 +127,7 @@ useChamberSeo(() => {
       kind: "afinidad",
       eyebrow: "afinidad",
       badge: diputado.value.bloque || undefined,
+      photoSrc: diputado.value.foto || "/placeholder-user.jpg",
     },
   };
 });

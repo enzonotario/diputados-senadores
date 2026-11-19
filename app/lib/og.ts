@@ -289,10 +289,12 @@ export function wrapOgActaTitle(
 
   const used = lines.join(" ");
   if (short.length > used.length && !lines[lines.length - 1]!.endsWith("…")) {
-    lines[lines.length - 1] = truncateOgText(
-      lines[lines.length - 1]!,
-      charsPerLine,
-    );
+    // Siempre marcar el corte: la última línea suele ser más corta que el límite.
+    const last = lines[lines.length - 1]!.replace(/[\s,.;:]+$/, "");
+    lines[lines.length - 1] =
+      last.length >= charsPerLine
+        ? truncateOgText(last, charsPerLine)
+        : `${last}…`;
   }
 
   return lines.slice(0, maxLines);

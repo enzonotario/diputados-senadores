@@ -1,4 +1,4 @@
-import type { ChamberId } from "./chamber";
+import { siteOgLogoSrc, type ChamberId, type SiteConfig } from "./chamber";
 import { encodeOgHemiciclo } from "./hemiciclo-layout";
 import { encodeOgRecintoActa } from "./og-recinto";
 import { getVotoTipoConfig } from "../utils/votoTipo";
@@ -43,7 +43,40 @@ export type ChamberOgInput = {
    * `45:14b8a6,30:ef4444` (count:hex sin #).
    */
   hemiciclo?: string;
+  /** Acta view (`resultados` | `grupos` | `provincias`); empty = default. */
+  vista?: string;
+  /** Compact per-view data (see `app/lib/og-acta.ts`). */
+  breakdown?: string;
 };
+
+/** Props for `Chamber.takumi` — shared by `useChamberSeo` and server patches. */
+export function buildChamberOgProps(input: {
+  pageTitle: string;
+  description: string;
+  site: SiteConfig;
+  og?: ChamberOgInput;
+}): Record<string, string> {
+  const { pageTitle, description, site, og } = input;
+  return {
+    title: og?.kind === "acta" ? pageTitle : truncateOgText(pageTitle, 110),
+    description: truncateOgText(description, 160),
+    brand: site.brand,
+    // Public path: the OG island resolves it on the same server. Do not use
+    // the request origin (Host without port → :80 and the logo fetch fails).
+    logoSrc: siteOgLogoSrc(site),
+    eyebrow: og?.eyebrow || site.brand,
+    badge: og?.badge || "",
+    accent: resolveOgAccent(og?.accent, site.id as ChamberId),
+    footerLeft: og?.footerLeft || "",
+    kind: og?.kind || "",
+    votes: encodeOgVotes(og),
+    photoSrc: og?.photoSrc || "",
+    hemiciclo: og?.hemiciclo || "",
+    chamber: site.id,
+    vista: og?.vista || "",
+    breakdown: og?.breakdown || "",
+  };
+}
 
 /** Serializa conteos para props OG (`144:102:9:1`). */
 export function encodeOgVotes(input?: {

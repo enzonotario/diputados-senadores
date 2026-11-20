@@ -15,7 +15,8 @@ import {
   VOTO_TIPO_ORDER,
 } from "@/utils/votoTipo";
 import { partidoPath } from "@/utils/partido";
-import { buildActaChamberOg } from "@/lib/og";
+import { buildActaSeo } from "@/lib/og-acta";
+import { getPartidoColores } from "@/lib/senadores-data";
 import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
 import { actaPdfUrl } from "@/utils/staticPdf";
 
@@ -34,29 +35,15 @@ const acta = computed(() => data.value || null);
 
 const presidenteMember = computed(() => acta.value?.presidenteObj || null);
 
-useChamberSeo(() => {
-  const a = acta.value;
-  if (!a) {
-    return {
-      title: "Votación",
-      description: "Cómo se votó esta iniciativa en el Senado.",
-      og: { kind: "acta", eyebrow: "votación" },
-    };
-  }
-  const fecha = a.fecha ? formatDate(a.fecha) : null;
-  const parts = [
-    a.resultado ? `Resultado: ${a.resultado}` : null,
-    fecha ? `Votación del ${fecha}` : null,
-    `A favor ${a.votosAfirmativos}, en contra ${a.votosNegativos}, abstenciones ${a.abstenciones}`,
-  ].filter(Boolean);
-  return {
-    title: a.titulo || "Votación",
-    description: parts.length
-      ? `${parts.join(". ")}.`
-      : "Cómo se votó esta iniciativa en el Senado.",
-    og: buildActaChamberOg(a, formatDate),
-  };
-});
+useChamberSeo(() =>
+  buildActaSeo(
+    "senadores",
+    acta.value,
+    route.query.vista,
+    formatDate,
+    getPartidoColores,
+  ),
+);
 
 const vista = useRouteQuery("vista", "senadores");
 const vistaItems = [

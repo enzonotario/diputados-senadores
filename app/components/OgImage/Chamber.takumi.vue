@@ -18,6 +18,11 @@ import {
   layoutOgRecintoHemiciclo,
 } from "@/lib/og-recinto";
 import { decodeOgVotes, OG_BAR_ACCENT, wrapOgActaTitle } from "@/lib/og";
+import {
+  decodeOgGrupos,
+  decodeOgProvincias,
+  OG_PROVINCIAS,
+} from "@/lib/og-acta";
 
 const props = withDefaults(
   defineProps<{
@@ -34,6 +39,8 @@ const props = withDefaults(
     photoSrc?: string;
     hemiciclo?: string;
     chamber?: string;
+    vista?: string;
+    breakdown?: string;
   }>(),
   {
     title: "ArgentinaDatos.com",
@@ -49,6 +56,8 @@ const props = withDefaults(
     photoSrc: "",
     hemiciclo: "",
     chamber: "",
+    vista: "",
+    breakdown: "",
   },
 );
 
@@ -166,9 +175,76 @@ const voteRows = computed(() => {
 
 const showVotes = computed(() => voteRows.value.length > 0);
 
-const actaTitleLines = computed(() =>
-  isActa.value ? wrapOgActaTitle(props.title, 3, 58) : [props.title],
+const actaVista = computed(() => (isActa.value ? props.vista : ""));
+
+const actaTitleLines = computed(() => {
+  if (!isActa.value) return [props.title];
+  if (actaVista.value === "provincias")
+    return wrapOgActaTitle(props.title, 4, 38);
+  if (actaVista.value) return wrapOgActaTitle(props.title, 2, 58);
+  return wrapOgActaTitle(props.title, 3, 58);
+});
+
+const VOTE_KEYS = ["afirmativo", "negativo", "abstencion", "ausente"] as const;
+
+/** Stacked segments for 4 counts (a, n, b, u); zero counts dropped. */
+function segments(counts: readonly number[]) {
+  return VOTE_KEYS.map((key, i) => ({
+    key,
+    count: counts[i] ?? 0,
+    color: VOTE_COLORS[key],
+  })).filter((seg) => seg.count > 0);
+}
+
+const voteTotal = computed(() =>
+  voteRows.value.reduce((sum, row) => sum + row.count, 0),
 );
+
+function pct(count: number, total: number) {
+  return total > 0 ? `${Math.round((count / total) * 100)}%` : "0%";
+}
+
+const grupos = computed(() => {
+  if (actaVista.value !== "grupos") return [];
+  const rows = decodeOgGrupos(props.breakdown);
+  const max = Math.max(1, ...rows.map((r) => r.counts.reduce((a, b) => a + b)));
+  return rows.map((r) => {
+    const total = r.counts.reduce((a, b) => a + b, 0);
+    return {
+      ...r,
+      total,
+      width: `${Math.max(2, (total / max) * 100)}%`,
+      segments: segments(r.counts),
+    };
+  });
+});
+
+/** Tile map: 5 cols × 9 rows (see `OG_PROVINCIAS`). */
+const TILE = { w: 82, h: 46, gapX: 6, gapY: 6 };
+const tiles = computed(() => {
+  if (actaVista.value !== "provincias") return [];
+  const data = decodeOgProvincias(props.breakdown);
+  return Object.values(OG_PROVINCIAS).map((p) => {
+    const counts = data.get(p.abbr) || [0, 0, 0, 0];
+    let top = -1;
+    counts.forEach((n, i) => {
+      if (n > 0 && (top < 0 || n > counts[top]!)) top = i;
+    });
+    const color = top >= 0 ? VOTE_COLORS[VOTE_KEYS[top]!] : "#d1d5db";
+    return {
+      abbr: p.abbr,
+      left: p.col * (TILE.w + TILE.gapX),
+      top: p.row * (TILE.h + TILE.gapY),
+      color,
+      background: rgba(color, top >= 0 ? 0.16 : 0.4),
+      segments: segments(counts),
+    };
+  });
+});
+const tileMapSize = {
+  width: 5 * TILE.w + 4 * TILE.gapX,
+  height: 9 * TILE.h + 8 * TILE.gapY,
+};
 </script>
 
 <template>
@@ -193,9 +269,58 @@ const actaTitleLines = computed(() =>
     </div>
 
     <!-- Acta: título arriba, conteos a la izquierda, hemiciclo a la derecha -->
+    <!-- Acta por provincia: tile map a la derecha (fuera de la zona de X) -->
+    <div
+      v-if="tiles.length"
+      class="absolute right-14 top-9 flex"
+      :style="{
+        width: `${tileMapSize.width}px`,
+        height: `${tileMapSize.height}px`,
+      }"
+    >
+      <div
+        v-for="tile in tiles"
+        :key="tile.abbr"
+        class="absolute flex flex-col justify-between rounded-lg px-2 pb-[6px] pt-1"
+        :style="{
+          left: `${tile.left}px`,
+          top: `${tile.top}px`,
+          width: `${TILE.w}px`,
+          height: `${TILE.h}px`,
+          background: tile.background,
+          border: `2px solid ${tile.color}`,
+        }"
+      >
+        <div
+          class="text-[16px] font-extrabold leading-none tracking-wide"
+          :style="{ color: INK }"
+        >
+          {{ tile.abbr }}
+        </div>
+        <div
+          class="flex h-[9px] w-full overflow-hidden rounded-full"
+          :style="{ background: '#ffffff' }"
+        >
+          <div
+            v-for="seg in tile.segments"
+            :key="seg.key"
+            class="h-full"
+            :style="{
+              flexGrow: seg.count,
+              flexBasis: 0,
+              background: seg.color,
+            }"
+          />
+        </div>
+      </div>
+    </div>
+
     <div
       v-if="isActa"
       class="relative flex h-full w-full flex-col pb-[92px] pl-[4.25rem] pr-14 pt-10"
+      :style="
+        tiles.length ? { paddingRight: `${tileMapSize.width + 96}px` } : {}
+      "
     >
       <div class="flex w-full items-center justify-between">
         <div class="flex items-center gap-4">
@@ -227,7 +352,8 @@ const actaTitleLines = computed(() =>
         <div
           v-for="(line, i) in actaTitleLines"
           :key="i"
-          class="w-full text-[30px] font-bold leading-[1.18] tracking-tight"
+          class="w-full font-bold leading-[1.18] tracking-tight"
+          :class="tiles.length ? 'text-[28px]' : 'text-[30px]'"
           :style="{ color: INK }"
         >
           {{ line }}
@@ -241,7 +367,129 @@ const actaTitleLines = computed(() =>
         </div>
       </div>
 
-      <div class="mt-4 flex w-full flex-1 items-center justify-between gap-8">
+      <!-- Por tipo de voto: barra 100% + conteos con % -->
+      <div
+        v-if="actaVista === 'resultados' && voteTotal > 0"
+        class="mt-8 flex w-full flex-col gap-6"
+      >
+        <div class="flex h-[64px] w-full overflow-hidden rounded-2xl">
+          <div
+            v-for="row in voteRows.filter((r) => r.count > 0)"
+            :key="row.key"
+            class="h-full"
+            :style="{
+              flexGrow: row.count,
+              flexBasis: 0,
+              background: row.color,
+            }"
+          />
+        </div>
+        <div class="flex w-full justify-between">
+          <div
+            v-for="row in voteRows"
+            :key="row.key"
+            class="flex items-center gap-3"
+          >
+            <div
+              class="h-5 w-5 shrink-0 rounded-full"
+              :style="{ background: row.color }"
+            />
+            <div class="flex flex-col">
+              <div class="flex items-baseline gap-2">
+                <div
+                  class="text-[44px] font-extrabold leading-none tabular-nums"
+                  :style="{ color: row.color }"
+                >
+                  {{ row.count }}
+                </div>
+                <div
+                  class="text-[22px] font-bold tabular-nums"
+                  :style="{ color: `${rgba(INK, 0.5)}` }"
+                >
+                  {{ pct(row.count, voteTotal) }}
+                </div>
+              </div>
+              <div
+                class="mt-1 text-[15px] font-semibold uppercase tracking-[0.06em]"
+                :style="{ color: `${rgba(INK, 0.6)}` }"
+              >
+                {{ row.label }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Por bloque / partido: barras apiladas por grupo -->
+      <div
+        v-else-if="grupos.length"
+        class="mt-4 flex w-full flex-col gap-[10px]"
+      >
+        <div class="flex w-full items-center gap-6">
+          <div
+            v-for="row in voteRows"
+            :key="row.key"
+            class="flex items-center gap-2 text-[16px] font-semibold"
+            :style="{ color: `${rgba(INK, 0.7)}` }"
+          >
+            <div
+              class="h-3 w-3 rounded-full"
+              :style="{ background: row.color }"
+            />
+            <span>{{ row.label }} {{ row.count }}</span>
+          </div>
+        </div>
+        <div
+          v-for="g in grupos"
+          :key="g.name"
+          class="flex h-[26px] w-full items-center gap-4"
+        >
+          <div class="flex w-[360px] shrink-0 items-center gap-3">
+            <div
+              class="h-4 w-4 shrink-0 rounded"
+              :style="{ background: g.color }"
+            />
+            <div
+              class="text-[19px] font-semibold leading-none"
+              :style="{ color: INK }"
+            >
+              {{
+                g.name.length > 30
+                  ? `${g.name.slice(0, 29).trimEnd()}…`
+                  : g.name
+              }}
+            </div>
+          </div>
+          <div class="flex h-full flex-1 items-center gap-3">
+            <div
+              class="flex h-full overflow-hidden rounded-md"
+              :style="{ width: g.width }"
+            >
+              <div
+                v-for="seg in g.segments"
+                :key="seg.key"
+                class="h-full"
+                :style="{
+                  flexGrow: seg.count,
+                  flexBasis: 0,
+                  background: seg.color,
+                }"
+              />
+            </div>
+            <div
+              class="w-[44px] shrink-0 text-[18px] font-bold tabular-nums"
+              :style="{ color: `${rgba(INK, 0.6)}` }"
+            >
+              {{ g.total }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-else
+        class="mt-4 flex w-full flex-1 items-center justify-between gap-8"
+      >
         <div v-if="showVotes" class="flex w-[460px] flex-wrap gap-x-8 gap-y-4">
           <div
             v-for="row in voteRows"

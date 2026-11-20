@@ -1,10 +1,4 @@
-import { siteOgLogoSrc, type ChamberId } from "@/lib/chamber";
-import {
-  encodeOgVotes,
-  resolveOgAccent,
-  truncateOgText,
-  type ChamberOgInput,
-} from "@/lib/og";
+import { buildChamberOgProps, type ChamberOgInput } from "@/lib/og";
 
 export type ChamberSeoInput = {
   /** Título corto de la página (sin host). */
@@ -87,28 +81,31 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
   }));
 
   // Takumi via Nuxt OG Image — defineOgImage setea og:image / twitter:image.
+  // Props compartidas con el patch server de actas prerenderizadas (`?vista=`).
+  const ogProps = computed(() =>
+    buildChamberOgProps({
+      pageTitle: seo.value.pageTitle,
+      description: seo.value.description,
+      site: chamber.value,
+      og: seo.value.og,
+    }),
+  );
+  const prop = (key: string) => computed(() => ogProps.value[key] || "");
   defineOgImage("Chamber.takumi", {
-    title: computed(() =>
-      seo.value.og?.kind === "acta"
-        ? seo.value.pageTitle
-        : truncateOgText(seo.value.pageTitle, 110),
-    ),
-    description: computed(() => truncateOgText(seo.value.description, 160)),
-    brand: computed(() => chamber.value.brand),
-    // Path relativo en /public — el island del OG lo resuelve en el mismo server.
-    // No usar useRequestURL().origin: con Host senadores.localhost sin puerto
-    // queda :80 y el fetch del logo falla.
-    logoSrc: computed(() => siteOgLogoSrc(chamber.value)),
-    eyebrow: computed(() => seo.value.og?.eyebrow || chamber.value.brand),
-    badge: computed(() => seo.value.og?.badge || ""),
-    accent: computed(() =>
-      resolveOgAccent(seo.value.og?.accent, chamber.value.id as ChamberId),
-    ),
-    footerLeft: computed(() => seo.value.og?.footerLeft || ""),
-    kind: computed(() => seo.value.og?.kind || ""),
-    votes: computed(() => encodeOgVotes(seo.value.og)),
-    photoSrc: computed(() => seo.value.og?.photoSrc || ""),
-    hemiciclo: computed(() => seo.value.og?.hemiciclo || ""),
-    chamber: computed(() => chamber.value.id),
+    title: prop("title"),
+    description: prop("description"),
+    brand: prop("brand"),
+    logoSrc: prop("logoSrc"),
+    eyebrow: prop("eyebrow"),
+    badge: prop("badge"),
+    accent: prop("accent"),
+    footerLeft: prop("footerLeft"),
+    kind: prop("kind"),
+    votes: prop("votes"),
+    photoSrc: prop("photoSrc"),
+    hemiciclo: prop("hemiciclo"),
+    chamber: prop("chamber"),
+    vista: prop("vista"),
+    breakdown: prop("breakdown"),
   });
 }

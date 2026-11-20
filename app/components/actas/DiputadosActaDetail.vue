@@ -15,7 +15,8 @@ import {
   VOTO_TIPO_ORDER,
 } from "@/utils/votoTipo";
 import { bloquePath } from "@/utils/bloque";
-import { buildDiputadosActaChamberOg } from "@/lib/og";
+import { buildActaSeo } from "@/lib/og-acta";
+import { getBloqueColores } from "@/lib/diputados-data";
 import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
 import { actaPdfUrl } from "@/utils/staticPdf";
 
@@ -32,29 +33,15 @@ const { data, pending } = await useAsyncData(
 );
 const acta = computed(() => data.value || null);
 
-useChamberSeo(() => {
-  const a = acta.value;
-  if (!a) {
-    return {
-      title: "Votación",
-      description: "Cómo se votó esta iniciativa en la Cámara de Diputados.",
-      og: { kind: "acta", eyebrow: "votación" },
-    };
-  }
-  const fecha = a.fecha ? formatDate(a.fecha) : null;
-  const parts = [
-    a.resultado ? `Resultado: ${a.resultado}` : null,
-    fecha ? `Votación del ${fecha}` : null,
-    `A favor ${a.votosAfirmativos}, en contra ${a.votosNegativos}, abstenciones ${a.abstenciones}`,
-  ].filter(Boolean);
-  return {
-    title: a.titulo || "Votación",
-    description: parts.length
-      ? `${parts.join(". ")}.`
-      : "Cómo se votó esta iniciativa en la Cámara de Diputados.",
-    og: buildDiputadosActaChamberOg(a, formatDate),
-  };
-});
+useChamberSeo(() =>
+  buildActaSeo(
+    "diputados",
+    acta.value,
+    route.query.vista,
+    formatDate,
+    getBloqueColores,
+  ),
+);
 
 const vista = useRouteQuery("vista", "diputados");
 const vistaItems = [

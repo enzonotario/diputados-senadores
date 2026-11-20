@@ -23,6 +23,7 @@ import {
   decodeOgProvincias,
   OG_PROVINCIAS,
 } from "@/lib/og-acta";
+import { OG_PROVINCIA_PATHS } from "@/lib/og-provincias-paths";
 
 const props = withDefaults(
   defineProps<{
@@ -180,7 +181,7 @@ const actaVista = computed(() => (isActa.value ? props.vista : ""));
 const actaTitleLines = computed(() => {
   if (!isActa.value) return [props.title];
   if (actaVista.value === "provincias")
-    return wrapOgActaTitle(props.title, 4, 38);
+    return wrapOgActaTitle(props.title, 4, 32);
   if (actaVista.value) return wrapOgActaTitle(props.title, 2, 58);
   return wrapOgActaTitle(props.title, 3, 58);
 });
@@ -220,7 +221,7 @@ const grupos = computed(() => {
 });
 
 /** Tile map: 5 cols × 9 rows (see `OG_PROVINCIAS`). */
-const TILE = { w: 82, h: 46, gapX: 6, gapY: 6 };
+const TILE = { w: 98, h: 46, gapX: 6, gapY: 6 };
 const tiles = computed(() => {
   if (actaVista.value !== "provincias") return [];
   const data = decodeOgProvincias(props.breakdown);
@@ -236,7 +237,8 @@ const tiles = computed(() => {
       left: p.col * (TILE.w + TILE.gapX),
       top: p.row * (TILE.h + TILE.gapY),
       color,
-      background: rgba(color, top >= 0 ? 0.16 : 0.4),
+      background: rgba(color, top >= 0 ? 0.14 : 0.4),
+      path: OG_PROVINCIA_PATHS[p.abbr] || "",
       segments: segments(counts),
     };
   });
@@ -281,7 +283,7 @@ const tileMapSize = {
       <div
         v-for="tile in tiles"
         :key="tile.abbr"
-        class="absolute flex flex-col justify-between rounded-lg px-2 pb-[6px] pt-1"
+        class="absolute flex items-center gap-[6px] rounded-lg py-[3px] pl-1 pr-2"
         :style="{
           left: `${tile.left}px`,
           top: `${tile.top}px`,
@@ -291,26 +293,40 @@ const tileMapSize = {
           border: `2px solid ${tile.color}`,
         }"
       >
-        <div
-          class="text-[16px] font-extrabold leading-none tracking-wide"
-          :style="{ color: INK }"
+        <!-- Silueta (Terrane, MIT) coloreada por el voto mayoritario -->
+        <svg
+          v-if="tile.path"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="38"
+          height="38"
         >
-          {{ tile.abbr }}
-        </div>
+          <path fill-rule="evenodd" :fill="tile.color" :d="tile.path" />
+        </svg>
         <div
-          class="flex h-[9px] w-full overflow-hidden rounded-full"
-          :style="{ background: '#ffffff' }"
+          class="flex h-full min-w-0 flex-1 flex-col justify-center gap-[6px]"
         >
           <div
-            v-for="seg in tile.segments"
-            :key="seg.key"
-            class="h-full"
-            :style="{
-              flexGrow: seg.count,
-              flexBasis: 0,
-              background: seg.color,
-            }"
-          />
+            class="text-[14px] font-extrabold leading-none tracking-wide"
+            :style="{ color: INK }"
+          >
+            {{ tile.abbr }}
+          </div>
+          <div
+            class="flex h-[7px] w-full overflow-hidden rounded-full"
+            :style="{ background: '#ffffff' }"
+          >
+            <div
+              v-for="seg in tile.segments"
+              :key="seg.key"
+              class="h-full"
+              :style="{
+                flexGrow: seg.count,
+                flexBasis: 0,
+                background: seg.color,
+              }"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -353,7 +369,7 @@ const tileMapSize = {
           v-for="(line, i) in actaTitleLines"
           :key="i"
           class="w-full font-bold leading-[1.18] tracking-tight"
-          :class="tiles.length ? 'text-[28px]' : 'text-[30px]'"
+          :class="tiles.length ? 'text-[26px]' : 'text-[30px]'"
           :style="{ color: INK }"
         >
           {{ line }}

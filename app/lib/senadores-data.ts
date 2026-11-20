@@ -9,10 +9,7 @@ import {
   averagePresentismo,
   buildPresentismoPorPeriodo,
 } from "../utils/presentismo";
-import {
-  getSenadoresAliasMap,
-  votoCoincideConSenador,
-} from "./matchSenadorNombre";
+import { buildSenadorVotoMatcher } from "./matchSenadorNombre";
 import { normalizeResultado, normalizeVotoTipo } from "../utils/votoTipo";
 import {
   matchMemberByPresidenteNombre,
@@ -150,15 +147,25 @@ export function clearSenadoresDataCache() {
   _personalById.clear();
 }
 
-function votoMatchesSenador(voto: Voto, senador: Senador): boolean {
-  return votoCoincideConSenador({
-    votoNombre: voto.senador || "",
-    votoSlug: voto.senadorSlug || "",
-    senadorId: senador.id,
-    senadorNombre: senador.nombre || senador.nombreCompleto || "",
-    senadorSlug: senador.nombreSlug || "",
-    aliasMap: getSenadoresAliasMap(),
-  });
+const _matchers = new WeakMap<
+  Senador[],
+  ReturnType<typeof buildSenadorVotoMatcher>
+>();
+
+/** Índices (en `senadores`) de los senadores que coinciden con el voto. */
+function matchVoto(senadores: Senador[], voto: Voto): number[] {
+  let matcher = _matchers.get(senadores);
+  if (!matcher) {
+    matcher = buildSenadorVotoMatcher(
+      senadores.map((s) => ({
+        id: s.id,
+        nombre: s.nombre || s.nombreCompleto || "",
+        nombreSlug: s.nombreSlug || "",
+      })),
+    );
+    _matchers.set(senadores, matcher);
+  }
+  return matcher(voto.senador || "", voto.senadorSlug || "");
 }
 
 function maxByPeriod(a: any, b: any) {
@@ -534,15 +541,25 @@ export async function getSenadoresConActas(): Promise<Senador[]> {
     const senadores = await getSenadores();
     const actas = await getActas();
 
-    return senadores.map((senador) => {
-      const actasSenador = actas
-        .filter((acta) =>
-          acta.votos.some((v) => votoMatchesSenador(v, senador)),
-        )
-        .map((acta) => {
-          const votoSenador = acta.votos.find((v) =>
-            votoMatchesSenador(v, senador),
-          );
+    // Una pasada por los votos (antes: senadores × actas × votos fuzzy,
+    // ~78M comparaciones síncronas que bloqueaban el event loop minutos).
+    const votosBySenador = senadores.map(
+      () => [] as Array<{ acta: Acta; voto: Voto }>,
+    );
+    for (const acta of actas) {
+      const seen = new Set<number>();
+      for (const v of acta.votos) {
+        for (const i of matchVoto(senadores, v)) {
+          if (seen.has(i)) continue;
+          seen.add(i);
+          votosBySenador[i]!.push({ acta, voto: v });
+        }
+      }
+    }
+
+    return senadores.map((senador, idx) => {
+      const actasSenador = votosBySenador[idx]!.map(
+        ({ acta, voto: votoSenador }) => {
           return {
             id: acta.id,
             titulo: acta.titulo,
@@ -561,7 +578,8 @@ export async function getSenadoresConActas(): Promise<Senador[]> {
             votoSenador,
             tipoVotoSenador: votoSenador?.tipoVoto,
           };
-        });
+        },
+      );
 
       const estadisticas = calcularEstadisticasSenador(actasSenador);
       const estadisticasPorPeriodo = buildPresentismoPorPeriodo(
@@ -621,7 +639,8 @@ export async function getActaWithSenadoresById(
   const senadores = await getSenadores();
 
   const votos = actaById.votos.map((v) => {
-    const matched = senadores.find((s) => votoMatchesSenador(v, s));
+    const first = matchVoto(senadores, v)[0];
+    const matched = first != null ? senadores[first] : undefined;
     const parsed = parseNombreSenador(v.senador);
 
     return {

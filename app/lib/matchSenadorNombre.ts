@@ -70,6 +70,54 @@ export function clearSenadoresAliasMapCache() {
   _aliasMap = null;
 }
 
+/**
+ * Index equivalent to `votoCoincideConSenador` but O(1) per vote: every rule
+ * is a key equality, so senadores are bucketed by key once. Returns indices
+ * into `senadores` in ascending order (same "first match" as `Array.find`).
+ */
+export function buildSenadorVotoMatcher(
+  senadores: Array<{ id: string; nombre: string; nombreSlug: string }>,
+  aliasMap: Map<string, string> = getSenadoresAliasMap(),
+): (votoNombre: string, votoSlug: string) => number[] {
+  const bySlug = new Map<string, number[]>();
+  const byFold = new Map<string, number[]>();
+  const byClave = new Map<string, number[]>();
+  const byId = new Map<string, number[]>();
+  const push = (m: Map<string, number[]>, k: string, i: number) => {
+    const list = m.get(k);
+    if (list) list.push(i);
+    else m.set(k, [i]);
+  };
+
+  senadores.forEach((s, i) => {
+    if (s.nombreSlug) push(bySlug, s.nombreSlug, i);
+    push(byFold, foldNombre(s.nombre), i);
+    const clave = claveApellidoNombre(s.nombre);
+    if (clave) push(byClave, clave, i);
+    push(byId, String(s.id), i);
+  });
+
+  const cache = new Map<string, number[]>();
+  return (votoNombre, votoSlug) => {
+    const cacheKey = `${votoSlug}\u0000${votoNombre}`;
+    const hit = cache.get(cacheKey);
+    if (hit) return hit;
+
+    const folded = foldNombre(votoNombre);
+    const out = new Set<number>();
+    for (const i of (votoSlug && bySlug.get(votoSlug)) || []) out.add(i);
+    for (const i of byFold.get(folded) || []) out.add(i);
+    const aliasId = aliasMap.get(votoNombre) || aliasMap.get(folded);
+    if (aliasId) for (const i of byId.get(aliasId) || []) out.add(i);
+    const clave = claveApellidoNombre(votoNombre);
+    if (clave) for (const i of byClave.get(clave) || []) out.add(i);
+
+    const result = [...out].sort((a, b) => a - b);
+    cache.set(cacheKey, result);
+    return result;
+  };
+}
+
 export function votoCoincideConSenador(options: {
   votoNombre: string;
   votoSlug: string;

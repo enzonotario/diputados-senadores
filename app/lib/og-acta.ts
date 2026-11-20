@@ -55,35 +55,32 @@ function countIndex(tipo?: string | null): number {
   return -1;
 }
 
-/** Abbreviation + tile-map position (col,row), roughly Argentina's shape. */
-export const OG_PROVINCIAS: Record<
-  string,
-  { abbr: string; col: number; row: number }
-> = {
-  jujuy: { abbr: "JUJ", col: 1, row: 0 },
-  salta: { abbr: "SAL", col: 2, row: 0 },
-  formosa: { abbr: "FOR", col: 3, row: 0 },
-  misiones: { abbr: "MIS", col: 4, row: 0 },
-  catamarca: { abbr: "CAT", col: 1, row: 1 },
-  tucuman: { abbr: "TUC", col: 2, row: 1 },
-  chaco: { abbr: "CHA", col: 3, row: 1 },
-  corrientes: { abbr: "COR", col: 4, row: 1 },
-  "san juan": { abbr: "SJU", col: 0, row: 2 },
-  "la rioja": { abbr: "LRJ", col: 1, row: 2 },
-  "santiago del estero": { abbr: "SDE", col: 2, row: 2 },
-  "santa fe": { abbr: "SFE", col: 3, row: 2 },
-  "entre rios": { abbr: "ERI", col: 4, row: 2 },
-  mendoza: { abbr: "MZA", col: 0, row: 3 },
-  "san luis": { abbr: "SLU", col: 1, row: 3 },
-  cordoba: { abbr: "CBA", col: 2, row: 3 },
-  "buenos aires": { abbr: "BUE", col: 3, row: 3 },
-  caba: { abbr: "CABA", col: 4, row: 3 },
-  neuquen: { abbr: "NQN", col: 0, row: 4 },
-  "la pampa": { abbr: "LPA", col: 1, row: 4 },
-  "rio negro": { abbr: "RNE", col: 1, row: 5 },
-  chubut: { abbr: "CHU", col: 1, row: 6 },
-  "santa cruz": { abbr: "SCR", col: 1, row: 7 },
-  "tierra del fuego": { abbr: "TDF", col: 2, row: 8 },
+/** Province key (`provinciaKey`) → short label for the OG grid. */
+export const OG_PROVINCIAS: Record<string, { abbr: string }> = {
+  jujuy: { abbr: "JUJ" },
+  salta: { abbr: "SAL" },
+  formosa: { abbr: "FOR" },
+  misiones: { abbr: "MIS" },
+  catamarca: { abbr: "CAT" },
+  tucuman: { abbr: "TUC" },
+  chaco: { abbr: "CHA" },
+  corrientes: { abbr: "COR" },
+  "san juan": { abbr: "SJU" },
+  "la rioja": { abbr: "LRJ" },
+  "santiago del estero": { abbr: "SDE" },
+  "santa fe": { abbr: "SFE" },
+  "entre rios": { abbr: "ERI" },
+  mendoza: { abbr: "MZA" },
+  "san luis": { abbr: "SLU" },
+  cordoba: { abbr: "CBA" },
+  "buenos aires": { abbr: "BUE" },
+  caba: { abbr: "CABA" },
+  neuquen: { abbr: "NQN" },
+  "la pampa": { abbr: "LPA" },
+  "rio negro": { abbr: "RNE" },
+  chubut: { abbr: "CHU" },
+  "santa cruz": { abbr: "SCR" },
+  "tierra del fuego": { abbr: "TDF" },
 };
 
 type VotoRow = { group: string; provincia: string; tipoVoto: string };

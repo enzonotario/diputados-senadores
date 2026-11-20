@@ -227,32 +227,47 @@ const grupos = computed(() => {
   });
 });
 
-/** Tile map: 5 cols × 9 rows (see `OG_PROVINCIAS`). */
-const TILE = { w: 98, h: 46, gapX: 6, gapY: 6 };
+/**
+ * Province grid: 4 cols × 6 rows, all 24 provinces. Sorted by majority vote
+ * (a favor → en contra → abstención → ausente), then by that vote's share.
+ */
+const TILE = { w: 122, h: 70, gap: 8, cols: 4, rows: 6 };
 const tiles = computed(() => {
   if (actaVista.value !== "provincias") return [];
   const data = decodeOgProvincias(props.breakdown);
-  return Object.values(OG_PROVINCIAS).map((p) => {
-    const counts = data.get(p.abbr) || [0, 0, 0, 0];
-    let top = -1;
-    counts.forEach((n, i) => {
-      if (n > 0 && (top < 0 || n > counts[top]!)) top = i;
-    });
-    const color = top >= 0 ? VOTE_COLORS[VOTE_KEYS[top]!] : "#d1d5db";
-    return {
-      abbr: p.abbr,
-      left: p.col * (TILE.w + TILE.gapX),
-      top: p.row * (TILE.h + TILE.gapY),
-      color,
-      background: rgba(color, top >= 0 ? 0.14 : 0.4),
-      path: OG_PROVINCIA_PATHS[p.abbr] || "",
-      segments: segments(counts),
-    };
-  });
+  return Object.values(OG_PROVINCIAS)
+    .map((p) => {
+      const counts = data.get(p.abbr) || [0, 0, 0, 0];
+      const total = counts.reduce((a, b) => a + b, 0);
+      let top = -1;
+      counts.forEach((n, i) => {
+        if (n > 0 && (top < 0 || n > counts[top]!)) top = i;
+      });
+      return {
+        abbr: p.abbr,
+        top,
+        share: top >= 0 && total ? counts[top]! / total : 0,
+        color: top >= 0 ? VOTE_COLORS[VOTE_KEYS[top]!] : "#d1d5db",
+        path: OG_PROVINCIA_PATHS[p.abbr] || "",
+        segments: segments(counts),
+      };
+    })
+    .sort(
+      (a, b) =>
+        (a.top < 0 ? 9 : a.top) - (b.top < 0 ? 9 : b.top) ||
+        b.share - a.share ||
+        a.abbr.localeCompare(b.abbr),
+    )
+    .map((t, i) => ({
+      ...t,
+      left: (i % TILE.cols) * (TILE.w + TILE.gap),
+      top: Math.floor(i / TILE.cols) * (TILE.h + TILE.gap),
+      background: rgba(t.color, t.top >= 0 ? 0.14 : 0.4),
+    }));
 });
 const tileMapSize = {
-  width: 5 * TILE.w + 4 * TILE.gapX,
-  height: 9 * TILE.h + 8 * TILE.gapY,
+  width: TILE.cols * TILE.w + (TILE.cols - 1) * TILE.gap,
+  height: TILE.rows * TILE.h + (TILE.rows - 1) * TILE.gap,
 };
 </script>
 
@@ -290,7 +305,7 @@ const tileMapSize = {
       <div
         v-for="tile in tiles"
         :key="tile.abbr"
-        class="absolute flex items-center gap-[6px] rounded-lg py-[3px] pl-1 pr-2"
+        class="absolute flex items-center gap-2 rounded-xl py-1 pl-2 pr-[10px]"
         :style="{
           left: `${tile.left}px`,
           top: `${tile.top}px`,
@@ -305,22 +320,20 @@ const tileMapSize = {
           v-if="tile.path"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
-          width="38"
-          height="38"
+          width="48"
+          height="48"
         >
           <path fill-rule="evenodd" :fill="tile.color" :d="tile.path" />
         </svg>
-        <div
-          class="flex h-full min-w-0 flex-1 flex-col justify-center gap-[6px]"
-        >
+        <div class="flex h-full min-w-0 flex-1 flex-col justify-center gap-2">
           <div
-            class="text-[14px] font-extrabold leading-none tracking-wide"
+            class="text-[17px] font-extrabold leading-none tracking-wide"
             :style="{ color: INK }"
           >
             {{ tile.abbr }}
           </div>
           <div
-            class="flex h-[7px] w-full overflow-hidden rounded-full"
+            class="flex h-[10px] w-full overflow-hidden rounded-full"
             :style="{ background: '#ffffff' }"
           >
             <div

@@ -188,7 +188,7 @@ useChamberSeo(() => ({
   title: "Gasto",
   description:
     "Gasto bruto estimado del Senado: personal de bloques, personal de despachos y dietas, según la escala salarial oficial.",
-  og: { kind: "list", eyebrow: "gasto", badge: "Gasto" },
+  og: { kind: "list", summary: "gasto", eyebrow: "gasto", badge: "Gasto" },
 }));
 </script>
 

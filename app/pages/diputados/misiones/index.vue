@@ -245,6 +245,7 @@ useChamberSeo(() => ({
     "Misiones oficiales al exterior de los diputados publicadas por la HCDN.",
   og: {
     kind: "list",
+    summary: "misiones",
     eyebrow: "misiones oficiales",
     badge: "Misiones oficiales",
   },

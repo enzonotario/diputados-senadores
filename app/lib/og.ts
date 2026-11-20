@@ -49,6 +49,40 @@ export type ChamberOgInput = {
   breakdown?: string;
   /** Bloque/partido slug → photo hemiciclo of its active members. */
   group?: string;
+  /** Listing summary key → KPIs + top rows fetched by the OG component. */
+  summary?: OgSummaryKey;
+};
+
+/** Listing-page OG summaries (built in `server/utils/og-summary.ts`). */
+export const OG_SUMMARY_KEYS = [
+  "gasto",
+  "dietas",
+  "viajes",
+  "misiones",
+  "comisiones",
+  "grupos",
+  "miembros",
+  "actas",
+] as const;
+export type OgSummaryKey = (typeof OG_SUMMARY_KEYS)[number];
+
+export type OgSummaryRow = {
+  label: string;
+  sub?: string;
+  value: string;
+  /** 0..1 bar length (relative to the first row or a total). */
+  ratio?: number;
+  color?: string;
+  photo?: string;
+  badge?: string;
+  badgeColor?: string;
+};
+
+export type OgSummary = {
+  /** First KPI is the hero number; the rest render small. */
+  kpis: { label: string; value: string }[];
+  rowsTitle: string;
+  rows: OgSummaryRow[];
 };
 
 /** Props for `Chamber.takumi` — shared by `useChamberSeo` and server patches. */
@@ -78,6 +112,7 @@ export function buildChamberOgProps(input: {
     vista: og?.vista || "",
     breakdown: og?.breakdown || "",
     group: og?.group || "",
+    summary: og?.summary || "",
   };
 }
 

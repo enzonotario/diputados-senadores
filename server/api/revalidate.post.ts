@@ -2,6 +2,7 @@ import { clearDiputadosDataCache } from "../../app/lib/diputados-data";
 import { clearSenadoresDataCache } from "../../app/lib/senadores-data";
 import { CHAMBERS, type ChamberId } from "../../app/lib/chamber";
 import { clearOgHemicicloPhotosCache } from "../utils/og-hemiciclo-photos";
+import { clearOgSummaryCache } from "../utils/og-summary";
 
 type RevalidateBody = {
   /** Si true (default), limpia caches en memoria de actas/miembros. */
@@ -97,6 +98,7 @@ export default defineEventHandler(async (event) => {
     clearSenadoresDataCache();
     clearDiputadosDataCache();
     clearOgHemicicloPhotosCache();
+    clearOgSummaryCache();
   }
 
   const warmResults: Array<{

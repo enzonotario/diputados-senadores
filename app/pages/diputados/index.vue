@@ -114,6 +114,7 @@ useChamberSeo(() => {
       "Conocé a los diputados de la Cámara de Diputados de la Nación Argentina. Historial de votos, presentismo y con quién coinciden.",
     og: {
       kind: "list",
+      summary: "miembros",
       eyebrow: "listado",
       badge: "Diputados",
       hemiciclo: encodeOgHemiciclo(groups),

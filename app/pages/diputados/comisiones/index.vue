@@ -110,7 +110,12 @@ useChamberSeo(() => ({
   title: "Comisiones",
   description:
     "Comisiones de la Cámara de Diputados de la Nación Argentina: integrantes, tipología y diputados que las conforman.",
-  og: { kind: "list", eyebrow: "comisiones", badge: "Comisiones" },
+  og: {
+    kind: "list",
+    summary: "comisiones",
+    eyebrow: "comisiones",
+    badge: "Comisiones",
+  },
 }));
 </script>
 

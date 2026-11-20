@@ -204,7 +204,7 @@ useChamberSeo(() => ({
   title: "Dietas",
   description:
     "Mecanismos sobre la dieta de los senadores: renuncia al aumento, donación y aportes partidarios.",
-  og: { kind: "list", eyebrow: "dietas", badge: "Dietas" },
+  og: { kind: "list", summary: "dietas", eyebrow: "dietas", badge: "Dietas" },
 }));
 </script>
 

@@ -14,7 +14,7 @@ useChamberSeo({
   title: "Votaciones",
   description:
     "Mirá las votaciones de la Cámara de Diputados de la Nación Argentina y cómo votó cada uno.",
-  og: { kind: "list", eyebrow: "actas", badge: "Votaciones" },
+  og: { kind: "list", summary: "actas", eyebrow: "actas", badge: "Votaciones" },
 });
 
 const { filterActas: filterByPeriodo } = usePeriodoFilter();

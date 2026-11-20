@@ -17,7 +17,13 @@ import {
   isOgRecintoHemiciclo,
   layoutOgRecintoHemiciclo,
 } from "@/lib/og-recinto";
-import { decodeOgVotes, OG_BAR_ACCENT, wrapOgActaTitle } from "@/lib/og";
+import {
+  decodeOgVotes,
+  OG_BAR_ACCENT,
+  OG_SUMMARY_KEYS,
+  wrapOgActaTitle,
+  type OgSummary,
+} from "@/lib/og";
 import {
   decodeOgGrupos,
   decodeOgProvincias,
@@ -43,6 +49,7 @@ const props = withDefaults(
     vista?: string;
     breakdown?: string;
     group?: string;
+    summary?: string;
   }>(),
   {
     title: "ArgentinaDatos.com",
@@ -61,6 +68,7 @@ const props = withDefaults(
     vista: "",
     breakdown: "",
     group: "",
+    summary: "",
   },
 );
 
@@ -86,6 +94,40 @@ const VOTE_COLORS = {
 } as const;
 
 const isActa = computed(() => props.kind === "acta");
+
+/**
+ * Listing pages: KPIs + top rows, computed server-side from the RAM data
+ * layer (`/api/og/summary`, memoized). Missing/failed → generic card.
+ */
+async function loadSummary(): Promise<OgSummary | null> {
+  const key = props.summary;
+  if (!(OG_SUMMARY_KEYS as readonly string[]).includes(key)) return null;
+  if (props.chamber !== "diputados" && props.chamber !== "senadores") {
+    return null;
+  }
+  try {
+    return await $fetch<OgSummary>("/api/og/summary", {
+      query: { chamber: props.chamber, key },
+      timeout: 8000,
+    });
+  } catch {
+    return null;
+  }
+}
+const summaryData = await loadSummary();
+const summaryRows = (summaryData?.rows || []).slice(0, 3).map((row) => ({
+  ...row,
+  label:
+    row.label.length > 64 ? `${row.label.slice(0, 63).trimEnd()}…` : row.label,
+  sub:
+    row.sub && row.sub.length > 40
+      ? `${row.sub.slice(0, 39).trimEnd()}…`
+      : row.sub,
+  barWidth: `${Math.max(3, Math.min(1, row.ratio ?? 0) * 100)}%`,
+  barColor: row.color || props.accent,
+}));
+const summaryHero = summaryData?.kpis[0] || null;
+const summaryKpis = (summaryData?.kpis || []).slice(1, 4);
 
 const resolvedLogo = computed(() => {
   const explicit = (props.logoSrc || "").trim();
@@ -573,6 +615,143 @@ const tileMapSize = {
               backgroundColor: seat.color,
             }"
           />
+        </div>
+      </div>
+    </div>
+
+    <!-- Listados: título + KPIs a la izquierda, top 3 a la derecha -->
+    <div
+      v-else-if="summaryData && summaryRows.length"
+      class="relative flex h-full w-full gap-12 pb-[92px] pl-[4.25rem] pr-14 pt-10"
+    >
+      <div class="flex h-full w-[430px] shrink-0 flex-col">
+        <div class="flex items-center gap-4">
+          <img
+            :src="resolvedLogo"
+            :alt="brand"
+            width="64"
+            height="64"
+            class="h-16 w-16 object-contain"
+          />
+          <div
+            v-if="eyebrow"
+            class="text-[22px] font-semibold uppercase tracking-[0.08em]"
+            :style="{ color: `${rgba(INK, 0.6)}` }"
+          >
+            {{ eyebrow }}
+          </div>
+        </div>
+        <div
+          class="mt-6 text-[46px] font-extrabold leading-[1.06] tracking-tight"
+          :style="{ color: INK }"
+        >
+          {{ title }}
+        </div>
+        <div class="mt-auto flex flex-col">
+          <div
+            v-if="summaryHero"
+            class="text-[44px] font-extrabold leading-none tabular-nums"
+            :style="{ color: accent }"
+          >
+            {{ summaryHero.value }}
+          </div>
+          <div
+            v-if="summaryHero"
+            class="mt-2 text-[16px] font-semibold uppercase tracking-[0.06em]"
+            :style="{ color: `${rgba(INK, 0.6)}` }"
+          >
+            {{ summaryHero.label }}
+          </div>
+          <div
+            v-for="kpi in summaryKpis"
+            :key="kpi.label"
+            class="mt-2 flex items-baseline gap-2 text-[18px]"
+            :style="{ color: `${rgba(INK, 0.65)}` }"
+          >
+            <span class="font-semibold">{{ kpi.label }}</span>
+            <span class="font-bold tabular-nums" :style="{ color: INK }">
+              {{ kpi.value }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex h-full min-w-0 flex-1 flex-col justify-center gap-4">
+        <div
+          class="text-[18px] font-semibold uppercase tracking-[0.08em]"
+          :style="{ color: `${rgba(INK, 0.55)}` }"
+        >
+          {{ summaryData.rowsTitle }}
+        </div>
+        <div
+          v-for="(row, i) in summaryRows"
+          :key="i"
+          class="flex w-full items-center gap-4 rounded-2xl px-4 py-3"
+          :style="{
+            background: '#ffffff',
+            border: `2px solid ${rgba(INK, 0.08)}`,
+          }"
+        >
+          <div
+            class="w-[26px] shrink-0 text-[26px] font-extrabold tabular-nums"
+            :style="{ color: `${rgba(INK, 0.35)}` }"
+          >
+            {{ i + 1 }}
+          </div>
+          <img
+            v-if="row.photo"
+            :src="row.photo"
+            :alt="row.label"
+            width="64"
+            height="64"
+            class="h-16 w-16 shrink-0 rounded-full object-cover"
+            :style="{ border: `3px solid ${row.color || rgba(INK, 0.15)}` }"
+          />
+          <div
+            v-else-if="row.color"
+            class="h-6 w-6 shrink-0 rounded-md"
+            :style="{ background: row.color }"
+          />
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <div
+              class="text-[21px] font-bold leading-[1.15]"
+              :style="{ color: INK }"
+            >
+              {{ row.label }}
+            </div>
+            <div class="flex items-center gap-3">
+              <div
+                v-if="row.badge"
+                class="rounded-full px-3 py-[2px] text-[14px] font-bold text-white"
+                :style="{ background: row.badgeColor || accent }"
+              >
+                {{ row.badge }}
+              </div>
+              <div
+                v-if="row.sub"
+                class="text-[16px] font-medium"
+                :style="{ color: `${rgba(INK, 0.6)}` }"
+              >
+                {{ row.sub }}
+              </div>
+            </div>
+            <div
+              v-if="row.ratio != null"
+              class="mt-1 flex h-[8px] w-full overflow-hidden rounded-full"
+              :style="{ background: rgba(INK, 0.06) }"
+            >
+              <div
+                class="h-full rounded-full"
+                :style="{ width: row.barWidth, background: row.barColor }"
+              />
+            </div>
+          </div>
+          <div
+            class="shrink-0 text-[22px] font-extrabold tabular-nums"
+            :style="{ color: INK }"
+          >
+            {{ row.value }}
+          </div>
         </div>
       </div>
     </div>

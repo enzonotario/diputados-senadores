@@ -191,7 +191,7 @@ function onNacSelect(
 useChamberSeo(() => ({
   title: "Viajes",
   description: "Viajes nacionales de los diputados publicados por la HCDN.",
-  og: { kind: "list", eyebrow: "viajes", badge: "Viajes" },
+  og: { kind: "list", summary: "viajes", eyebrow: "viajes", badge: "Viajes" },
 }));
 </script>
 

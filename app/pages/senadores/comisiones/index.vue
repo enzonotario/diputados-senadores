@@ -110,7 +110,12 @@ useChamberSeo(() => ({
   title: "Comisiones",
   description:
     "Comisiones del Senado de la Nación Argentina: integrantes, tipología y senadores que las conforman.",
-  og: { kind: "list", eyebrow: "comisiones", badge: "Comisiones" },
+  og: {
+    kind: "list",
+    summary: "comisiones",
+    eyebrow: "comisiones",
+    badge: "Comisiones",
+  },
 }));
 </script>
 

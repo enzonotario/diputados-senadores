@@ -156,7 +156,7 @@ useChamberSeo({
   title: "Bloques",
   description:
     "Explorá los bloques políticos activos de la Cámara de Diputados, quiénes los integran y cuánto asisten a votar.",
-  og: { kind: "list", eyebrow: "bloques", badge: "Bloques" },
+  og: { kind: "list", summary: "grupos", eyebrow: "bloques", badge: "Bloques" },
 });
 </script>
 

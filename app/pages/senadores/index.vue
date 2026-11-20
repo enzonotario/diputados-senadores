@@ -121,6 +121,7 @@ useChamberSeo(() => {
       "Conocé a los senadores del Senado de la Nación Argentina. Historial de votos, presentismo y con quién coinciden.",
     og: {
       kind: "list",
+      summary: "miembros",
       eyebrow: "listado",
       badge: "Senadores",
       hemiciclo: encodeOgHemiciclo(groups),

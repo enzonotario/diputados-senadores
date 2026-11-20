@@ -108,5 +108,6 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
     vista: prop("vista"),
     breakdown: prop("breakdown"),
     group: prop("group"),
+    summary: prop("summary"),
   });
 }

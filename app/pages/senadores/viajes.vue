@@ -267,7 +267,7 @@ useChamberSeo(() => ({
   title: "Viajes",
   description:
     "Viajes nacionales e internacionales declarados por los senadores.",
-  og: { kind: "list", eyebrow: "viajes", badge: "Viajes" },
+  og: { kind: "list", summary: "viajes", eyebrow: "viajes", badge: "Viajes" },
 }));
 </script>
 

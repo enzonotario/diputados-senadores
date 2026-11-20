@@ -93,12 +93,8 @@ function curl(url, host) {
 
 function extractOgImage(html) {
   const m =
-    html.match(
-      /property=["']og:image["']\s+content=["']([^"']+)["']/i,
-    ) ||
-    html.match(
-      /content=["']([^"']+)["']\s+property=["']og:image["']/i,
-    );
+    html.match(/property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+    html.match(/content=["']([^"']+)["']\s+property=["']og:image["']/i);
   return m?.[1] || "";
 }
 
@@ -216,7 +212,9 @@ function main() {
       const down = /Failed to connect|Empty reply|Connection refused/i.test(
         msg,
       );
-      process.stderr.write(timedOut ? "timeout\n" : down ? "down\n" : "error\n");
+      process.stderr.write(
+        timedOut ? "timeout\n" : down ? "down\n" : "error\n",
+      );
       printItem(n, sample, {
         error: down
           ? "dev server no responde — corré pnpm dev"

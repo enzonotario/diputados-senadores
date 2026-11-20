@@ -1,8 +1,4 @@
-import {
-  parseSiteId,
-  SITES,
-  type SiteId,
-} from "./app/lib/chamber";
+import { parseSiteId, SITES, type SiteId } from "./app/lib/chamber";
 import {
   ACTAS_SSG_YEARS,
   collectSitePrerenderRoutes,
@@ -28,8 +24,7 @@ const dockerBuild = process.env.DOCKER_BUILD === "1";
 /** CDN/browser: HTML SSR “casi eterno” hasta el próximo deploy (+ purge CF). */
 const ssrLongCache = {
   headers: {
-    "cache-control":
-      "public, max-age=31536000, stale-while-revalidate=86400",
+    "cache-control": "public, max-age=31536000, stale-while-revalidate=86400",
   },
 } as const;
 
@@ -256,9 +251,10 @@ export default defineNuxtConfig({
         process.env.NUXT_PUBLIC_API_BASE_URL ||
         "https://api.argentinadatos.com",
       /** Base de la mini-API (`/api/*`). Vacío = same-origin. */
-      appApiBaseUrl: (
-        process.env.NUXT_PUBLIC_APP_API_BASE_URL || ""
-      ).replace(/\/$/, ""),
+      appApiBaseUrl: (process.env.NUXT_PUBLIC_APP_API_BASE_URL || "").replace(
+        /\/$/,
+        "",
+      ),
     },
   },
 

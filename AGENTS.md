@@ -62,7 +62,9 @@ En **cada** app (diputados / senadores / congreso):
 1. **Rolling Updates: ON** (Advanced / General). Requiere healthcheck válido y **nombre de contenedor por defecto** (sin custom name). Sin port mapping al host.
 2. **Healthcheck: ON**
    - Path: `/api/health`
-   - Port: `3000` (el de la app, no 80)
+   - Port: `80` (= `ports_exposes` de la app en Coolify; Traefik apunta ahí)
+   - Start period: `40`, interval `10`, retries `3`
+   - Sin healthcheck Coolify **no** hace rolling: para el viejo antes de levantar el nuevo → 503 de 10–40 s en cada deploy.
    - Expected status: `200`
    - Host: `localhost` (Coolify lo exige)
 3. Build pack = **Dockerfile thin** de la raíz (solo pull), no `Dockerfile.build` en el VPS.

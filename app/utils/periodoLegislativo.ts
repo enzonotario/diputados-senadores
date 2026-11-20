@@ -377,7 +377,7 @@ export function normalizePeriodoKeys(periodo: unknown): string[] {
 export function routeUsesPeriodoQuery(path: string): boolean {
   const p = (path.split("?")[0] || "/").replace(/\/+$/, "") || "/";
 
-  if (p === "/") return true;
+  // `/` (home) siempre muestra el período vigente: no usa `?periodo=`.
   if (p === "/actas") return true;
   if (p === "/diputados" || p === "/senadores") return true;
   if (p === "/diputados/bloques" || p === "/senadores/partidos") return true;

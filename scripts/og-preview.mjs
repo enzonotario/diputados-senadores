@@ -37,6 +37,26 @@ const SAMPLES = [
   },
   {
     chamber: "diputados",
+    label: "Acta por bloque",
+    path: "/actas/5959?vista=bloques",
+  },
+  {
+    chamber: "diputados",
+    label: "Acta por provincia",
+    path: "/actas/5959?vista=provincias",
+  },
+  {
+    chamber: "diputados",
+    label: "Acta por tipo de voto",
+    path: "/actas/5959?vista=resultados",
+  },
+  {
+    chamber: "diputados",
+    label: "Diputado ejemplo",
+    path: "/diputados/HCDN3181",
+  },
+  {
+    chamber: "diputados",
     label: "Bloque LLA",
     path: "/diputados/bloques/la-libertad-avanza",
   },
@@ -47,7 +67,22 @@ const SAMPLES = [
     label: "Acta afirmativa",
     path: "/actas/2618",
   },
+  {
+    chamber: "senadores",
+    label: "Acta por partido",
+    path: "/actas/2618?vista=partidos",
+  },
+  {
+    chamber: "senadores",
+    label: "Acta por provincia",
+    path: "/actas/2618?vista=provincias",
+  },
   { chamber: "senadores", label: "Senador ejemplo", path: "/senadores/578" },
+  {
+    chamber: "senadores",
+    label: "Partido JxC",
+    path: "/senadores/partidos/juntos-por-el-cambio",
+  },
   { chamber: "senadores", label: "Partidos", path: "/senadores/partidos" },
 ];
 

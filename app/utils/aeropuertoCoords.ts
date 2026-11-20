@@ -10,7 +10,12 @@ export type AeropuertoPunto = {
 };
 
 const BY_CODE: Record<string, AeropuertoPunto> = {
-  AEP: { code: "AEP", label: "Buenos Aires (Aeroparque)", lon: -58.4156, lat: -34.5592 },
+  AEP: {
+    code: "AEP",
+    label: "Buenos Aires (Aeroparque)",
+    lon: -58.4156,
+    lat: -34.5592,
+  },
   EZE: { code: "EZE", label: "Ezeiza", lon: -58.5358, lat: -34.8222 },
   BUE: { code: "BUE", label: "Buenos Aires", lon: -58.45, lat: -34.6 },
   MDZ: { code: "MDZ", label: "Mendoza", lon: -68.7958, lat: -32.8317 },
@@ -22,7 +27,12 @@ const BY_CODE: Record<string, AeropuertoPunto> = {
   JUJ: { code: "JUJ", label: "Jujuy", lon: -65.0978, lat: -24.3928 },
   IRJ: { code: "IRJ", label: "La Rioja", lon: -66.7958, lat: -29.3816 },
   CTC: { code: "CTC", label: "Catamarca", lon: -65.7517, lat: -28.5956 },
-  SDE: { code: "SDE", label: "Santiago del Estero", lon: -64.3113, lat: -27.7656 },
+  SDE: {
+    code: "SDE",
+    label: "Santiago del Estero",
+    lon: -64.3113,
+    lat: -27.7656,
+  },
   RES: { code: "RES", label: "Resistencia", lon: -59.0561, lat: -27.45 },
   CNQ: { code: "CNQ", label: "Corrientes", lon: -58.7619, lat: -27.4455 },
   FMA: { code: "FMA", label: "Formosa", lon: -58.2281, lat: -26.2127 },
@@ -39,8 +49,18 @@ const BY_CODE: Record<string, AeropuertoPunto> = {
   RSA: { code: "RSA", label: "Santa Rosa", lon: -64.2753, lat: -36.5883 },
   REL: { code: "REL", label: "Trelew", lon: -65.2703, lat: -43.2105 },
   BRC: { code: "BRC", label: "Bariloche", lon: -71.1395, lat: -41.1512 },
-  CPC: { code: "CPC", label: "San Martín de los Andes", lon: -71.139, lat: -40.0754 },
-  CRD: { code: "CRD", label: "Comodoro Rivadavia", lon: -67.4655, lat: -45.7853 },
+  CPC: {
+    code: "CPC",
+    label: "San Martín de los Andes",
+    lon: -71.139,
+    lat: -40.0754,
+  },
+  CRD: {
+    code: "CRD",
+    label: "Comodoro Rivadavia",
+    lon: -67.4655,
+    lat: -45.7853,
+  },
   RGL: { code: "RGL", label: "Río Gallegos", lon: -69.3126, lat: -51.6089 },
   RGA: { code: "RGA", label: "Río Grande", lon: -67.7494, lat: -53.7777 },
   USH: { code: "USH", label: "Ushuaia", lon: -68.2956, lat: -54.8433 },
@@ -55,7 +75,12 @@ const BY_CODE: Record<string, AeropuertoPunto> = {
   RCU: { code: "RCU", label: "Río Cuarto", lon: -64.2615, lat: -33.085 },
   RCQ: { code: "RCQ", label: "Reconquista", lon: -59.6125, lat: -29.2103 },
   RLO: { code: "RLO", label: "Merlo", lon: -65.1833, lat: -32.35 },
-  OES: { code: "OES", label: "San Antonio Oeste", lon: -64.9514, lat: -40.7512 },
+  OES: {
+    code: "OES",
+    label: "San Antonio Oeste",
+    lon: -64.9514,
+    lat: -40.7512,
+  },
   GPO: { code: "GPO", label: "General Pico", lon: -63.7564, lat: -35.6961 },
 };
 

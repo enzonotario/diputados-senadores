@@ -6,7 +6,10 @@ export default defineEventHandler(async (event) => {
   }
   const comision = await buildComisionById(chamber, id);
   if (!comision) {
-    throw createError({ statusCode: 404, statusMessage: "Comisión no encontrada" });
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Comisión no encontrada",
+    });
   }
   return comision;
 });

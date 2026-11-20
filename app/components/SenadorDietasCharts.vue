@@ -179,10 +179,7 @@ const overviewOption = computed(() => {
   };
 });
 
-function onPieClick(
-  field: "donacion" | "renuncia" | "aportes",
-  params: any,
-) {
+function onPieClick(field: "donacion" | "renuncia" | "aportes", params: any) {
   const name = String(params?.name || "");
   if (name === "Sí") emit("select", field, "si");
   else if (name === "No") emit("select", field, "no");

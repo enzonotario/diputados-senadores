@@ -34,8 +34,8 @@ const { otherChamber, otherChamberUrl } = useChamber();
         También explorá {{ otherChamber.siteName }}
       </h2>
       <p class="text-muted max-w-xl mx-auto text-sm sm:text-base">
-        También podés ver cómo votan, quiénes son y cómo se agrupan
-        en {{ otherChamber.bodyName }}.
+        También podés ver cómo votan, quiénes son y cómo se agrupan en
+        {{ otherChamber.bodyName }}.
       </p>
     </div>
 

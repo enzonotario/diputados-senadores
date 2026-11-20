@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { bloquePath } from "@/utils/bloque";
 import { partidoPath } from "@/utils/partido";
-import {
-  RECINTO_SEATS,
-  RECINTO_VIEWBOX,
-} from "@/lib/diputados-recinto-layout";
+import { RECINTO_SEATS, RECINTO_VIEWBOX } from "@/lib/diputados-recinto-layout";
 
 /** Miembro mínimo para hemiciclo (diputado o senador). */
 export type HemicicloMember = {
@@ -33,7 +30,8 @@ const props = withDefaults(
     /** Presidente de la sesión: asiento en el centro del hemiciclo. */
     president?: HemicicloMember | null;
     groupColors: Record<string, string>;
-    groupBy?: "bloque" | "partido" | "tipoVoto" | ((d: HemicicloMember) => string);
+    groupBy?:
+      "bloque" | "partido" | "tipoVoto" | ((d: HemicicloMember) => string);
     groupOrder?: string[];
     groupLabel?: (key: string) => string;
     clickable?: boolean;
@@ -281,8 +279,7 @@ const geom = computed(() => {
   const bottomPad = maxDot + 18 + labelBlock;
   const cy = H - bottomPad;
 
-  const angleMargin =
-    (((desktop ? (compact ? 6 : 4) : 8) * Math.PI) / 180);
+  const angleMargin = ((desktop ? (compact ? 6 : 4) : 8) * Math.PI) / 180;
   const aLeft = Math.PI - angleMargin;
   const aRight = angleMargin;
   const sweep = aLeft - aRight;
@@ -800,7 +797,10 @@ function seatNombre(m: HemicicloMember): string {
 function clipSeatLabel(text: string): string {
   const font = Math.max(7, DOT_R.value * 0.42);
   // Caber en el pitch tangencial (con un poco de margen entre vecinos).
-  const max = Math.max(4, Math.floor((geom.value.pitch * 0.85) / (font * 0.55)));
+  const max = Math.max(
+    4,
+    Math.floor((geom.value.pitch * 0.85) / (font * 0.55)),
+  );
   const t = text.trim();
   if (t.length <= max) return t;
   return `${t.slice(0, Math.max(1, max - 1))}…`;
@@ -832,17 +832,10 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
         />
 
         <defs>
-          <clipPath
-            v-for="(p, i) in puntos"
-            :id="clipId(i)"
-            :key="clipId(i)"
-          >
+          <clipPath v-for="(p, i) in puntos" :id="clipId(i)" :key="clipId(i)">
             <circle :cx="p.x" :cy="p.y" :r="DOT_R - 1" />
           </clipPath>
-          <clipPath
-            v-if="presidentSeat"
-            :id="clipId('president')"
-          >
+          <clipPath v-if="presidentSeat" :id="clipId('president')">
             <circle
               :cx="presidentSeat.x"
               :cy="presidentSeat.y"
@@ -889,12 +882,7 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
           @mouseenter="onEnter(p)"
           @click="onClick(p.member)"
         >
-          <circle
-            :cx="p.x"
-            :cy="p.y"
-            :r="DOT_R"
-            :fill="colorFor(p.member)"
-          />
+          <circle :cx="p.x" :cy="p.y" :r="DOT_R" :fill="colorFor(p.member)" />
           <text
             v-if="p.vacant || !showPhotos || !p.member.foto"
             :x="p.x"
@@ -929,9 +917,7 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
             pointer-events="none"
           />
           <text
-            v-if="
-              !p.vacant && showSeatApellidos && seatApellido(p.member)
-            "
+            v-if="!p.vacant && showSeatApellidos && seatApellido(p.member)"
             :x="p.x"
             :y="p.y + DOT_R + seatLabelFontSize * 0.95"
             text-anchor="middle"
@@ -1040,8 +1026,7 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
           :cx="tooltip.x"
           :cy="tooltip.y"
           :r="
-            presidentSeat &&
-            tooltip.member.id === presidentSeat.member.id
+            presidentSeat && tooltip.member.id === presidentSeat.member.id
               ? presidentDotR + 4
               : DOT_R + 4
           "
@@ -1170,7 +1155,9 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
           :to="groupTo(group)!"
           class="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition-opacity hover:underline underline-offset-2"
           :class="
-            hoveredGroup && hoveredGroup !== group ? 'opacity-40' : 'opacity-100'
+            hoveredGroup && hoveredGroup !== group
+              ? 'opacity-40'
+              : 'opacity-100'
           "
           @mouseenter="onLegendEnter(group)"
           @mouseleave="onLegendLeave"
@@ -1190,7 +1177,9 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
           v-else
           class="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition-opacity"
           :class="
-            hoveredGroup && hoveredGroup !== group ? 'opacity-40' : 'opacity-100'
+            hoveredGroup && hoveredGroup !== group
+              ? 'opacity-40'
+              : 'opacity-100'
           "
           @mouseenter="onLegendEnter(group)"
           @mouseleave="onLegendLeave"

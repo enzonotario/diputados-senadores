@@ -35,14 +35,21 @@ import {
   getActaWithSenadoresById,
 } from "../../app/lib/senadores-data";
 import type { SlimAffinityPeer } from "../../app/lib/payload-slim";
-import { slimActas, slimMemberStats, slimMembersStats } from "../../app/lib/payload-slim";
+import {
+  slimActas,
+  slimMemberStats,
+  slimMembersStats,
+} from "../../app/lib/payload-slim";
 import {
   formatDate,
   isDiputadoActivo,
   isSenadorActivo,
 } from "../../app/lib/utils";
 import { bloquePath } from "../../app/utils/bloque";
-import { comisionPath, sortComisionIntegrantes } from "../../app/utils/comision";
+import {
+  comisionPath,
+  sortComisionIntegrantes,
+} from "../../app/utils/comision";
 import { partidoPath } from "../../app/utils/partido";
 import {
   memberActasInWindow,
@@ -99,12 +106,14 @@ function sortActasByFechaDesc<T extends { fecha?: string | null }>(list: T[]) {
 
 export async function buildSearchCatalog(chamber: ChamberId) {
   if (chamber === "diputados") {
-    const [diputados, bloques, listaActas, listaComisiones] = await Promise.all([
-      getDiputados(),
-      getBloqueSlugs(),
-      getActasDiputados(),
-      getDiputadoComisiones(),
-    ]);
+    const [diputados, bloques, listaActas, listaComisiones] = await Promise.all(
+      [
+        getDiputados(),
+        getBloqueSlugs(),
+        getActasDiputados(),
+        getDiputadoComisiones(),
+      ],
+    );
 
     const members: SearchCatalogItem[] = [...diputados]
       .sort((a, b) => {
@@ -242,33 +251,29 @@ export async function buildAffinityPeers(
 ): Promise<{ chamber: ChamberId; peers: AffinityPeerDto[] }> {
   if (chamber === "diputados") {
     const all = await getDiputadosConActas();
-    const peers: AffinityPeerDto[] = all
-      .filter(isDiputadoActivo)
-      .map((d) => ({
-        id: d.id,
-        name:
-          d.nombreCompleto ||
-          `${d.apellido}, ${d.nombre}` ||
-          `${d.nombre} ${d.apellido}`,
-        group: d.bloque,
-        foto: d.foto,
-        votes: memberActasInWindow(votesFromDiputado(d)),
-        activo: true,
-      }));
+    const peers: AffinityPeerDto[] = all.filter(isDiputadoActivo).map((d) => ({
+      id: d.id,
+      name:
+        d.nombreCompleto ||
+        `${d.apellido}, ${d.nombre}` ||
+        `${d.nombre} ${d.apellido}`,
+      group: d.bloque,
+      foto: d.foto,
+      votes: memberActasInWindow(votesFromDiputado(d)),
+      activo: true,
+    }));
     return { chamber, peers };
   }
 
   const all = await getSenadoresConActas();
-  const peers: AffinityPeerDto[] = all
-    .filter(isSenadorActivo)
-    .map((s) => ({
-      id: s.id,
-      name: s.nombreCompleto || s.nombre,
-      group: s.bloque || s.partido,
-      foto: s.foto,
-      votes: memberActasInWindow(votesFromSenador(s)),
-      activo: true,
-    }));
+  const peers: AffinityPeerDto[] = all.filter(isSenadorActivo).map((s) => ({
+    id: s.id,
+    name: s.nombreCompleto || s.nombre,
+    group: s.bloque || s.partido,
+    foto: s.foto,
+    votes: memberActasInWindow(votesFromSenador(s)),
+    activo: true,
+  }));
   return { chamber, peers };
 }
 
@@ -829,4 +834,3 @@ export async function buildComisionById(chamber: ChamberId, id: string) {
     integrantes,
   };
 }
-

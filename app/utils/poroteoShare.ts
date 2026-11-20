@@ -20,7 +20,9 @@ export type PoroteoSharePayloadV1 = {
 /** Query param del poroteo comprimido (lz-string URI-safe). */
 export const POROTEO_SHARE_QUERY = "s";
 
-export function votesToSharePayload(votes: PoroteoVotes): PoroteoSharePayloadV1 {
+export function votesToSharePayload(
+  votes: PoroteoVotes,
+): PoroteoSharePayloadV1 {
   const a: string[] = [];
   const n: string[] = [];
   const b: string[] = [];

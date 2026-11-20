@@ -44,9 +44,7 @@ const useRecinto = computed(
   >
     <template #header>
       <div>
-        <h2 class="text-2xl font-bold text-center">
-          La Cámara hoy
-        </h2>
+        <h2 class="text-2xl font-bold text-center">La Cámara hoy</h2>
         <p class="mt-1 text-center text-sm text-gray-600 dark:text-gray-400">
           <template v-if="useRecinto">
             {{ diputados.length }} diputados en el recinto ·

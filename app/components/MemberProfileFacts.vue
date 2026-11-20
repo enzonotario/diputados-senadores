@@ -53,9 +53,7 @@ const visibleSections = computed(() =>
               class="hover:underline font-medium"
               :target="item.href.startsWith('http') ? '_blank' : undefined"
               :rel="
-                item.href.startsWith('http')
-                  ? 'noopener noreferrer'
-                  : undefined
+                item.href.startsWith('http') ? 'noopener noreferrer' : undefined
               "
             >
               {{ item.value }}

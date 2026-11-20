@@ -31,9 +31,7 @@ const unitedCount = computed(
   () => rows.value.filter((r) => r.united && r.total > 0).length,
 );
 
-const title = computed(
-  () => `Comparación de votos por ${props.groupNoun}`,
-);
+const title = computed(() => `Comparación de votos por ${props.groupNoun}`);
 
 const description = computed(() => {
   const n = rows.value.length;

@@ -36,9 +36,7 @@ function clipSouthOf(geometry: any, minLat = CLIP_MIN_LAT): any {
     const coords = (geometry.coordinates || [])
       .map((poly: number[][][]) => poly.filter(ringOk))
       .filter((poly: number[][][]) => poly.length > 0);
-    return coords.length
-      ? { type: "MultiPolygon", coordinates: coords }
-      : null;
+    return coords.length ? { type: "MultiPolygon", coordinates: coords } : null;
   }
 
   return geometry;

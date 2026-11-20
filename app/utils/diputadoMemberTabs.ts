@@ -1,11 +1,7 @@
 import type { TabsItem } from "@nuxt/ui";
 
 export type DiputadoMemberTab =
-  | "votaciones"
-  | "afinidad"
-  | "viajes"
-  | "misiones"
-  | "comisiones";
+  "votaciones" | "afinidad" | "viajes" | "misiones" | "comisiones";
 
 export function diputadoMemberBasePath(id: string | number) {
   return `/diputados/${id}`;

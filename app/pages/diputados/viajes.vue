@@ -216,10 +216,7 @@ useChamberSeo(() => ({
 
     <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
 
-    <div
-      v-if="!pending && data"
-      class="grid grid-cols-2 sm:grid-cols-2 gap-3"
-    >
+    <div v-if="!pending && data" class="grid grid-cols-2 sm:grid-cols-2 gap-3">
       <div class="rounded-lg border border-default p-3">
         <p class="text-xs text-muted">Nacionales</p>
         <p class="text-2xl font-semibold tabular-nums">
@@ -281,7 +278,8 @@ useChamberSeo(() => ({
             <SenadorTableAvatar
               :src="(row.original as DiputadosViajesExploreRankingRow).foto"
               :alt="
-                (row.original as DiputadosViajesExploreRankingRow).nombreCompleto
+                (row.original as DiputadosViajesExploreRankingRow)
+                  .nombreCompleto
               "
             />
           </template>

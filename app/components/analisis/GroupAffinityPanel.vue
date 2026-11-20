@@ -68,8 +68,7 @@ const quorumRows = computed(() =>
 );
 
 const hasData = computed(
-  () =>
-    affinity.value.allies.length > 0 || affinity.value.opponents.length > 0,
+  () => affinity.value.allies.length > 0 || affinity.value.opponents.length > 0,
 );
 
 function groupTo(pair: InterGroupPair) {

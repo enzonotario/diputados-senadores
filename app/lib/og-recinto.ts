@@ -1,7 +1,4 @@
-import {
-  RECINTO_SEATS,
-  RECINTO_VIEWBOX,
-} from "./diputados-recinto-layout";
+import { RECINTO_SEATS, RECINTO_VIEWBOX } from "./diputados-recinto-layout";
 import type { OgHemicicloLayout, OgHemicicloSeat } from "./hemiciclo-layout";
 import { getVotoTipoConfig, normalizeVotoTipo } from "../utils/votoTipo";
 
@@ -29,7 +26,9 @@ const CHAR_TO_COLOR: Record<string, string> = {
 };
 
 export function isOgRecintoHemiciclo(raw?: string | null): boolean {
-  return String(raw || "").trim().startsWith(OG_RECINTO_PREFIX);
+  return String(raw || "")
+    .trim()
+    .startsWith(OG_RECINTO_PREFIX);
 }
 
 /** Un carácter por banca del recinto (orden de `RECINTO_SEATS`). */

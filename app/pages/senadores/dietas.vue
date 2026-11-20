@@ -299,9 +299,7 @@ useChamberSeo(() => ({
         </template>
         <template v-else-if="vista === 'provincias'">
           · {{ groupsByProvincia.length }}
-          {{
-            groupsByProvincia.length === 1 ? "provincia" : "provincias"
-          }}
+          {{ groupsByProvincia.length === 1 ? "provincia" : "provincias" }}
         </template>
       </p>
 
@@ -361,14 +359,12 @@ useChamberSeo(() => ({
           <template #donacion-cell="{ row }">
             <UBadge
               :color="
-                boolBadge((row.original as Senador).meta?.dieta?.donacion)
-                  .color
+                boolBadge((row.original as Senador).meta?.dieta?.donacion).color
               "
               variant="soft"
             >
               {{
-                boolBadge((row.original as Senador).meta?.dieta?.donacion)
-                  .label
+                boolBadge((row.original as Senador).meta?.dieta?.donacion).label
               }}
             </UBadge>
           </template>

@@ -1,8 +1,5 @@
 import type { H3Event } from "h3";
-import {
-  resolveChamberFromHost,
-  type ChamberId,
-} from "../../app/lib/chamber";
+import { resolveChamberFromHost, type ChamberId } from "../../app/lib/chamber";
 
 function asChamberId(raw: unknown): ChamberId | null {
   const v = String(raw || "")

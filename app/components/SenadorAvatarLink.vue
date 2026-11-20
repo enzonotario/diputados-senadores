@@ -80,10 +80,7 @@ const hasVoto = computed(() => Boolean(props.senador.tipoVoto));
           <p class="text-sm font-semibold leading-snug text-highlighted">
             {{ fullName }}
           </p>
-          <p
-            v-if="senador.partido"
-            class="text-xs leading-snug text-toned"
-          >
+          <p v-if="senador.partido" class="text-xs leading-snug text-toned">
             <NuxtLink
               v-if="partidoPath(senador.partido)"
               :to="partidoPath(senador.partido)!"
@@ -94,10 +91,7 @@ const hasVoto = computed(() => Boolean(props.senador.tipoVoto));
             </NuxtLink>
             <template v-else>{{ senador.partido }}</template>
           </p>
-          <p
-            v-if="senador.provincia"
-            class="text-xs leading-snug text-muted"
-          >
+          <p v-if="senador.provincia" class="text-xs leading-snug text-muted">
             {{ senador.provincia }}
           </p>
           <div
@@ -109,10 +103,7 @@ const hasVoto = computed(() => Boolean(props.senador.tipoVoto));
               class="size-4 shrink-0"
               :class="voto.iconClass"
             />
-            <span
-              class="text-xs font-medium"
-              :class="voto.textClass"
-            >
+            <span class="text-xs font-medium" :class="voto.textClass">
               {{ voto.label }}
             </span>
           </div>

@@ -24,10 +24,7 @@ export default defineNuxtRouteMiddleware((to) => {
 
   if (!isChamberId(id.value)) return;
 
-  const rewritten = rewritePathForChamber(
-    to.fullPath,
-    id.value as ChamberId,
-  );
+  const rewritten = rewritePathForChamber(to.fullPath, id.value as ChamberId);
   if (rewritten && rewritten !== to.fullPath) {
     return navigateTo(rewritten, { redirectCode: 302 });
   }

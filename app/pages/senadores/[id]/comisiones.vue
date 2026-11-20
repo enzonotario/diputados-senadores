@@ -42,9 +42,5 @@ useChamberSeo(() => {
 </script>
 
 <template>
-  <SenadorComisionesCard
-    v-if="senador"
-    :comisiones="comisiones"
-    show-empty
-  />
+  <SenadorComisionesCard v-if="senador" :comisiones="comisiones" show-empty />
 </template>

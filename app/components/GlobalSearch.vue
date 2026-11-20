@@ -233,14 +233,8 @@ const placeholder = computed(
         v-if="(item as SearchItem).resultado"
         class="flex items-center gap-1.5 min-w-0"
       >
-        <ResultadoBadge
-          :resultado="(item as SearchItem).resultado"
-          size="sm"
-        />
-        <span
-          v-if="(item as SearchItem).proyecto"
-          class="truncate text-muted"
-        >
+        <ResultadoBadge :resultado="(item as SearchItem).resultado" size="sm" />
+        <span v-if="(item as SearchItem).proyecto" class="truncate text-muted">
           {{ (item as SearchItem).proyecto }}
         </span>
       </div>

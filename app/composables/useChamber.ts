@@ -99,8 +99,7 @@ export function useChamber() {
     const path = router.currentRoute.value.path;
     const rewritten = rewritePathForChamber(path, otherId.value);
     const targetPath =
-      rewritten ||
-      (path === "/" || path.startsWith("/actas") ? path : "/");
+      rewritten || (path === "/" || path.startsWith("/actas") ? path : "/");
     return buildChamberAbsoluteUrl(otherId.value, {
       ...currentLocation(),
       path: targetPath,

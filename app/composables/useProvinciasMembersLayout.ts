@@ -3,7 +3,11 @@
  * (listados de miembros y detalle de acta).
  */
 export function useProvinciasMembersLayout() {
-  return useLocalStorage<"tabla" | "grid">("provincias-members-layout", "tabla", {
-    initOnMounted: true,
-  });
+  return useLocalStorage<"tabla" | "grid">(
+    "provincias-members-layout",
+    "tabla",
+    {
+      initOnMounted: true,
+    },
+  );
 }

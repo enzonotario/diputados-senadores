@@ -283,10 +283,7 @@ useChamberSeo(() => ({
 
     <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
 
-    <div
-      v-if="!pending && data"
-      class="grid grid-cols-2 sm:grid-cols-4 gap-3"
-    >
+    <div v-if="!pending && data" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div class="rounded-lg border border-default p-3">
         <p class="text-xs text-muted">Total viajes</p>
         <p class="text-2xl font-semibold tabular-nums">{{ stats.total }}</p>
@@ -348,16 +345,11 @@ useChamberSeo(() => ({
       </p>
       <p v-else class="text-sm text-muted">
         {{ internacionalesDisplayed.length }}
-        {{
-          internacionalesDisplayed.length === 1 ? "viaje" : "viajes"
-        }}
+        {{ internacionalesDisplayed.length === 1 ? "viaje" : "viajes" }}
         internacionales
       </p>
 
-      <DataTableCard
-        v-if="vista === 'ranking'"
-        :show-periodo-badge="false"
-      >
+      <DataTableCard v-if="vista === 'ranking'" :show-periodo-badge="false">
         <UTable
           v-model:sorting="sortingRanking"
           :data="rankingDisplayed"
@@ -383,8 +375,12 @@ useChamberSeo(() => ({
           </template>
           <template #partido-cell="{ row }">
             <NuxtLink
-              v-if="partidoPath((row.original as ViajesExploreRankingRow).partido)"
-              :to="partidoPath((row.original as ViajesExploreRankingRow).partido)!"
+              v-if="
+                partidoPath((row.original as ViajesExploreRankingRow).partido)
+              "
+              :to="
+                partidoPath((row.original as ViajesExploreRankingRow).partido)!
+              "
               class="inline-flex"
               @click.stop
             >

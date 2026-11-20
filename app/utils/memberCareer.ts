@@ -142,9 +142,7 @@ function isTemporallyCompatible(
   maxGapYears: number,
 ): boolean {
   if (!known.length) return true;
-  return known.some(
-    (k) => yearsBetweenPeriods(candidate, k) <= maxGapYears,
-  );
+  return known.some((k) => yearsBetweenPeriods(candidate, k) <= maxGapYears);
 }
 
 function cargoLabel(
@@ -415,9 +413,7 @@ export function mandatoRangesForChamber(
   for (const c of rows) {
     const inicioMs = new Date(c.inicio).getTime();
     if (Number.isNaN(inicioMs)) continue;
-    const finMs = c.fin
-      ? new Date(c.fin).getTime()
-      : Number.POSITIVE_INFINITY;
+    const finMs = c.fin ? new Date(c.fin).getTime() : Number.POSITIVE_INFINITY;
     const key = String(c.inicio).slice(0, 10);
     const prev = byKey.get(key);
     if (!prev || finMs >= prev.finMs) {
@@ -455,10 +451,7 @@ export function mandatoKeyFromFecha(
   return best?.key ?? null;
 }
 
-export function formatMandatoKey(
-  key: string,
-  ranges: MandatoRange[],
-): string {
+export function formatMandatoKey(key: string, ranges: MandatoRange[]): string {
   if (key === "sin-mandato") return "Sin mandato";
   return ranges.find((r) => r.key === key)?.label || key;
 }

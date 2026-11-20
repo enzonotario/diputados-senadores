@@ -297,7 +297,11 @@ const memberColumns = [
     meta: { class: { th: "w-12 px-2", td: "w-12 px-2" } },
   },
   { id: "name", accessorKey: "name", header: sortableHeader("Nombre") },
-  { id: "rate", accessorKey: "rate", header: sortableHeader("Coincide con el grupo") },
+  {
+    id: "rate",
+    accessorKey: "rate",
+    header: sortableHeader("Coincide con el grupo"),
+  },
   {
     id: "compared",
     accessorKey: "compared",
@@ -367,7 +371,9 @@ function onGroupSelect(_e: Event, row: { original: InterGroupPair }) {
           class="flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between"
         >
           <div class="min-w-0 space-y-2">
-            <p class="text-sm text-toned">Cómo votan juntos · {{ groupLabel }}</p>
+            <p class="text-sm text-toned">
+              Cómo votan juntos · {{ groupLabel }}
+            </p>
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
               {{ groupName }}
             </h1>
@@ -413,7 +419,9 @@ function onGroupSelect(_e: Event, row: { original: InterGroupPair }) {
               <div class="text-3xl font-bold tabular-nums text-highlighted">
                 {{ formatAffinityPct(cohesion.pairwiseAvg) }}
               </div>
-              <p class="text-sm text-muted">Coincidencia promedio entre integrantes</p>
+              <p class="text-sm text-muted">
+                Coincidencia promedio entre integrantes
+              </p>
             </div>
             <div v-if="cohesion.modeAlignment != null">
               <div class="flex justify-between mb-1.5 text-sm">
@@ -466,9 +474,7 @@ function onGroupSelect(_e: Event, row: { original: InterGroupPair }) {
                   affinityRateClass((row.original as MemberAlignment).rate)
                 "
               >
-                {{
-                  formatAffinityPct((row.original as MemberAlignment).rate)
-                }}
+                {{ formatAffinityPct((row.original as MemberAlignment).rate) }}
               </span>
             </template>
           </UTable>

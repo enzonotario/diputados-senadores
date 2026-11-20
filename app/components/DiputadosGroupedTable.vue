@@ -40,9 +40,7 @@ const rows = computed<DiputadosGroupedTableRow[]>(() =>
   props.groups.map((g) => ({
     ...g,
     count: g.diputados.length,
-    presentismo: props.showPresentismo
-      ? averagePresentismo(g.diputados)
-      : null,
+    presentismo: props.showPresentismo ? averagePresentismo(g.diputados) : null,
     color: props.accentColors?.[g.key],
   })),
 );
@@ -352,7 +350,9 @@ function hrefForGroup(group: DiputadosGroupedTableRow) {
                 </h3>
               </div>
 
-              <div class="flex items-center gap-3 shrink-0 flex-wrap justify-end">
+              <div
+                class="flex items-center gap-3 shrink-0 flex-wrap justify-end"
+              >
                 <div
                   v-if="
                     (row.original as DiputadosGroupedTableRow).presentismo !=
@@ -367,8 +367,8 @@ function hrefForGroup(group: DiputadosGroupedTableRow) {
                     size="sm"
                     class="flex-1"
                     :color="
-                      ((row.original as DiputadosGroupedTableRow)
-                        .presentismo || 0) > 80
+                      ((row.original as DiputadosGroupedTableRow).presentismo ||
+                        0) > 80
                         ? 'success'
                         : 'error'
                     "

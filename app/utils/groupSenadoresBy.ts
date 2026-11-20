@@ -55,15 +55,9 @@ export function groupSenadoresBy(
     label: labelForKey(k, kind, String(key)),
     senadores: items.sort((a, b) => {
       const aLabel =
-        a.apellido ||
-        a.nombreCompleto?.split(",")[0] ||
-        a.nombre ||
-        "";
+        a.apellido || a.nombreCompleto?.split(",")[0] || a.nombre || "";
       const bLabel =
-        b.apellido ||
-        b.nombreCompleto?.split(",")[0] ||
-        b.nombre ||
-        "";
+        b.apellido || b.nombreCompleto?.split(",")[0] || b.nombre || "";
       return aLabel.localeCompare(bLabel, "es");
     }),
   }));

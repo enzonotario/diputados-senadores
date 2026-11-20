@@ -51,9 +51,13 @@ const sharing = ref(false);
 const exportRoot = ref<HTMLElement | null>(null);
 const toast = useToast();
 
-const verPor = useLocalStorage<"grupo" | "provincia">("poroteo-ver-por", "grupo", {
-  initOnMounted: true,
-});
+const verPor = useLocalStorage<"grupo" | "provincia">(
+  "poroteo-ver-por",
+  "grupo",
+  {
+    initOnMounted: true,
+  },
+);
 const verComo = useLocalStorage<"grid" | "tabla">("poroteo-ver-como", "grid", {
   initOnMounted: true,
 });
@@ -197,8 +201,9 @@ const POROTEO_ACTIONS: {
   { tipo: "ausente", label: "Ausentes", short: "Aus.", color: "neutral" },
 ];
 
-const dockLeftActions = POROTEO_ACTIONS.filter((a) =>
-  a.tipo === "afirmativo" || a.tipo === "negativo" || a.tipo === "indeciso",
+const dockLeftActions = POROTEO_ACTIONS.filter(
+  (a) =>
+    a.tipo === "afirmativo" || a.tipo === "negativo" || a.tipo === "indeciso",
 );
 const dockRightActions = POROTEO_ACTIONS.filter(
   (a) => a.tipo === "abstencion" || a.tipo === "ausente",
@@ -308,7 +313,8 @@ function applyShareToUrl() {
     ...route.query,
   };
   if (encoded) nextQuery[POROTEO_SHARE_QUERY] = encoded;
-  else delete nextQuery[POROTEO_SHARE_QUERY];
+  // vue-router omite claves `undefined` al serializar.
+  else nextQuery[POROTEO_SHARE_QUERY] = undefined;
 
   const cur = String(route.query[POROTEO_SHARE_QUERY] || "");
   const nxt = encoded || "";
@@ -349,9 +355,7 @@ const accentColors = computed(() => {
   const keys = [
     ...new Set(
       props.members
-        .map((m) =>
-          props.groupField === "bloque" ? m.bloque : m.partido,
-        )
+        .map((m) => (props.groupField === "bloque" ? m.bloque : m.partido))
         .filter(Boolean) as string[],
     ),
   ];
@@ -416,8 +420,7 @@ const tableRows = computed<PoroteoTableRow[]>(() =>
     grupo:
       verPor.value === "provincia"
         ? m.provincia?.trim() || "—"
-        : (props.groupField === "bloque" ? m.bloque : m.partido)?.trim() ||
-          "—",
+        : (props.groupField === "bloque" ? m.bloque : m.partido)?.trim() || "—",
     voto: voteOf(votes.value, m.id),
   })),
 );
@@ -902,9 +905,7 @@ const groupsSectionTitle = computed(() => {
                 :key="action.tipo"
                 size="xs"
                 :color="action.color"
-                :variant="
-                  group.counts[action.tipo] > 0 ? 'soft' : 'outline'
-                "
+                :variant="group.counts[action.tipo] > 0 ? 'soft' : 'outline'"
                 :aria-label="`Asignar ${group.label} a ${action.label}`"
                 :label="`${action.short} ${group.counts[action.tipo]}`"
                 @click.stop="assignGroup(group, action.tipo)"
@@ -945,10 +946,7 @@ const groupsSectionTitle = computed(() => {
                   class="flex w-full min-w-0 flex-col items-center gap-1.5 rounded-md p-1.5 pt-4"
                   :title="`${m.nombreCompleto} — ${poroteoLegendLabel(voteOf(votes, m.id))}`"
                   @click="
-                    assignMember(
-                      m.id,
-                      cyclePoroteoVoto(voteOf(votes, m.id)),
-                    )
+                    assignMember(m.id, cyclePoroteoVoto(voteOf(votes, m.id)))
                   "
                 >
                   <span
@@ -968,9 +966,7 @@ const groupsSectionTitle = computed(() => {
                       v-else
                       class="flex size-full items-center justify-center bg-elevated text-xs font-bold"
                     >
-                      {{
-                        (m.apellido || m.nombreCompleto || "?").slice(0, 2)
-                      }}
+                      {{ (m.apellido || m.nombreCompleto || "?").slice(0, 2) }}
                     </span>
                   </span>
                   <span class="w-full min-w-0 text-center">
@@ -1055,8 +1051,7 @@ const groupsSectionTitle = computed(() => {
                 :color="votoSelectColor(row.original.voto)"
                 class="w-40"
                 @update:model-value="
-                  (v: string) =>
-                    assignMember(row.original.id, v as PoroteoVoto)
+                  (v: string) => assignMember(row.original.id, v as PoroteoVoto)
                 "
               />
             </template>
@@ -1162,7 +1157,9 @@ const groupsSectionTitle = computed(() => {
                 "
                 :aria-hidden="!dockExpanded"
                 role="dialog"
-                :aria-label="dockExpanded ? 'Vista previa de la imagen' : undefined"
+                :aria-label="
+                  dockExpanded ? 'Vista previa de la imagen' : undefined
+                "
                 @click.stop
               >
                 <div
@@ -1170,7 +1167,9 @@ const groupsSectionTitle = computed(() => {
                   data-export-ignore
                   class="mb-2 flex items-center justify-between gap-2 rounded-lg bg-default/95 px-2 py-1.5 shadow-sm ring-1 ring-default"
                 >
-                  <p class="min-w-0 flex-1 truncate text-sm font-medium text-muted">
+                  <p
+                    class="min-w-0 flex-1 truncate text-sm font-medium text-muted"
+                  >
                     Así se verá la imagen — clic en un asiento para ciclar
                   </p>
                   <div class="flex shrink-0 items-center gap-1">
@@ -1263,7 +1262,9 @@ const groupsSectionTitle = computed(() => {
                       </div>
                     </div>
 
-                    <div class="flex flex-col gap-2 border-t border-default pt-2">
+                    <div
+                      class="flex flex-col gap-2 border-t border-default pt-2"
+                    >
                       <USwitch
                         v-model="exportDesign.showTitle"
                         size="sm"

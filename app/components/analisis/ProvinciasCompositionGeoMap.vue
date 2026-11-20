@@ -84,9 +84,7 @@ onMounted(async () => {
 
 const selectedKeys = computed(
   () =>
-    new Set(
-      (props.selected || []).map((n) => provinciaKey(n)).filter(Boolean),
-    ),
+    new Set((props.selected || []).map((n) => provinciaKey(n)).filter(Boolean)),
 );
 
 const categoryByKey = computed(() => {
@@ -224,7 +222,7 @@ function patchPieRadii() {
   );
 }
 
-function buildOption(full: boolean) {
+function buildOption(_full: boolean) {
   const p = palette.value;
   const chrome = baseChartChrome(p);
   const baseFill = p.isDark ? "#1e293b" : "#e2e8f0";
@@ -312,9 +310,7 @@ function buildOption(full: boolean) {
         borderColor: p.isDark ? "#111827" : "#ffffff",
         borderWidth: isSel ? 2 : 1,
         shadowBlur: isSel ? 8 : 0,
-        shadowColor: p.isDark
-          ? "rgba(255,255,255,0.35)"
-          : "rgba(0,0,0,0.25)",
+        shadowColor: p.isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.25)",
       },
       emphasis: {
         scale: true,
@@ -416,8 +412,7 @@ function resolveRawName(params: any): string {
     );
     if (fromCatalog) return fromCatalog;
     return (
-      getArgentinaProvinciaMetas().find((m) => m.key === key)?.displayName ||
-      ""
+      getArgentinaProvinciaMetas().find((m) => m.key === key)?.displayName || ""
     );
   }
 

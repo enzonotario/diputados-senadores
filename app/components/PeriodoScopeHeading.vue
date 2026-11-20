@@ -12,10 +12,7 @@ const { isLegislative, periodosScopeTitle, periodosScopeDetails } =
       <PeriodoScopeBadges />
     </div>
 
-    <ul
-      v-if="periodosScopeDetails.length"
-      class="space-y-1 text-sm text-muted"
-    >
+    <ul v-if="periodosScopeDetails.length" class="space-y-1 text-sm text-muted">
       <li
         v-for="item in periodosScopeDetails"
         :key="item.key"

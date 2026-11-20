@@ -105,7 +105,9 @@ export function baseChartChrome(p: ChartPalette) {
         bottom: 12,
         borderColor: p.border,
         backgroundColor: p.splitLine,
-        fillerColor: p.isDark ? "rgba(45,212,191,0.18)" : "rgba(13,148,136,0.15)",
+        fillerColor: p.isDark
+          ? "rgba(45,212,191,0.18)"
+          : "rgba(13,148,136,0.15)",
         handleStyle: { color: p.presentismo, borderColor: p.presentismo },
         textStyle: { color: p.textMuted, fontSize: 10 },
         dataBackground: {

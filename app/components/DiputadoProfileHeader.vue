@@ -50,7 +50,9 @@ const profileSections = computed<ProfileFactSection[]>(() => {
   const finMandato = d.periodoMandato?.fin;
   // El cese solo aporta si difiere del fin natural del mandato.
   const ceseAnticipado =
-    d.ceseFecha && finMandato && d.ceseFecha.slice(0, 10) !== finMandato.slice(0, 10);
+    d.ceseFecha &&
+    finMandato &&
+    d.ceseFecha.slice(0, 10) !== finMandato.slice(0, 10);
 
   return [
     {

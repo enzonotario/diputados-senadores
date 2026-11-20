@@ -76,7 +76,11 @@ const actasMeta = computed(() => bloque.value?.actasMeta || {});
 const pageVista = useRouteQuery("vista", "integrantes");
 const pageVistaItems: TabsItem[] = [
   { label: "Integrantes", value: "integrantes", icon: "i-lucide-users" },
-  { label: "Cómo votan juntos", value: "afinidad", icon: "i-lucide-git-compare" },
+  {
+    label: "Cómo votan juntos",
+    value: "afinidad",
+    icon: "i-lucide-git-compare",
+  },
 ];
 
 watch(
@@ -170,8 +174,7 @@ useChamberSeo(() => {
   if (!name) {
     return {
       title: "Bloque",
-      description:
-        "Bloques de la Cámara de Diputados de la Nación Argentina.",
+      description: "Bloques de la Cámara de Diputados de la Nación Argentina.",
       og: { kind: "group", eyebrow: "bloque" },
     };
   }
@@ -370,8 +373,7 @@ useChamberSeo(() => {
             </template>
             <template #presentismo-cell="{ row }">
               <span>
-                {{
-                  (row.original as Diputado).estadisticas?.presentismo ?? "—"
+                {{ (row.original as Diputado).estadisticas?.presentismo ?? "—"
                 }}{{ (row.original as Diputado).estadisticas ? "%" : "" }}
               </span>
             </template>

@@ -51,8 +51,9 @@ export function actaGroupVoteRows(
   const rows: ActaGroupVoteRow[] = [...map.entries()].map(([key, c]) => {
     const total = c.afirmativo + c.negativo + c.abstencion + c.ausente;
     const voted = c.afirmativo + c.negativo + c.abstencion;
-    const sides = [c.afirmativo, c.negativo, c.abstencion].filter((n) => n > 0)
-      .length;
+    const sides = [c.afirmativo, c.negativo, c.abstencion].filter(
+      (n) => n > 0,
+    ).length;
     const majority = Math.max(
       c.afirmativo,
       c.negativo,
@@ -69,7 +70,9 @@ export function actaGroupVoteRows(
     };
   });
 
-  rows.sort((a, b) => b.total - a.total || a.label.localeCompare(b.label, "es"));
+  rows.sort(
+    (a, b) => b.total - a.total || a.label.localeCompare(b.label, "es"),
+  );
   return rows;
 }
 

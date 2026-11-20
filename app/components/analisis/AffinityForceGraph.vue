@@ -73,12 +73,6 @@ function memberTo(id: string) {
   return `${props.memberBasePath}/${id}`;
 }
 
-function bandOf(rate: number): AffinityBand {
-  if (rate >= RING_HIGH) return "high";
-  if (rate >= RING_MID) return "mid";
-  return "low";
-}
-
 function sortPeersForRing(peers: AffinityPair[]) {
   return [...peers].sort((a, b) => {
     const g = String(a.group || "").localeCompare(String(b.group || ""));
@@ -94,7 +88,11 @@ function placeRing(peers: AffinityPair[], band: AffinityBand): RadialPeer[] {
   const radiusPct = RING_RADIUS[band];
   // Desfasar anillos para que no se alineen radialmente
   const phase =
-    band === "high" ? -Math.PI / 2 : band === "mid" ? -Math.PI / 2 + 0.2 : -Math.PI / 2 + 0.4;
+    band === "high"
+      ? -Math.PI / 2
+      : band === "mid"
+        ? -Math.PI / 2 + 0.2
+        : -Math.PI / 2 + 0.4;
   return placed.map((pair, i) => ({
     ...pair,
     band,
@@ -142,8 +140,8 @@ const ringGuides = computed(() =>
   ),
 );
 
-const hasRadial = computed(
-  () => Boolean(props.centerId && centerMember.value && radialPeers.value.length),
+const hasRadial = computed(() =>
+  Boolean(props.centerId && centerMember.value && radialPeers.value.length),
 );
 
 function edgeColor(rate: number) {
@@ -370,7 +368,9 @@ function edgeTouches(edge: CircleEdge, id: string | null) {
         fill="none"
         :stroke="edgeColor(peer.rate)"
         :stroke-width="0.35 + peer.rate * 0.55"
-        :opacity="hoveredId && hoveredId !== peer.id ? 0.12 : 0.3 + peer.rate * 0.35"
+        :opacity="
+          hoveredId && hoveredId !== peer.id ? 0.12 : 0.3 + peer.rate * 0.35
+        "
         vector-effect="non-scaling-stroke"
       />
     </svg>
@@ -399,7 +399,9 @@ function edgeTouches(edge: CircleEdge, id: string | null) {
         <UAvatar
           :src="peer.foto || undefined"
           :alt="peer.name"
-          :size="peer.band === 'high' ? 'lg' : peer.band === 'mid' ? 'md' : 'sm'"
+          :size="
+            peer.band === 'high' ? 'lg' : peer.band === 'mid' ? 'md' : 'sm'
+          "
           :ui="{
             root: 'ring-2 ring-default shadow-sm bg-elevated',
           }"
@@ -454,7 +456,7 @@ function edgeTouches(edge: CircleEdge, id: string | null) {
             : 'max-w-14 text-[10px] sm:max-w-16 sm:text-xs'
         "
       >
-        {{ shortName(peer.name, peer.band === 'low' ? 10 : 12) }}
+        {{ shortName(peer.name, peer.band === "low" ? 10 : 12) }}
       </span>
     </NuxtLink>
 
@@ -493,7 +495,9 @@ function edgeTouches(edge: CircleEdge, id: string | null) {
           </div>
         </template>
       </UTooltip>
-      <span class="text-xs font-semibold leading-tight text-highlighted sm:text-sm">
+      <span
+        class="text-xs font-semibold leading-tight text-highlighted sm:text-sm"
+      >
         {{ shortName(centerMember.name, 16) }}
       </span>
     </NuxtLink>
@@ -587,10 +591,7 @@ function edgeTouches(edge: CircleEdge, id: string | null) {
         </span>
       </NuxtLink>
     </div>
-    <p
-      v-if="groupCircle.truncated"
-      class="mt-2 text-center text-xs text-muted"
-    >
+    <p v-if="groupCircle.truncated" class="mt-2 text-center text-xs text-muted">
       Mostrando {{ groupCircle.nodes.length }} de
       {{ groupCircle.totalMembers }} integrantes (los que más votaron juntos).
     </p>

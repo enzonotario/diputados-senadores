@@ -25,10 +25,7 @@ export function isPoroteoVoto(v: string): v is PoroteoVoto {
   return (POROTEO_VOTO_ORDER as readonly string[]).includes(v);
 }
 
-export function voteOf(
-  votes: PoroteoVotes,
-  id: string,
-): PoroteoVoto {
+export function voteOf(votes: PoroteoVotes, id: string): PoroteoVoto {
   const raw = votes[id];
   if (raw && isPoroteoVoto(raw)) return raw;
   return "indeciso";

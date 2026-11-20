@@ -78,13 +78,14 @@ const activeSegment = computed(() =>
   props.active ? resolveViajeSegmento(props.active) : null,
 );
 
-const trailSegments = computed(() =>
-  (props.trail || [])
-    .map((v) => resolveViajeSegmento(v))
-    .filter(Boolean) as Array<{
-    origen: AeropuertoPunto;
-    destino: AeropuertoPunto;
-  }>,
+const trailSegments = computed(
+  () =>
+    (props.trail || [])
+      .map((v) => resolveViajeSegmento(v))
+      .filter(Boolean) as Array<{
+      origen: AeropuertoPunto;
+      destino: AeropuertoPunto;
+    }>,
 );
 
 const routeLabel = computed(() => {

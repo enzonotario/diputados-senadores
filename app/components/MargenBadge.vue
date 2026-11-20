@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import {
-  getVoteMargin,
-  type VoteMarginLevel,
-} from "@/utils/voteMargin";
+import { getVoteMargin, type VoteMarginLevel } from "@/utils/voteMargin";
 
 const props = defineProps<{
   afirmativos?: number | null;
@@ -16,7 +13,10 @@ const margin = computed(() =>
 );
 
 const color = computed(() => {
-  const map: Record<VoteMarginLevel, "error" | "warning" | "info" | "success" | "neutral"> = {
+  const map: Record<
+    VoteMarginLevel,
+    "error" | "warning" | "info" | "success" | "neutral"
+  > = {
     empate: "error",
     ajustada: "warning",
     comoda: "info",
@@ -36,10 +36,7 @@ const color = computed(() => {
     <UBadge :color="color" variant="soft">
       {{ margin.label }}
     </UBadge>
-    <span
-      v-if="showVotes !== false"
-      class="text-xs text-muted tabular-nums"
-    >
+    <span v-if="showVotes !== false" class="text-xs text-muted tabular-nums">
       {{ margin.votes }}
       {{ margin.votes === 1 ? "voto" : "votos" }}
     </span>

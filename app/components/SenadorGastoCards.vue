@@ -56,7 +56,9 @@ const cards = computed(() => {
   <div
     v-if="cards.length"
     class="grid gap-3"
-    :class="compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-3'"
+    :class="
+      compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-3'
+    "
   >
     <UCard
       v-for="card in cards"

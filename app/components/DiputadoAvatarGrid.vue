@@ -22,9 +22,7 @@ const props = withDefaults(
 
 /** Con halo de voto, agrupar visualmente por tipo (a favor → … → ausente). */
 const orderedDiputados = computed(() =>
-  props.showVotoHalo
-    ? sortByVotoTipo(props.diputados)
-    : props.diputados,
+  props.showVotoHalo ? sortByVotoTipo(props.diputados) : props.diputados,
 );
 </script>
 

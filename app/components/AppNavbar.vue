@@ -4,13 +4,8 @@ import { getChamberConfig } from "@/lib/chamber";
 import { routeUsesPeriodoQuery } from "@/utils/periodoLegislativo";
 
 const route = useRoute();
-const {
-  chamberId,
-  otherChamber,
-  otherChamberUrl,
-  isCongreso,
-  isLegislative,
-} = useChamber();
+const { chamberId, otherChamber, otherChamberUrl, isCongreso, isLegislative } =
+  useChamber();
 
 const legislative = computed(() =>
   isLegislative.value ? getChamberConfig(chamberId.value) : null,
@@ -94,7 +89,8 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
       children: [
         {
           label: "Viajes",
-          description: "Viajes nacionales e internacionales de todos los senadores.",
+          description:
+            "Viajes nacionales e internacionales de todos los senadores.",
           icon: "i-lucide-plane",
           to: withPeriodo("/senadores/viajes"),
           active: path.startsWith("/senadores/viajes"),
@@ -108,7 +104,8 @@ const desktopNavItems = computed<NavigationMenuItem[]>(() => {
         },
         {
           label: "Gasto",
-          description: "Gasto estimado por escala salarial (bloques, despachos y dietas).",
+          description:
+            "Gasto estimado por escala salarial (bloques, despachos y dietas).",
           icon: "i-lucide-banknote",
           to: withPeriodo("/senadores/gasto"),
           active: path === "/senadores/gasto",

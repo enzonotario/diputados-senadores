@@ -49,11 +49,7 @@ export function chartActasToMemberRows(
 }
 
 export type VotosTimeGroupBy =
-  | "mes"
-  | "trimestre"
-  | "cuatrimestre"
-  | "periodo"
-  | "mandato";
+  "mes" | "trimestre" | "cuatrimestre" | "periodo" | "mandato";
 
 type VotoBucket = {
   afirmativo: number;

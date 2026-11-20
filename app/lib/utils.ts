@@ -1,14 +1,5 @@
-import type {
-  Acta,
-  Senador,
-  FilterConfig,
-  SortConfig,
-  Voto,
-} from "./types";
-import type {
-  Acta as DiputadoActa,
-  Diputado,
-} from "./types-diputados";
+import type { Acta, Senador, FilterConfig, SortConfig, Voto } from "./types";
+import type { Acta as DiputadoActa, Diputado } from "./types-diputados";
 
 const ARGENTINA_DATE_FORMATTER = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
@@ -269,7 +260,10 @@ export function sortActas(actas: Acta[], sortConfig: SortConfig): Acta[] {
   });
 }
 
-export function filterActas(actas: Acta[] | any[], filters: FilterConfig): Acta[] {
+export function filterActas(
+  actas: Acta[] | any[],
+  filters: FilterConfig,
+): Acta[] {
   return (actas as Acta[]).filter((acta) => {
     return Object.entries(filters).every(([key, value]) => {
       if (isEmptyFilterValue(value)) return true;

@@ -37,9 +37,7 @@ const palette = useChartPalette();
 const actasRows = computed(() => chartActasToMemberRows(props.actas || []));
 
 const mandatos = computed(() =>
-  props.chamber
-    ? mandatoRangesForChamber(props.career, props.chamber)
-    : [],
+  props.chamber ? mandatoRangesForChamber(props.career, props.chamber) : [],
 );
 
 const hasMandatos = computed(
@@ -322,7 +320,9 @@ const presentismoOption = computed(() => {
         const titulo = s.titulos[idx] || "";
         const fecha = s.labels[idx] || "";
         const lines = list
-          .filter((item: any) => item.seriesType !== "line" || item.value != null)
+          .filter(
+            (item: any) => item.seriesType !== "line" || item.value != null,
+          )
           .filter((item: any) => item.componentType !== "markLine")
           .map(
             (item: any) =>
@@ -497,10 +497,7 @@ const votosOption = computed(() => {
 </script>
 
 <template>
-  <div
-    v-if="hasSeries || hasVotosOverTime"
-    class="grid grid-cols-1 gap-4"
-  >
+  <div v-if="hasSeries || hasVotosOverTime" class="grid grid-cols-1 gap-4">
     <ChartsChartCard
       v-if="presentismoOption"
       title="Asistencia a lo largo del tiempo"

@@ -12,8 +12,25 @@ type RevalidateBody = {
 };
 
 const SEED_PATHS: Record<ChamberId, string[]> = {
-  diputados: ["/", "/actas", "/diputados", "/diputados/bloques", "/diputados/comisiones", "/diputados/viajes", "/diputados/misiones"],
-  senadores: ["/", "/actas", "/senadores", "/senadores/partidos", "/senadores/comisiones", "/senadores/dietas", "/senadores/gasto", "/senadores/viajes"],
+  diputados: [
+    "/",
+    "/actas",
+    "/diputados",
+    "/diputados/bloques",
+    "/diputados/comisiones",
+    "/diputados/viajes",
+    "/diputados/misiones",
+  ],
+  senadores: [
+    "/",
+    "/actas",
+    "/senadores",
+    "/senadores/partidos",
+    "/senadores/comisiones",
+    "/senadores/dietas",
+    "/senadores/gasto",
+    "/senadores/viajes",
+  ],
 };
 
 function defaultHosts(): string[] {
@@ -85,8 +102,7 @@ export default defineEventHandler(async (event) => {
     status: number;
   }> = [];
 
-  const shouldWarm =
-    Boolean(body.paths?.length) || body.chamber != null;
+  const shouldWarm = Boolean(body.paths?.length) || body.chamber != null;
 
   if (shouldWarm) {
     const paths = resolvePaths(body);

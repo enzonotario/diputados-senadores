@@ -60,11 +60,7 @@ export function presentismoForPeriodos(
   const fallback = member.estadisticas?.presentismo ?? 0;
   if (isTodosPeriodoSelection(periodos)) return fallback;
 
-  const keys = Array.isArray(periodos)
-    ? periodos
-    : periodos
-      ? [periodos]
-      : [];
+  const keys = Array.isArray(periodos) ? periodos : periodos ? [periodos] : [];
   if (!keys.length) return fallback;
 
   const porPeriodo = member.estadisticasPorPeriodo;

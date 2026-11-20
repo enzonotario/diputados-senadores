@@ -20,10 +20,7 @@ const abstenciones = computed(() => Number(props.acta.abstenciones || 0));
 const ausentes = computed(() => Number(props.acta.ausentes || 0));
 
 const presentes = computed(() => {
-  if (
-    typeof props.acta.presentes === "number" &&
-    props.acta.presentes > 0
-  ) {
+  if (typeof props.acta.presentes === "number" && props.acta.presentes > 0) {
     return props.acta.presentes;
   }
   return afirmativos.value + negativos.value + abstenciones.value;
@@ -143,9 +140,7 @@ const sankeyOption = computed(() => {
       formatter: (params: any) => {
         if (params.dataType === "edge") {
           const pct =
-            tot > 0
-              ? Math.round((Number(params.value) / tot) * 1000) / 10
-              : 0;
+            tot > 0 ? Math.round((Number(params.value) / tot) * 1000) / 10 : 0;
           return `${params.data.source} → ${params.data.target}<br/><b>${params.value}</b> (${pct}%)`;
         }
         const pct =
@@ -218,14 +213,16 @@ const sankeyOption = computed(() => {
       <div class="space-y-1">
         <h2 class="text-lg font-semibold">Asistencia y resultados</h2>
         <p class="text-sm text-muted">
-          Del total: quiénes estaban, y entre los presentes, a favor, en contra o
-          abstención.
+          Del total: quiénes estaban, y entre los presentes, a favor, en contra
+          o abstención.
         </p>
       </div>
     </template>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div class="rounded-xl border border-default bg-elevated/40 p-3 space-y-3">
+      <div
+        class="rounded-xl border border-default bg-elevated/40 p-3 space-y-3"
+      >
         <div class="flex items-baseline justify-between gap-2">
           <h3 class="text-sm font-medium text-highlighted">Asistencia</h3>
           <span class="text-xs text-muted tabular-nums">
@@ -253,7 +250,9 @@ const sankeyOption = computed(() => {
         </div>
       </div>
 
-      <div class="rounded-xl border border-default bg-elevated/40 p-3 space-y-3">
+      <div
+        class="rounded-xl border border-default bg-elevated/40 p-3 space-y-3"
+      >
         <div class="flex items-baseline justify-between gap-2">
           <h3 class="text-sm font-medium text-highlighted">Resultados</h3>
           <span class="text-xs text-muted">Entre presentes</span>

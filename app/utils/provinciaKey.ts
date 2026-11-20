@@ -1,6 +1,6 @@
 /** Clave canónica para matchear nombres de provincia (API ↔ GeoJSON). */
 export function provinciaKey(raw: string | null | undefined): string {
-  let s = String(raw || "")
+  const s = String(raw || "")
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .toLowerCase()
@@ -8,9 +8,7 @@ export function provinciaKey(raw: string | null | undefined): string {
 
   if (!s || s === "sin-dato" || s === "sin provincia") return "";
 
-  if (
-    s.includes("ciudad") && s.includes("buenos aires")
-  ) {
+  if (s.includes("ciudad") && s.includes("buenos aires")) {
     return "caba";
   }
   if (s.startsWith("tierra del fuego")) {

@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import type { DiputadosMisionesExploreRow } from "@/lib/diputados-data";
 import { formatDate } from "@/lib/utils";
-import {
-  MISIONES_FUENTE_URL_DIPUTADOS,
-} from "@/utils/viajes";
+import { MISIONES_FUENTE_URL_DIPUTADOS } from "@/utils/viajes";
 import {
   formatMisionMonto,
   misionCsvUrl,
@@ -31,7 +29,9 @@ const mision = computed(() => data.value?.mision || null);
 const recursoPageUrl = computed(() =>
   mision.value ? misionRecursoPageUrl(mision.value) : null,
 );
-const csvUrl = computed(() => (mision.value ? misionCsvUrl(mision.value) : null));
+const csvUrl = computed(() =>
+  mision.value ? misionCsvUrl(mision.value) : null,
+);
 const monto = computed(() =>
   mision.value ? misionMontoPrincipal(mision.value) : null,
 );
@@ -260,9 +260,7 @@ useChamberSeo(() => {
                 <UIcon name="i-lucide-arrow-right" class="size-3.5" />
               </NuxtLink>
             </div>
-            <p class="text-xs text-muted break-all">
-              Id: {{ mision.id }}
-            </p>
+            <p class="text-xs text-muted break-all">Id: {{ mision.id }}</p>
           </div>
         </UCard>
       </div>

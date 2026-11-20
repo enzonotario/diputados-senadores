@@ -122,10 +122,7 @@ export function getVotoTipoConfig(tipo?: string | null): VotoTipoConfig {
 }
 
 /** Orden canónico: a favor → en contra → abstención → ausente → resto. */
-export function compareVotoTipo(
-  a?: string | null,
-  b?: string | null,
-): number {
+export function compareVotoTipo(a?: string | null, b?: string | null): number {
   const order = VOTO_TIPO_ORDER as readonly string[];
   const ai = order.indexOf(normalizeVotoTipo(a));
   const bi = order.indexOf(normalizeVotoTipo(b));

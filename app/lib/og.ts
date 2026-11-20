@@ -21,13 +21,7 @@ export const OG_RESULTADO_ACCENT: Record<string, string> = {
   cancelada: "#6b7280",
 };
 
-export type OgKind =
-  | "home"
-  | "list"
-  | "member"
-  | "group"
-  | "acta"
-  | "afinidad";
+export type OgKind = "home" | "list" | "member" | "group" | "acta" | "afinidad";
 
 export type ChamberOgInput = {
   eyebrow?: string;
@@ -209,10 +203,7 @@ export function resolveOgAccent(
   const raw = accent.trim();
   if (raw.startsWith("#") && /^#[0-9a-fA-F]{3,8}$/.test(raw)) return raw;
 
-  const key = raw
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "");
+  const key = raw.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
   if (key.startsWith("afirmativ")) return OG_RESULTADO_ACCENT.afirmativo;
   if (key.startsWith("negativ")) return OG_RESULTADO_ACCENT.negativo;
   if (key.includes("abstenc")) return OG_RESULTADO_ACCENT.abstencion;

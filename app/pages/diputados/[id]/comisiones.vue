@@ -23,7 +23,8 @@ useChamberSeo(() => {
   if (!d) {
     return {
       title: "Comisiones",
-      description: "Comisiones de la Cámara de Diputados de la Nación Argentina.",
+      description:
+        "Comisiones de la Cámara de Diputados de la Nación Argentina.",
       og: { kind: "member", eyebrow: "comisiones" },
     };
   }

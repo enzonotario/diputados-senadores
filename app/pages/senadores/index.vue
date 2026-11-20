@@ -108,13 +108,9 @@ const partidoColores = computed(() =>
 
 useChamberSeo(() => {
   const activosAll = senadores.value.filter(isSenadorActivo);
-  const colores = getPartidoColores(
-    [
-      ...new Set(
-        activosAll.map((s) => s.partido).filter(Boolean) as string[],
-      ),
-    ],
-  );
+  const colores = getPartidoColores([
+    ...new Set(activosAll.map((s) => s.partido).filter(Boolean) as string[]),
+  ]);
   const groups = groupsForOgHemiciclo(
     activosAll.map((s) => ({ group: s.partido })),
     colores,
@@ -245,7 +241,9 @@ const tableColumns = [
   },
 ];
 
-const provinciaTableColumns = tableColumns.filter((col) => col.id !== "provincia");
+const provinciaTableColumns = tableColumns.filter(
+  (col) => col.id !== "provincia",
+);
 
 function onRowSelect(_e: Event, row: { original: Senador }) {
   navigateTo(`/senadores/${row.original.id}`);
@@ -262,11 +260,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
       timeline-mode="members"
     />
 
-    <SegmentedTabs
-      v-model="vista"
-      :items="vistaItems"
-      :center="false"
-    />
+    <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
 
     <div class="space-y-3">
       <div class="flex items-center justify-between gap-2">
@@ -281,9 +275,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           @click="clearFilters"
         />
       </div>
-      <div
-        class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3"
-      >
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
         <FilterSelect
           v-model="provinciaFilter"
           label="Provincia"
@@ -305,8 +297,8 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
       </div>
       <div class="w-full sm:max-w-sm">
         <FilterSearch
-            v-model="searchQuery"
-            placeholder="Nombre, provincia, partido o bloque..."
+          v-model="searchQuery"
+          placeholder="Nombre, provincia, partido o bloque..."
         />
       </div>
     </div>
@@ -463,9 +455,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                   class="text-sm text-muted"
                 >
                   {{ displayed.length }}
-                  {{
-                    displayed.length === 1 ? "senador" : "senadores"
-                  }}
+                  {{ displayed.length === 1 ? "senador" : "senadores" }}
                 </p>
               </div>
               <ClientOnly>
@@ -508,9 +498,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                   <h3 class="text-base font-semibold">{{ group.label }}</h3>
                   <UBadge variant="subtle" color="neutral">
                     {{ group.members.length }}
-                    {{
-                      group.members.length === 1 ? "senador" : "senadores"
-                    }}
+                    {{ group.members.length === 1 ? "senador" : "senadores" }}
                   </UBadge>
                 </div>
 
@@ -581,7 +569,9 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                         title="Viajes 12m"
                         @click.stop
                       >
-                        {{ (row.original as Senador).viajesUltimos12Meses ?? 0 }}
+                        {{
+                          (row.original as Senador).viajesUltimos12Meses ?? 0
+                        }}
                       </NuxtLink>
                     </template>
                     <template #presentismo-cell="{ row }">

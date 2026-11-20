@@ -13,6 +13,8 @@ import { buildMisionId } from "../utils/misiones";
 import { normalizeDiputadosActaConteos } from "../utils/actaConteos";
 import recintoAsignacion from "../data/diputados-recinto-asignacion.json";
 
+import { createSingleflight } from "./singleflight";
+
 function slug(value: string) {
   return slugify(value || "", { lower: true, strict: true, trim: true });
 }
@@ -56,21 +58,27 @@ function getApiOrigin() {
   }
 }
 
-import { createSingleflight } from "./singleflight";
-
-let _diputadosRaw = createSingleflight<any[]>();
-let _diputados = createSingleflight<Diputado[]>();
-let _actas = createSingleflight<Acta[]>();
-let _diputadosConActas = createSingleflight<Diputado[]>();
-let _viajesConteo12m = createSingleflight<Record<string, number>>();
-let _viajesExplore = createSingleflight<DiputadosViajesExplorePayload>();
-let _misionesExplore = createSingleflight<DiputadosMisionesExplorePayload>();
-let _comisiones = createSingleflight<import("./types").Comision[]>();
-let _periodosOficiales = createSingleflight<
-  Array<{ periodo: string; inicio: string; fin: string; sesiones: string | null }>
+const _diputadosRaw = createSingleflight<any[]>();
+const _diputados = createSingleflight<Diputado[]>();
+const _actas = createSingleflight<Acta[]>();
+const _diputadosConActas = createSingleflight<Diputado[]>();
+const _viajesConteo12m = createSingleflight<Record<string, number>>();
+const _viajesExplore = createSingleflight<DiputadosViajesExplorePayload>();
+const _misionesExplore = createSingleflight<DiputadosMisionesExplorePayload>();
+const _comisiones = createSingleflight<import("./types").Comision[]>();
+const _periodosOficiales = createSingleflight<
+  Array<{
+    periodo: string;
+    inicio: string;
+    fin: string;
+    sesiones: string | null;
+  }>
 >();
-let _recintoBancaById = createSingleflight<Record<string, number>>();
-const _viajesById = new Map<string, Promise<import("./types").DiputadoViajes>>();
+const _recintoBancaById = createSingleflight<Record<string, number>>();
+const _viajesById = new Map<
+  string,
+  Promise<import("./types").DiputadoViajes>
+>();
 const _misionesById = new Map<
   string,
   Promise<import("./types").DiputadoMisiones>
@@ -280,10 +288,7 @@ export async function getDiputadosConActas(): Promise<Diputado[]> {
       // de `votos` para el hemiciclo). Contar presencia vía `acta.presidente`.
       const presidenteNombre = String((acta as any).presidente || "").trim();
       if (presidenteNombre) {
-        const matched = resolve(
-          presidenteNombre,
-          slug(presidenteNombre),
-        );
+        const matched = resolve(presidenteNombre, slug(presidenteNombre));
         if (matched && !votoByDiputadoId.has(matched.id)) {
           votoByDiputadoId.set(matched.id, {
             diputado: presidenteNombre,
@@ -329,12 +334,15 @@ export async function getDiputadosConActas(): Promise<Diputado[]> {
         actasDiputado.map((a) => ({
           periodo: a.periodo,
           tipoVoto:
-            a.tipoVotoDiputado ||
-            (a as any).votoDiputado?.tipoVoto ||
-            null,
+            a.tipoVotoDiputado || (a as any).votoDiputado?.tipoVoto || null,
         })),
       );
-      return { ...diputado, estadisticas, estadisticasPorPeriodo, actasDiputado };
+      return {
+        ...diputado,
+        estadisticas,
+        estadisticasPorPeriodo,
+        actasDiputado,
+      };
     });
   });
 }
@@ -383,9 +391,7 @@ export async function getActaWithDiputadosById(
 
   const votos = acta.votos.map((v) => {
     const matched = resolve(v.diputado, (v as any).diputadoSlug || "");
-    const diputado = matched
-      ? diputadosById.get(matched.id)
-      : undefined;
+    const diputado = matched ? diputadosById.get(matched.id) : undefined;
 
     const parsed = parseNombreVoto(v.diputado);
 
@@ -546,8 +552,7 @@ export async function getBloquesIndex() {
       diputados: activos,
     }))
     .sort(
-      (a, b) =>
-        b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
+      (a, b) => b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
     );
 }
 
@@ -656,7 +661,12 @@ export type DiputadosMisionesExplorePayload = {
 };
 
 export async function getDiputadosPeriodosOficiales(): Promise<
-  Array<{ periodo: string; inicio: string; fin: string; sesiones: string | null }>
+  Array<{
+    periodo: string;
+    inicio: string;
+    fin: string;
+    sesiones: string | null;
+  }>
 > {
   assertServerData();
   return _periodosOficiales.get(async () => {
@@ -748,11 +758,13 @@ export async function getDiputadosViajesExplore(): Promise<DiputadosViajesExplor
         mesNombre: String(v?.mesNombre || ""),
         nombre: String(v?.nombre || ""),
         diputadoId: v?.diputadoId ? String(v.diputadoId) : null,
-        tipoSolicitud: v?.tipoSolicitud != null ? String(v.tipoSolicitud) : null,
+        tipoSolicitud:
+          v?.tipoSolicitud != null ? String(v.tipoSolicitud) : null,
         origen: String(v?.origen || ""),
         origenCodigo: v?.origenCodigo != null ? String(v.origenCodigo) : null,
         destino: String(v?.destino || ""),
-        destinoCodigo: v?.destinoCodigo != null ? String(v.destinoCodigo) : null,
+        destinoCodigo:
+          v?.destinoCodigo != null ? String(v.destinoCodigo) : null,
         recursoId: String(v?.recursoId || ""),
         recursoUrl: String(v?.recursoUrl || ""),
       });
@@ -803,7 +815,9 @@ export async function getDiputadosMisionesExplore(): Promise<DiputadosMisionesEx
     const origin = getApiOrigin();
     const [diputados, rawLista] = await Promise.all([
       getDiputados(),
-      $fetch<any>(`${origin}/v1/diputados/misiones/lista`).catch(() => [] as any[]),
+      $fetch<any>(`${origin}/v1/diputados/misiones/lista`).catch(
+        () => [] as any[],
+      ),
     ]);
 
     const list = Array.isArray(rawLista)

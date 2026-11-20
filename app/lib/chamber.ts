@@ -140,7 +140,6 @@ export function parseSiteId(
   return isSiteId(v) ? v : fallback;
 }
 
-
 /** Local + prod host patterns. Prefer explicit site markers in hostname. */
 export function resolveSiteFromHost(
   hostname: string,
@@ -202,10 +201,7 @@ export function swapSiteHostname(hostname: string, to: SiteId): string {
 }
 
 /** @deprecated Prefer swapSiteHostname */
-export function swapChamberHostname(
-  hostname: string,
-  to: ChamberId,
-): string {
+export function swapChamberHostname(hostname: string, to: ChamberId): string {
   return swapSiteHostname(hostname, to);
 }
 
@@ -258,20 +254,21 @@ export function rewritePathForChamber(
 ): string | null {
   if (chamber === "diputados") {
     if (path === "/senadores" || path.startsWith("/senadores/")) {
-      return path
-        .replace(/^\/senadores/, "/diputados")
-        .replace(/\/partidos\b/, "/bloques")
-        // Dietas / gasto solo en senadores.
-        .replace(/\/dietas$/, "")
-        .replace(/\/gasto$/, "");
+      return (
+        path
+          .replace(/^\/senadores/, "/diputados")
+          .replace(/\/partidos\b/, "/bloques")
+          // Dietas / gasto solo en senadores.
+          .replace(/\/dietas$/, "")
+          .replace(/\/gasto$/, "")
+      );
     }
   }
   if (chamber === "senadores") {
     if (path === "/diputados" || path.startsWith("/diputados/")) {
-      return path.replace(/^\/diputados/, "/senadores").replace(
-        /\/bloques\b/,
-        "/partidos",
-      );
+      return path
+        .replace(/^\/diputados/, "/senadores")
+        .replace(/\/bloques\b/, "/partidos");
     }
   }
   return null;

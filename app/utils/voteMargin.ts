@@ -4,11 +4,7 @@
  */
 
 export type VoteMarginLevel =
-  | "empate"
-  | "ajustada"
-  | "comoda"
-  | "amplia"
-  | "unanime";
+  "empate" | "ajustada" | "comoda" | "amplia" | "unanime";
 
 export type VoteMargin = {
   /** |afirmativos − negativos| */

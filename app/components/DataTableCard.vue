@@ -20,10 +20,7 @@ withDefaults(
 <template>
   <UCard
     :ui="{
-      root: [
-        'min-w-0 w-full',
-        scrollable ? undefined : 'overflow-visible',
-      ]
+      root: ['min-w-0 w-full', scrollable ? undefined : 'overflow-visible']
         .filter(Boolean)
         .join(' '),
       body: 'p-0!',

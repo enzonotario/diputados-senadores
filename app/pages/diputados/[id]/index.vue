@@ -279,9 +279,7 @@ function onRowSelect(_e: Event, row: { original: HistoryRow }) {
         Resumen, charts e historial según el período legislativo seleccionado
         <template v-if="periodScoped">
           ({{ chartActasFiltered.length }}
-          {{
-            chartActasFiltered.length === 1 ? "votación" : "votaciones"
-          }}
+          {{ chartActasFiltered.length === 1 ? "votación" : "votaciones" }}
           de este diputado).
         </template>
         <template v-else>.</template>

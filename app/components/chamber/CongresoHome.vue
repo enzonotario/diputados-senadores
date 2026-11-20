@@ -44,7 +44,9 @@ const cards = computed(() => [
       />
     </div>
 
-    <div class="page-container relative flex flex-1 flex-col justify-center py-10 sm:py-14">
+    <div
+      class="page-container relative flex flex-1 flex-col justify-center py-10 sm:py-14"
+    >
       <section
         class="flex flex-col items-center justify-center space-y-4 text-center"
       >

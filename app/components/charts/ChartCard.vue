@@ -31,7 +31,9 @@ withDefaults(
             size="xs"
           />
         </div>
-        <p v-if="description" class="text-sm text-gray-600 dark:text-gray-400">{{ description }}</p>
+        <p v-if="description" class="text-sm text-gray-600 dark:text-gray-400">
+          {{ description }}
+        </p>
       </div>
       <div
         v-if="moreTo || $slots.actions"

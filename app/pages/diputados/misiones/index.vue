@@ -443,9 +443,7 @@ useChamberSeo(() => ({
               "
               @click.stop
             >
-              {{
-                (row.original as DiputadosMisionesExploreRow).diputadoNombre
-              }}
+              {{ (row.original as DiputadosMisionesExploreRow).diputadoNombre }}
             </NuxtLink>
             <span
               v-else
@@ -453,9 +451,7 @@ useChamberSeo(() => ({
                 (row.original as DiputadosMisionesExploreRow).diputadoNombre
               "
             >
-              {{
-                (row.original as DiputadosMisionesExploreRow).diputadoNombre
-              }}
+              {{ (row.original as DiputadosMisionesExploreRow).diputadoNombre }}
             </span>
           </template>
           <template #destino-cell="{ row }">
@@ -482,13 +478,12 @@ useChamberSeo(() => ({
               :to="misionPath((row.original as DiputadosMisionesExploreRow).id)"
               class="hover:underline block truncate"
               :title="
-                (row.original as DiputadosMisionesExploreRow).motivo || undefined
+                (row.original as DiputadosMisionesExploreRow).motivo ||
+                undefined
               "
               @click.stop
             >
-              {{
-                (row.original as DiputadosMisionesExploreRow).motivo || "—"
-              }}
+              {{ (row.original as DiputadosMisionesExploreRow).motivo || "—" }}
             </NuxtLink>
           </template>
         </UTable>

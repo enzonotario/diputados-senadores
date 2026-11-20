@@ -143,7 +143,9 @@ useChamberSeo(() => {
 
     <template v-else>
       <UCard>
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div
+          class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+        >
           <div class="min-w-0 space-y-2">
             <p class="text-sm text-toned">Comisión</p>
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -176,9 +178,7 @@ useChamberSeo(() => {
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-muted">
           {{ integrantes.length }}
-          {{
-            integrantes.length === 1 ? "integrante" : "integrantes"
-          }}
+          {{ integrantes.length === 1 ? "integrante" : "integrantes" }}
         </p>
         <ClientOnly>
           <UFieldGroup size="sm">
@@ -203,7 +203,10 @@ useChamberSeo(() => {
         </ClientOnly>
       </div>
 
-      <DataTableCard v-if="integrantesVista === 'lista'" :show-periodo-badge="false">
+      <DataTableCard
+        v-if="integrantesVista === 'lista'"
+        :show-periodo-badge="false"
+      >
         <UTable
           v-model:sorting="sorting"
           :data="integrantes"
@@ -285,10 +288,7 @@ useChamberSeo(() => {
         </UTable>
       </DataTableCard>
 
-      <div
-        v-else
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-      >
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <UCard
           v-for="row in integrantes"
           :key="`${row.senadorId || row.nombre}-${row.cargo}`"
@@ -328,10 +328,7 @@ useChamberSeo(() => {
             </div>
           </div>
         </UCard>
-        <p
-          v-if="!integrantes.length"
-          class="text-sm text-muted col-span-full"
-        >
+        <p v-if="!integrantes.length" class="text-sm text-muted col-span-full">
           No hay integrantes en esta comisión.
         </p>
       </div>

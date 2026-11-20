@@ -6,7 +6,10 @@ export default defineEventHandler(async (event) => {
   }
   const payload = await buildMisionById(chamber, id);
   if (!payload) {
-    throw createError({ statusCode: 404, statusMessage: "Misión no encontrada" });
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Misión no encontrada",
+    });
   }
   return payload;
 });

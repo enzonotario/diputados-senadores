@@ -12,9 +12,7 @@ const props = withDefaults(
   { showEmpty: false, chamber: "senadores" },
 );
 
-const visible = computed(
-  () => props.showEmpty || props.comisiones.length > 0,
-);
+const visible = computed(() => props.showEmpty || props.comisiones.length > 0);
 
 const listTo = computed(() => `/${props.chamber}/comisiones`);
 

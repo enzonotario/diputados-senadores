@@ -55,11 +55,13 @@ const periodMode = ref<"mes" | "trimestre" | "mandato">("trimestre");
 const hasMandatos = computed(() => (props.mandatos?.length || 0) >= 2);
 
 const periodModeItems = computed(() => {
-  const items: Array<{ label: string; value: "mes" | "trimestre" | "mandato" }> =
-    [
-      { label: "Trimestre", value: "trimestre" },
-      { label: "Mes", value: "mes" },
-    ];
+  const items: Array<{
+    label: string;
+    value: "mes" | "trimestre" | "mandato";
+  }> = [
+    { label: "Trimestre", value: "trimestre" },
+    { label: "Mes", value: "mes" },
+  ];
   if (hasMandatos.value) {
     items.push({ label: "Mandato", value: "mandato" });
   }
@@ -104,8 +106,7 @@ watch(hasMandatos, (ok) => {
 });
 
 const hasAffinity = computed(
-  () =>
-    affinity.value.allies.length > 0 || affinity.value.opponents.length > 0,
+  () => affinity.value.allies.length > 0 || affinity.value.opponents.length > 0,
 );
 
 const actasMetaById = computed(() => {
@@ -164,9 +165,7 @@ const dissentOption = computed(() => {
         bottom: 8,
         borderColor: p.border,
         backgroundColor: p.splitLine,
-        fillerColor: p.isDark
-          ? "rgba(239,68,68,0.2)"
-          : "rgba(239,68,68,0.12)",
+        fillerColor: p.isDark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.12)",
         handleStyle: { color: p.negativo, borderColor: p.negativo },
         textStyle: { color: p.textMuted, fontSize: 10 },
       },
@@ -255,9 +254,7 @@ function pairMeta(pair: AffinityPair) {
       <ClientOnly>
         <div class="grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
           <div class="space-y-2">
-            <h4 class="text-sm font-medium text-highlighted">
-              Más parecidos
-            </h4>
+            <h4 class="text-sm font-medium text-highlighted">Más parecidos</h4>
             <ul v-if="affinity.allies.length" class="space-y-1.5">
               <li
                 v-for="pair in affinity.allies"
@@ -287,9 +284,7 @@ function pairMeta(pair: AffinityPair) {
           </div>
 
           <div class="space-y-2">
-            <h4 class="text-sm font-medium text-highlighted">
-              Más opuestos
-            </h4>
+            <h4 class="text-sm font-medium text-highlighted">Más opuestos</h4>
             <ul v-if="affinity.opponents.length" class="space-y-1.5">
               <li
                 v-for="pair in affinity.opponents"

@@ -159,10 +159,11 @@ export function usePeriodoFilter() {
     },
   });
 
-  const selectedInfos = computed(() =>
-    periodos.value
-      .map((k) => findPeriodo(catalog.value || undefined, k))
-      .filter(Boolean) as PeriodoInfo[],
+  const selectedInfos = computed(
+    () =>
+      periodos.value
+        .map((k) => findPeriodo(catalog.value || undefined, k))
+        .filter(Boolean) as PeriodoInfo[],
   );
 
   const selectedInfo = computed(() => selectedInfos.value[0] || null);
@@ -210,8 +211,7 @@ export function usePeriodoFilter() {
       if (!c?.defaultKey) return;
       const q = route.query.periodo;
       const hasQuery =
-        q != null &&
-        String(Array.isArray(q) ? q.join(",") : q).trim() !== "";
+        q != null && String(Array.isArray(q) ? q.join(",") : q).trim() !== "";
       if (hasQuery) {
         // Auto-selección de ficha inactiva: no pisar la selección global.
         if (isMemberAutoQuery(memberAuto.value, route.path, q)) return;

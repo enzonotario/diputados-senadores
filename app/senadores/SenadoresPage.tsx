@@ -1,49 +1,53 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import SenadorCard from "../components/SenadorCard"
-import { getVotaciones, getSenatorsData } from "../lib/data"
-import { Search } from "lucide-react"
+import { useState, useEffect } from "react";
+import SenadorCard from "../components/SenadorCard";
+import { getVotaciones, getSenatorsData } from "../lib/data";
+import { Search } from "lucide-react";
 
 async function getSenadores() {
-  const votaciones = await getVotaciones()
-  const senadores: { [key: string]: { total: number; affirmative: number; negative: number } } = {}
+  const votaciones = await getVotaciones();
+  const senadores: {
+    [key: string]: { total: number; affirmative: number; negative: number };
+  } = {};
 
   votaciones.forEach((votacion: any) => {
     votacion.votes.forEach((vote: any) => {
       if (!senadores[vote.name]) {
-        senadores[vote.name] = { total: 0, affirmative: 0, negative: 0 }
+        senadores[vote.name] = { total: 0, affirmative: 0, negative: 0 };
       }
-      senadores[vote.name].total++
-      if (vote.vote === "SI") senadores[vote.name].affirmative++
-      if (vote.vote === "NO") senadores[vote.name].negative++
-    })
-  })
+      senadores[vote.name].total++;
+      if (vote.vote === "SI") senadores[vote.name].affirmative++;
+      if (vote.vote === "NO") senadores[vote.name].negative++;
+    });
+  });
 
   return Object.entries(senadores).map(([name, stats]) => ({
     name,
     totalVotes: stats.total,
     affirmativeVotes: stats.affirmative,
     negativeVotes: stats.negative,
-  }))
+  }));
 }
 
 export default function SenadoresPage() {
-  const [senadores, setSenadores] = useState<any[]>([])
-  const [senatorsData, setSenatorsData] = useState<any>({})
-  const [searchTerm, setSearchTerm] = useState("")
+  const [senadores, setSenadores] = useState<any[]>([]);
+  const [senatorsData, setSenatorsData] = useState<any>({});
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
-      const senadoresData = await getSenadores()
-      const senatorsImageData = await getSenatorsData()
-      setSenadores(senadoresData)
-      setSenatorsData(senatorsImageData)
-    }
-    fetchData()
-  }, [])
+      const senadoresData = await getSenadores();
+      const senatorsImageData = await getSenatorsData();
+      setSenadores(senadoresData);
+      setSenatorsData(senatorsImageData);
+    };
+    fetchData();
+  }, []);
 
-  const filteredSenadores = senadores.filter((senador) => senador.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredSenadores = senadores.filter((senador) =>
+    senador.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -71,6 +75,5 @@ export default function SenadoresPage() {
         ))}
       </div>
     </main>
-  )
+  );
 }
-

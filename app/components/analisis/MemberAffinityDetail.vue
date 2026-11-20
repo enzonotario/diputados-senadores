@@ -58,11 +58,13 @@ const periodMode = ref<"mes" | "trimestre" | "mandato">("trimestre");
 const hasMandatos = computed(() => (props.mandatos?.length || 0) >= 2);
 
 const periodModeItems = computed(() => {
-  const items: Array<{ label: string; value: "mes" | "trimestre" | "mandato" }> =
-    [
-      { label: "Trimestre", value: "trimestre" },
-      { label: "Mes", value: "mes" },
-    ];
+  const items: Array<{
+    label: string;
+    value: "mes" | "trimestre" | "mandato";
+  }> = [
+    { label: "Trimestre", value: "trimestre" },
+    { label: "Mes", value: "mes" },
+  ];
   if (hasMandatos.value) {
     items.push({ label: "Mandato", value: "mandato" });
   }
@@ -140,9 +142,7 @@ const dissentOption = computed(() => {
         bottom: 8,
         borderColor: p.border,
         backgroundColor: p.splitLine,
-        fillerColor: p.isDark
-          ? "rgba(239,68,68,0.2)"
-          : "rgba(239,68,68,0.12)",
+        fillerColor: p.isDark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.12)",
         handleStyle: { color: p.negativo, borderColor: p.negativo },
         textStyle: { color: p.textMuted, fontSize: 10 },
       },
@@ -247,9 +247,9 @@ const pairColumns = computed(() => [
     ),
     meta: {
       class: {
-        td: 'max-w-xs whitespace-normal',
+        td: "max-w-xs whitespace-normal",
       },
-    }
+    },
   },
   { id: "rate", accessorKey: "rate", header: sortableHeader("Coincidencia") },
   {
@@ -275,12 +275,7 @@ function onPairSelect(_e: Event, row: { original: AffinityPair }) {
 <template>
   <div class="page-container flex flex-col gap-8">
     <div class="flex flex-wrap items-center gap-3">
-      <UButton
-        :to="memberTo"
-        variant="ghost"
-        color="neutral"
-        size="sm"
-      >
+      <UButton :to="memberTo" variant="ghost" color="neutral" size="sm">
         <UIcon name="i-lucide-arrow-left" class="size-4" />
         Volver a la ficha
       </UButton>
@@ -315,12 +310,7 @@ function onPairSelect(_e: Event, row: { original: AffinityPair }) {
             <template v-else>Sin {{ groupLabel }}</template>
             · votaciones desde {{ AFFINITY_FROM_DATE.slice(0, 4) }}
           </p>
-          <UButton
-            :to="memberTo"
-            size="sm"
-            color="neutral"
-            variant="soft"
-          >
+          <UButton :to="memberTo" size="sm" color="neutral" variant="soft">
             Ver ficha completa
           </UButton>
         </div>
@@ -425,7 +415,9 @@ function onPairSelect(_e: Event, row: { original: AffinityPair }) {
           >
             <template #foto-cell="{ row }">
               <UAvatar
-                :src="(row.original as AffinityPair).foto || '/placeholder-user.jpg'"
+                :src="
+                  (row.original as AffinityPair).foto || '/placeholder-user.jpg'
+                "
                 :alt="(row.original as AffinityPair).name"
                 size="xs"
               />
@@ -471,7 +463,9 @@ function onPairSelect(_e: Event, row: { original: AffinityPair }) {
           >
             <template #foto-cell="{ row }">
               <UAvatar
-                :src="(row.original as AffinityPair).foto || '/placeholder-user.jpg'"
+                :src="
+                  (row.original as AffinityPair).foto || '/placeholder-user.jpg'
+                "
                 :alt="(row.original as AffinityPair).name"
                 size="xs"
               />

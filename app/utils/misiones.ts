@@ -1,7 +1,11 @@
 import slugify from "slugify";
 
 function slugPart(value: string, max = 48): string {
-  const s = slugify(String(value || ""), { lower: true, strict: true, trim: true });
+  const s = slugify(String(value || ""), {
+    lower: true,
+    strict: true,
+    trim: true,
+  });
   return (s || "x").slice(0, max);
 }
 
@@ -76,10 +80,11 @@ export type MisionIdParts = {
  * Clave: documento + fecha + nombre + destino (única en el dataset HCDN).
  */
 export function buildMisionId(m: MisionIdParts): string {
-  const doc = String(m.documentoId || m.recursoId || "x")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(0, 8)
-    .toLowerCase() || "x";
+  const doc =
+    String(m.documentoId || m.recursoId || "x")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 8)
+      .toLowerCase() || "x";
   const date = String(m.fechaInicio || m.anio || "0000")
     .slice(0, 10)
     .replace(/[^0-9-]/g, "");

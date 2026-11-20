@@ -89,8 +89,7 @@ function votesCount(row: PeriodoInfo): number {
 }
 
 const chartDescription = computed(() => {
-  const shortcuts =
-    "Clic = uno · Ctrl/⌘+clic = sumar · Shift+clic = rango.";
+  const shortcuts = "Clic = uno · Ctrl/⌘+clic = sumar · Shift+clic = rango.";
   if (hasDualMetrics.value) {
     return `Barras por año: ${membersNoun.value} y ${votesNoun.value} de cada período. ${shortcuts}`;
   }
@@ -461,8 +460,7 @@ function onClick(params: any) {
   const selected = props.selected || [];
 
   if (shift) {
-    const anchor =
-      shiftAnchorKey.value || selected[selected.length - 1] || key;
+    const anchor = shiftAnchorKey.value || selected[selected.length - 1] || key;
     const i0 = keys.indexOf(anchor);
     const i1 = keys.indexOf(key);
     if (i0 < 0 || i1 < 0) {
@@ -499,11 +497,7 @@ function onClick(params: any) {
     :description="chartDescription"
     :show-periodo-badge="false"
   >
-    <div
-      ref="chartWrap"
-      class="relative"
-      @mousedown.capture="onPointerDown"
-    >
+    <div ref="chartWrap" class="relative" @mousedown.capture="onPointerDown">
       <ChartsAppChart
         :option="option"
         height="22rem"

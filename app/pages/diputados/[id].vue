@@ -85,11 +85,7 @@ const tabItems = computed(() =>
     <template v-else>
       <DiputadoProfileHeader :diputado="diputado" :career="career" />
 
-      <SegmentedTabs
-        v-model="activeTab"
-        :items="tabItems"
-        :center="false"
-      />
+      <SegmentedTabs v-model="activeTab" :items="tabItems" :center="false" />
 
       <NuxtPage />
     </template>

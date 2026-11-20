@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Senador, FilterConfig, Voto } from "@/lib/types";
-import { filterSenadores, formatDate, formatDateTime, getUniqueValues } from "@/lib/utils";
+import {
+  filterSenadores,
+  formatDate,
+  formatDateTime,
+  getUniqueValues,
+} from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import { groupSenadoresBy } from "@/utils/groupSenadoresBy";
 import {
@@ -179,7 +184,9 @@ const tableColumns = [
   { id: "tipoVoto", accessorKey: "tipoVoto", header: sortableHeader("Voto") },
 ];
 
-const provinciaTableColumns = tableColumns.filter((col) => col.id !== "provincia");
+const provinciaTableColumns = tableColumns.filter(
+  (col) => col.id !== "provincia",
+);
 
 function onRowSelect(_e: Event, row: { original: Senador }) {
   navigateTo(`/senadores/${row.original.id}`);
@@ -200,12 +207,17 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
     </UCard>
 
     <template v-else>
-      <UCard :ui="{
-        body: 'p-3!',
-        header: 'border-0 p-3! pb-0!'
-      }" class="">
+      <UCard
+        :ui="{
+          body: 'p-3!',
+          header: 'border-0 p-3! pb-0!',
+        }"
+        class=""
+      >
         <template #header>
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div
+            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+          >
             <h1 class="text-lg md:text-2xl font-semibold">
               {{ acta.titulo }}
             </h1>
@@ -223,19 +235,25 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           </div>
         </template>
 
-        <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        <dl
+          class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+        >
           <div v-if="acta.proyecto" class="flex flex-col min-w-0">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Proyecto</dt>
             <dd class="text-sm font-medium break-words">{{ acta.proyecto }}</dd>
           </div>
           <div v-if="acta.descripcion" class="flex flex-col min-w-0">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Descripción</dt>
+            <dt class="text-sm text-gray-600 dark:text-gray-300">
+              Descripción
+            </dt>
             <dd class="text-sm font-medium break-words">
               {{ acta.descripcion }}
             </dd>
           </div>
           <div v-if="acta.quorumTipo" class="flex flex-col min-w-0">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Tipo quórum</dt>
+            <dt class="text-sm text-gray-600 dark:text-gray-300">
+              Tipo quórum
+            </dt>
             <dd class="text-sm font-medium">{{ acta.quorumTipo }}</dd>
           </div>
           <div v-if="acta.mayoria" class="flex flex-col min-w-0">
@@ -253,7 +271,9 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
             <dt class="text-sm text-gray-600 dark:text-gray-300">
               Miembros del cuerpo
             </dt>
-            <dd class="text-sm font-medium tabular-nums">{{ acta.miembros }}</dd>
+            <dd class="text-sm font-medium tabular-nums">
+              {{ acta.miembros }}
+            </dd>
           </div>
           <div v-if="acta.presidente" class="flex flex-col min-w-0">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Presidente</dt>
@@ -282,9 +302,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           </div>
         </dl>
 
-        <div
-          class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3"
-        >
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div
             class="rounded-lg border border-default px-3 py-2 grid grid-cols-3 gap-2 text-center"
           >
@@ -348,9 +366,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
         >
           <template #header>
             <div>
-              <h2 class="text-xl font-semibold text-center">
-                Cómo votaron
-              </h2>
+              <h2 class="text-xl font-semibold text-center">Cómo votaron</h2>
             </div>
           </template>
         </HemicicloChart>
@@ -502,9 +518,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
               empty-message="No hay senadores para mostrar con los filtros actuales."
             />
             <template v-else>
-              <div
-                class="flex flex-wrap items-center justify-between gap-3"
-              >
+              <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-lg font-semibold">
                   {{ selectedProvinciaTitle }}
                 </h2>
@@ -524,9 +538,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                     <UButton
                       color="neutral"
                       :variant="
-                        provinciasMembersLayout === 'grid'
-                          ? 'solid'
-                          : 'outline'
+                        provinciasMembersLayout === 'grid' ? 'solid' : 'outline'
                       "
                       icon="i-lucide-layout-grid"
                       label="Grid"
@@ -534,7 +546,9 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                     />
                   </UFieldGroup>
                   <template #fallback>
-                    <div class="h-8 w-36 animate-pulse rounded-md bg-elevated" />
+                    <div
+                      class="h-8 w-36 animate-pulse rounded-md bg-elevated"
+                    />
                   </template>
                 </ClientOnly>
               </div>
@@ -552,9 +566,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                     <h3 class="text-base font-semibold">{{ group.label }}</h3>
                     <UBadge variant="subtle" color="neutral">
                       {{ group.members.length }}
-                      {{
-                        group.members.length === 1 ? "senador" : "senadores"
-                      }}
+                      {{ group.members.length === 1 ? "senador" : "senadores" }}
                     </UBadge>
                   </div>
 

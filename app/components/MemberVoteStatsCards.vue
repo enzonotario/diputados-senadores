@@ -9,8 +9,8 @@ const props = defineProps<{
 
 const palette = useChartPalette();
 
-const presentes = computed(
-  () => Math.max(0, props.stats.totalVotaciones - props.stats.ausencias),
+const presentes = computed(() =>
+  Math.max(0, props.stats.totalVotaciones - props.stats.ausencias),
 );
 
 const votaron = computed(
@@ -22,8 +22,7 @@ const votaron = computed(
 
 const presidencias = computed(
   () =>
-    props.stats.presidencias ??
-    Math.max(0, presentes.value - votaron.value),
+    props.stats.presidencias ?? Math.max(0, presentes.value - votaron.value),
 );
 
 const presentismo = computed(() => Math.round(props.stats.presentismo));
@@ -140,9 +139,7 @@ const sankeyOption = computed(() => {
       formatter: (params: any) => {
         if (params.dataType === "edge") {
           const pct =
-            tot > 0
-              ? Math.round((Number(params.value) / tot) * 1000) / 10
-              : 0;
+            tot > 0 ? Math.round((Number(params.value) / tot) * 1000) / 10 : 0;
           return `${params.data.source} → ${params.data.target}<br/><b>${params.value}</b> (${pct}%)`;
         }
         const value = valueByName[params.name];
@@ -245,7 +242,9 @@ const sankeyOption = computed(() => {
             >
               {{ stats.votosAfirmativos }}
             </div>
-            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight">
+            <div
+              class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight"
+            >
               A favor
             </div>
           </div>
@@ -258,7 +257,9 @@ const sankeyOption = computed(() => {
             >
               {{ stats.votosNegativos }}
             </div>
-            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight">
+            <div
+              class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight"
+            >
               En contra
             </div>
           </div>
@@ -271,7 +272,9 @@ const sankeyOption = computed(() => {
             >
               {{ stats.abstenciones }}
             </div>
-            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight">
+            <div
+              class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight"
+            >
               Abstenciones
             </div>
           </div>
@@ -284,7 +287,9 @@ const sankeyOption = computed(() => {
             >
               {{ stats.ausencias }}
             </div>
-            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight">
+            <div
+              class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight"
+            >
               Ausencias
             </div>
           </div>
@@ -298,7 +303,9 @@ const sankeyOption = computed(() => {
             >
               {{ presidencias }}
             </div>
-            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight">
+            <div
+              class="mt-1 text-xs text-gray-600 dark:text-gray-300 leading-tight"
+            >
               Presidió (asistió sin votar)
             </div>
           </div>
@@ -311,7 +318,9 @@ const sankeyOption = computed(() => {
             body: 'flex items-center gap-3 py-2.5! px-3!',
           }"
         >
-          <span class="text-xs font-medium text-muted shrink-0">Asistencia</span>
+          <span class="text-xs font-medium text-muted shrink-0"
+            >Asistencia</span
+          >
           <UProgress
             :model-value="presentismo"
             size="sm"

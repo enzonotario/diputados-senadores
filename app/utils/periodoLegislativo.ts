@@ -264,7 +264,8 @@ export function buildPeriodosCatalogFromOfficial(
     const key = String(p.periodo || "").trim();
     if (!key) continue;
     knownKeys.add(key);
-    const minFecha = toIsoDateAr(p.inicio) || String(p.inicio || "").slice(0, 10);
+    const minFecha =
+      toIsoDateAr(p.inicio) || String(p.inicio || "").slice(0, 10);
     const maxFecha = toIsoDateAr(p.fin) || String(p.fin || "").slice(0, 10);
     if (!minFecha || !maxFecha) continue;
     periods.push({
@@ -638,7 +639,7 @@ export function periodosWithMemberCounts<T extends MemberPeriodoLike>(
 
   return periods.map((p) => {
     const actasCount = p.count;
-    let membersCount = 0;
+    let membersCount: number;
     if (p.key === SIN_PERIODO_KEY) {
       membersCount = members.filter(
         (m) =>

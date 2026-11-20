@@ -1,8 +1,5 @@
 import nameToId from "../assets/legacy-senador-redirects.json";
-import {
-  parseSiteId,
-  resolveSiteFromHost,
-} from "../../app/lib/chamber";
+import { parseSiteId, resolveSiteFromHost } from "../../app/lib/chamber";
 
 const STATIC: Record<string, string> = {
   "/votaciones": "/actas",

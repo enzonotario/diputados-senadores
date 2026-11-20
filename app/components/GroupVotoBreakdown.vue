@@ -88,7 +88,9 @@ function pct(n: number) {
         class="flex flex-col items-center justify-center text-blue-800 dark:text-blue-300"
       >
         <span>Abstenciones</span>
-        <span>{{ pct(tallies.abstenciones) }}% ({{ tallies.abstenciones }})</span>
+        <span
+          >{{ pct(tallies.abstenciones) }}% ({{ tallies.abstenciones }})</span
+        >
       </div>
       <div
         class="flex flex-col items-center justify-center text-amber-950 dark:text-amber-200"
@@ -98,9 +100,6 @@ function pct(n: number) {
       </div>
     </div>
 
-    <VotacionesProgress
-      :acta="tallies"
-      :resultado="predominant"
-    />
+    <VotacionesProgress :acta="tallies" :resultado="predominant" />
   </div>
 </template>

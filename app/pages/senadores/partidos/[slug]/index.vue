@@ -76,7 +76,11 @@ const actasMeta = computed(() => partido.value?.actasMeta || {});
 const pageVista = useRouteQuery("vista", "integrantes");
 const pageVistaItems: TabsItem[] = [
   { label: "Integrantes", value: "integrantes", icon: "i-lucide-users" },
-  { label: "Cómo votan juntos", value: "afinidad", icon: "i-lucide-git-compare" },
+  {
+    label: "Cómo votan juntos",
+    value: "afinidad",
+    icon: "i-lucide-git-compare",
+  },
 ];
 
 watch(
@@ -354,8 +358,7 @@ useChamberSeo(() => {
             </template>
             <template #presentismo-cell="{ row }">
               <span>
-                {{
-                  (row.original as Senador).estadisticas?.presentismo ?? "—"
+                {{ (row.original as Senador).estadisticas?.presentismo ?? "—"
                 }}{{ (row.original as Senador).estadisticas ? "%" : "" }}
               </span>
             </template>

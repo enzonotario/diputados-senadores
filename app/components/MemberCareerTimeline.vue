@@ -42,9 +42,7 @@ function periodLabel(cargo: CareerCargo): string {
 
 function groupLabel(cargo: CareerCargo): string {
   if (!cargo.group) return "";
-  return cargo.chamber === "diputados"
-    ? `Bloque ${cargo.group}`
-    : cargo.group;
+  return cargo.chamber === "diputados" ? `Bloque ${cargo.group}` : cargo.group;
 }
 
 function hrefFor(cargo: CareerCargo): string {

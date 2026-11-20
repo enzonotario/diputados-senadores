@@ -24,9 +24,9 @@ const { data, pending } = await useAsyncData("senado-comisiones", () =>
 const comisiones = computed(() => data.value?.comisiones || []);
 
 const tipos = computed(() =>
-  [...new Set(comisiones.value.map((c) => c.tipo).filter(Boolean) as string[])].sort(
-    (a, b) => a.localeCompare(b, "es"),
-  ),
+  [
+    ...new Set(comisiones.value.map((c) => c.tipo).filter(Boolean) as string[]),
+  ].sort((a, b) => a.localeCompare(b, "es")),
 );
 
 const tipoItems = computed(() =>
@@ -36,7 +36,10 @@ const tipoItems = computed(() =>
 const displayed = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
   return comisiones.value.filter((c) => {
-    if (tipoFilter.value.length && (!c.tipo || !tipoFilter.value.includes(c.tipo))) {
+    if (
+      tipoFilter.value.length &&
+      (!c.tipo || !tipoFilter.value.includes(c.tipo))
+    ) {
       return false;
     }
     if (!q) return true;
@@ -65,9 +68,9 @@ const tableColumns = [
     header: sortableHeader("Comisión"),
     meta: {
       class: {
-        td: 'max-w-xs whitespace-normal',
+        td: "max-w-xs whitespace-normal",
       },
-    }
+    },
   },
   {
     id: "tipo",

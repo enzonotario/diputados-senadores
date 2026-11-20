@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import type { SenadorViajes, ViajeInternacional, ViajeNacional } from "@/lib/types";
+import type {
+  SenadorViajes,
+  ViajeInternacional,
+  ViajeNacional,
+} from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
-import {
-  viajesFuenteUrl,
-} from "@/utils/viajes";
+import { viajesFuenteUrl } from "@/utils/viajes";
 import { viajePdfUrl } from "@/utils/staticPdf";
 import SenadorViajesMap from "@/components/SenadorViajesMap.vue";
 
@@ -153,9 +155,7 @@ const hasAny = computed(
     0,
 );
 
-const showTabs = computed(
-  () => tabItems.value.length > 1 && hasAny.value,
-);
+const showTabs = computed(() => tabItems.value.length > 1 && hasAny.value);
 
 const visible = computed(() => props.showEmpty || hasAny.value);
 
@@ -323,11 +323,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <DataTableCard
-    v-if="visible"
-    :show-periodo-badge="false"
-    :scrollable="false"
-  >
+  <DataTableCard v-if="visible" :show-periodo-badge="false" :scrollable="false">
     <template #header>
       <div
         class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -403,7 +399,9 @@ onBeforeUnmount(() => {
             <span>Destino</span>
           </div>
 
-          <ul class="divide-y divide-default rounded-lg ring ring-default overflow-hidden">
+          <ul
+            class="divide-y divide-default rounded-lg ring ring-default overflow-hidden"
+          >
             <li
               v-for="(viaje, index) in nacionalesSorted"
               :key="viajeNacKey(viaje, index)"
@@ -419,9 +417,7 @@ onBeforeUnmount(() => {
               <div class="flex items-start gap-1 min-w-0">
                 <div class="leading-tight min-w-0">
                   <p class="text-sm">
-                    {{
-                      periodoLabel(viaje.anio, viaje.mes, viaje.mesNombre)
-                    }}
+                    {{ periodoLabel(viaje.anio, viaje.mes, viaje.mesNombre) }}
                   </p>
                   <p class="text-xs text-muted tabular-nums">
                     {{ periodoKey(viaje.anio, viaje.mes) }}

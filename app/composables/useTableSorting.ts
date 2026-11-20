@@ -13,9 +13,7 @@ export function useTableSorting(
   const defaultDir = defaultDesc ? "desc" : "asc";
 
   if (!syncQuery) {
-    const sorting = ref<SortingState>([
-      { id: defaultId, desc: defaultDesc },
-    ]);
+    const sorting = ref<SortingState>([{ id: defaultId, desc: defaultDesc }]);
     return { sorting };
   }
 

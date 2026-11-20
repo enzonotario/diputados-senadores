@@ -70,7 +70,8 @@ const bloquePorSenadorId = computed(() => {
 const senadoresConBloque = computed(() =>
   (gasto.value?.senadores || []).map((s) => ({
     ...s,
-    bloque: s.bloque || bloquePorSenadorId.value.get(String(s.senadorId)) || null,
+    bloque:
+      s.bloque || bloquePorSenadorId.value.get(String(s.senadorId)) || null,
   })),
 );
 
@@ -166,8 +167,7 @@ const escalaColumns = [
   {
     accessorKey: "brutoConAdicionalFuncion",
     header: "Con adic. función",
-    cell: ({ row }: any) =>
-      formatMoney(row.original.brutoConAdicionalFuncion),
+    cell: ({ row }: any) => formatMoney(row.original.brutoConAdicionalFuncion),
   },
 ];
 
@@ -200,8 +200,7 @@ useChamberSeo(() => ({
         Cruce del personal publicado (bloques y despachos) con la escala
         salarial oficial. Monto por agente =
         <strong>Total en pesos + RC 2 y 6/22</strong>. La dieta de cada senador
-        se estima en 4000 módulos × valor del módulo
-        (<a
+        se estima en 4000 módulos × valor del módulo (<a
           :href="SENADO_DIETAS_URL"
           target="_blank"
           rel="noopener noreferrer"
@@ -315,7 +314,7 @@ useChamberSeo(() => ({
       </template>
 
       <template v-else-if="vista === 'escala'">
-        <p class="text-sm text-muted" v-if="escala">
+        <p v-if="escala" class="text-sm text-muted">
           Escala {{ escala.vigencia || "vigente" }} ·
           <a
             :href="escala.fuente"

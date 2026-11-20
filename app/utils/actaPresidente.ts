@@ -38,7 +38,9 @@ export function parsePresidenteNombre(raw: string): {
   nombre: string;
   nombreCompleto: string;
 } {
-  const value = String(raw || "").trim().replace(/\s+/g, " ");
+  const value = String(raw || "")
+    .trim()
+    .replace(/\s+/g, " ");
   if (!value) return { apellido: "", nombre: "", nombreCompleto: "" };
 
   if (value.includes(",")) {

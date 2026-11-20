@@ -41,7 +41,11 @@ export function decodeOgHemiciclo(raw?: string | null): OgHemicicloGroup[] {
     const [countRaw, hexRaw] = part.split(":");
     const count = Number(countRaw);
     const hex = String(hexRaw || "").trim();
-    if (!Number.isFinite(count) || count <= 0 || !/^[0-9a-fA-F]{3,8}$/.test(hex)) {
+    if (
+      !Number.isFinite(count) ||
+      count <= 0 ||
+      !/^[0-9a-fA-F]{3,8}$/.test(hex)
+    ) {
       continue;
     }
     out.push({ count: Math.round(count), color: `#${hex}` });
@@ -308,9 +312,7 @@ export function groupsForOgHemiciclo(
     counts.set(key, (counts.get(key) || 0) + 1);
   }
   return [...counts.entries()]
-    .sort(
-      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"),
-    )
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"))
     .map(([name, count]) => ({
       count,
       color: colors[name] || "#6b7280",

@@ -1,11 +1,7 @@
 import type { TabsItem } from "@nuxt/ui";
 
 export type SenadorMemberTab =
-  | "votaciones"
-  | "afinidad"
-  | "viajes"
-  | "comisiones"
-  | "gasto";
+  "votaciones" | "afinidad" | "viajes" | "comisiones" | "gasto";
 
 export function senadorMemberBasePath(id: string | number) {
   return `/senadores/${id}`;

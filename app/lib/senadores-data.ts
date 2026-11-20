@@ -20,6 +20,8 @@ import {
   SIN_PERIODO_KEY,
 } from "../utils/periodoLegislativo";
 
+import { createSingleflight } from "./singleflight";
+
 function slug(value: string) {
   return slugify(value || "", { lower: true, strict: true, trim: true });
 }
@@ -37,8 +39,6 @@ function getApiOrigin() {
     return "https://api.argentinadatos.com";
   }
 }
-
-import { createSingleflight } from "./singleflight";
 
 type Viajes12mRaw = {
   window: {
@@ -103,19 +103,23 @@ export type ViajesExplorePayload = {
   internacionales: ViajesExploreInternacional[];
 };
 
-let _senadoresRaw = createSingleflight<any[]>();
-let _senadores = createSingleflight<Senador[]>();
-let _actas = createSingleflight<Acta[]>();
-let _senadoresConActas = createSingleflight<Senador[]>();
+const _senadoresRaw = createSingleflight<any[]>();
+const _senadores = createSingleflight<Senador[]>();
+const _actas = createSingleflight<Acta[]>();
+const _senadoresConActas = createSingleflight<Senador[]>();
 const _viajesById = new Map<string, Promise<import("./types").SenadorViajes>>();
-let _viajesConteo12m = createSingleflight<Record<string, number>>();
-let _viajes12mRaw = createSingleflight<Viajes12mRaw>();
-let _viajesExplore = createSingleflight<ViajesExplorePayload>();
-let _comisiones = createSingleflight<import("./types").Comision[]>();
-let _presidencia = createSingleflight<import("./types").PresidenciaSenado | null>();
-let _gasto = createSingleflight<import("./types").GastoSenado | null>();
-let _bloques = createSingleflight<import("./types").BloqueSenadoGasto[]>();
-let _escala = createSingleflight<import("./types").EscalaSalarialSenado | null>();
+const _viajesConteo12m = createSingleflight<Record<string, number>>();
+const _viajes12mRaw = createSingleflight<Viajes12mRaw>();
+const _viajesExplore = createSingleflight<ViajesExplorePayload>();
+const _comisiones = createSingleflight<import("./types").Comision[]>();
+const _presidencia = createSingleflight<
+  import("./types").PresidenciaSenado | null
+>();
+const _gasto = createSingleflight<import("./types").GastoSenado | null>();
+const _bloques = createSingleflight<import("./types").BloqueSenadoGasto[]>();
+const _escala = createSingleflight<
+  import("./types").EscalaSalarialSenado | null
+>();
 const _personalById = new Map<
   string,
   Promise<import("./types").SenadorPersonalDetalle | null>
@@ -214,8 +218,7 @@ function mapActa(raw: any): Acta {
   const periodoRaw = String(raw.periodo || "").trim();
   const derived = fakeSenadoPeriodoKey(fecha);
   const periodo =
-    periodoRaw ||
-    (derived !== SIN_PERIODO_KEY ? derived : undefined);
+    periodoRaw || (derived !== SIN_PERIODO_KEY ? derived : undefined);
 
   return {
     id: String(raw.actaId ?? raw.id),
@@ -239,14 +242,12 @@ function mapActa(raw: any): Acta {
       raw.presidente != null ? String(raw.presidente).trim() || null : null,
     observaciones: raw.observaciones || [],
     periodo,
-    votos: (raw.votos || []).map(
-      (v: any): Voto => ({
-        senador: v.nombre || "",
-        senadorSlug: slug(v.nombre || ""),
-        tipoVoto: normalizeVotoTipo(v.voto),
-        banca: v.banca || "",
-      }),
-    ),
+    votos: (raw.votos || []).map((v: any): Voto => ({
+      senador: v.nombre || "",
+      senadorSlug: slug(v.nombre || ""),
+      tipoVoto: normalizeVotoTipo(v.voto),
+      banca: v.banca || "",
+    })),
   };
 }
 
@@ -284,7 +285,7 @@ export async function getSenadores(): Promise<Senador[]> {
 
 /**
  * Mapa senadorId → total de viajes (nac+intl) en los últimos 12 meses.
- * Prefiere el endpoint compacto (~8 KB); si aún no está en prod, calcula
+ * Prefiere el endpoint compacto (~8 KB); si aún no está en prod, calcula
  * desde los índices por año (ya publicados).
  */
 export async function getViajesConteo12mBySenadorId(): Promise<
@@ -586,9 +587,7 @@ export async function getSenadoresConActas(): Promise<Senador[]> {
         actasSenador.map((a) => ({
           periodo: a.periodo,
           tipoVoto:
-            a.tipoVotoSenador ||
-            (a as any).votoSenador?.tipoVoto ||
-            null,
+            a.tipoVotoSenador || (a as any).votoSenador?.tipoVoto || null,
         })),
       );
       return { ...senador, estadisticas, estadisticasPorPeriodo, actasSenador };
@@ -623,9 +622,8 @@ export async function getSenadorConActasById(
 
   const slugParam = slug(decoded);
   return (
-    list.find(
-      (d) => d.nombreSlug === slugParam || d.nombreSlug === decoded,
-    ) || null
+    list.find((d) => d.nombreSlug === slugParam || d.nombreSlug === decoded) ||
+    null
   );
 }
 
@@ -796,8 +794,7 @@ export async function getPartidosIndex() {
       senadores: activos,
     }))
     .sort(
-      (a, b) =>
-        b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
+      (a, b) => b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
     );
 }
 
@@ -838,7 +835,9 @@ export async function getSenadorViajes(
   const promise = (async () => {
     const origin = getApiOrigin();
     try {
-      const raw = await $fetch<any>(`${origin}/v1/senado/senadores/${key}/viajes`);
+      const raw = await $fetch<any>(
+        `${origin}/v1/senado/senadores/${key}/viajes`,
+      );
       return {
         senadorId: String(raw?.senadorId || key),
         nacionales: Array.isArray(raw?.nacionales) ? raw.nacionales : [],
@@ -1000,7 +999,9 @@ export async function getBloquesSenado(): Promise<
     const origin = getApiOrigin();
     try {
       const raw = await $fetch<any[]>(`${origin}/v1/senado/bloques`);
-      return Array.isArray(raw) ? (raw as import("./types").BloqueSenadoGasto[]) : [];
+      return Array.isArray(raw)
+        ? (raw as import("./types").BloqueSenadoGasto[])
+        : [];
     } catch {
       return [];
     }
@@ -1062,4 +1063,3 @@ export async function getSenadorGastoResumen(
   if (!gasto) return null;
   return gasto.senadores.find((s) => String(s.senadorId) === key) || null;
 }
-

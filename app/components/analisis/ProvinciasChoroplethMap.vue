@@ -85,9 +85,7 @@ onMounted(async () => {
 
 const selectedKeys = computed(
   () =>
-    new Set(
-      (props.selected || []).map((n) => provinciaKey(n)).filter(Boolean),
-    ),
+    new Set((props.selected || []).map((n) => provinciaKey(n)).filter(Boolean)),
 );
 
 const seriesData = computed(() => {
@@ -261,9 +259,7 @@ function buildBubbleData() {
           borderWidth: d.isSelected ? 3 : 1.5,
           opacity: 0.92,
           shadowBlur: d.isSelected ? 10 : 0,
-          shadowColor: p.isDark
-            ? "rgba(255,255,255,0.45)"
-            : "rgba(0,0,0,0.35)",
+          shadowColor: p.isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.35)",
         },
         provinciaLabel: d.label,
         rawName: d.rawName,

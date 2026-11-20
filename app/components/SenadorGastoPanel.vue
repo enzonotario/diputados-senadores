@@ -75,8 +75,8 @@ const { sorting } = useTableSorting("brutoBase", true);
         </NuxtLink>
       </div>
       <p class="text-sm text-muted">
-        Categorías publicadas por el Senado. Monto =
-        Total en pesos + RC 2 y 6/22 (sin título/antigüedad/presentismo).
+        Categorías publicadas por el Senado. Monto = Total en pesos + RC 2 y
+        6/22 (sin título/antigüedad/presentismo).
       </p>
     </div>
 

@@ -1,6 +1,6 @@
 /**
  * Recortes de payload para SSR: no embeber votos/actas completas en HTML.
- * Los scrapers de OG (p. ej. Meta) rechazan páginas > 5 MB.
+ * Los scrapers de OG (p. ej. Meta) rechazan páginas > 5 MB.
  */
 
 /** Acta sin array `votos` (conserva totales afirmativos/negativos/…). */

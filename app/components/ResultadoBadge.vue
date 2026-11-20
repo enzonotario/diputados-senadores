@@ -20,9 +20,7 @@ const label = computed(() => {
   if (normalized.value === "negativo") return "Rechazada";
   if (normalized.value === "cancelada") return "Cancelada";
   if (normalized.value === "empate") return "Empate";
-  return (
-    normalized.value.charAt(0).toUpperCase() + normalized.value.slice(1)
-  );
+  return normalized.value.charAt(0).toUpperCase() + normalized.value.slice(1);
 });
 </script>
 

@@ -4,9 +4,7 @@ import { sortableHeader } from "@/utils/sortableHeader";
 import type { AffinityGroupInput } from "@/utils/votingAffinity";
 import type { Diputado } from "@/lib/types-diputados";
 import { getBloqueColores } from "@/lib/diputados-data";
-import {
-  getUniqueValues,
-} from "@/lib/utils";
+import { getUniqueValues } from "@/lib/utils";
 import { groupDiputadosBy } from "@/utils/groupDiputadosBy";
 import { bloqueSlug } from "@/utils/bloque";
 import { averagePresentismo, withPeriodPresentismo } from "@/utils/presentismo";
@@ -79,8 +77,7 @@ const bloques = computed<BloqueRow[]>(() => {
       presentismo: averagePresentismo(list) ?? 0,
     }))
     .sort(
-      (a, b) =>
-        b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
+      (a, b) => b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
     );
 });
 
@@ -249,10 +246,7 @@ useChamberSeo({
     </template>
 
     <template v-else>
-      <AppDataSkeleton
-        v-if="pendingMembers || pendingBloques"
-        variant="list"
-      />
+      <AppDataSkeleton v-if="pendingMembers || pendingBloques" variant="list" />
       <div
         v-else
         class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6"

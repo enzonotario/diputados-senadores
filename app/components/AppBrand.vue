@@ -52,9 +52,7 @@ const logoSrcsetDark = computed(() => {
   return `${c.logoSrcDark} ${w1}w, ${c.logoSrcDark2x} ${w2}w`;
 });
 
-const showLogo = computed(
-  () => props.logo && Boolean(chamber.value.logoSrc),
-);
+const showLogo = computed(() => props.logo && Boolean(chamber.value.logoSrc));
 
 /** LCP en home: priorizar logo claro (auditorías light). */
 const isLcp = computed(() => props.size === "lg");

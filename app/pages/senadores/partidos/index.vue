@@ -77,8 +77,7 @@ const partidos = computed<PartidoRow[]>(() => {
       presentismo: averagePresentismo(list) ?? 0,
     }))
     .sort(
-      (a, b) =>
-        b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
+      (a, b) => b.activos - a.activos || a.nombre.localeCompare(b.nombre, "es"),
     );
 });
 

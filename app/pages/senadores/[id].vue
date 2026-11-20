@@ -114,11 +114,7 @@ const tabItems = computed(() =>
         <SenadorGastoCards :gasto="gasto" compact />
       </div>
 
-      <SegmentedTabs
-        v-model="activeTab"
-        :items="tabItems"
-        :center="false"
-      />
+      <SegmentedTabs v-model="activeTab" :items="tabItems" :center="false" />
 
       <NuxtPage />
     </template>

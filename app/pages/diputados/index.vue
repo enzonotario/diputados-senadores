@@ -101,13 +101,9 @@ const bloqueColores = computed(() =>
 
 useChamberSeo(() => {
   const activosAll = diputados.value.filter(isDiputadoActivo);
-  const colores = getBloqueColores(
-    [
-      ...new Set(
-        activosAll.map((d) => d.bloque).filter(Boolean) as string[],
-      ),
-    ],
-  );
+  const colores = getBloqueColores([
+    ...new Set(activosAll.map((d) => d.bloque).filter(Boolean) as string[]),
+  ]);
   const groups = groupsForOgHemiciclo(
     activosAll.map((d) => ({ group: d.bloque })),
     colores,
@@ -241,7 +237,9 @@ const tableColumns = [
   },
 ];
 
-const provinciaTableColumns = tableColumns.filter((col) => col.id !== "provincia");
+const provinciaTableColumns = tableColumns.filter(
+  (col) => col.id !== "provincia",
+);
 
 function onRowSelect(_e: Event, row: { original: Diputado }) {
   navigateTo(`/diputados/${row.original.id}`);
@@ -258,11 +256,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
       timeline-mode="members"
     />
 
-    <SegmentedTabs
-      v-model="vista"
-      :items="vistaItems"
-      :center="false"
-    />
+    <SegmentedTabs v-model="vista" :items="vistaItems" :center="false" />
 
     <div class="space-y-3">
       <div class="flex items-center justify-between gap-2">
@@ -277,9 +271,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           @click="clearFilters"
         />
       </div>
-      <div
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"
-      >
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <FilterSelect
           v-model="provinciaFilter"
           label="Provincia"
@@ -301,8 +293,8 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
       </div>
       <div class="w-full sm:max-w-sm">
         <FilterSearch
-            v-model="searchQuery"
-            placeholder="Nombre, provincia o bloque..."
+          v-model="searchQuery"
+          placeholder="Nombre, provincia o bloque..."
         />
       </div>
     </div>
@@ -455,9 +447,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
                   class="text-sm text-muted"
                 >
                   {{ displayed.length }}
-                  {{
-                    displayed.length === 1 ? "diputado" : "diputados"
-                  }}
+                  {{ displayed.length === 1 ? "diputado" : "diputados" }}
                 </p>
               </div>
               <ClientOnly>
@@ -500,9 +490,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
                   <h3 class="text-base font-semibold">{{ group.label }}</h3>
                   <UBadge variant="subtle" color="neutral">
                     {{ group.members.length }}
-                    {{
-                      group.members.length === 1 ? "diputado" : "diputados"
-                    }}
+                    {{ group.members.length === 1 ? "diputado" : "diputados" }}
                   </UBadge>
                 </div>
 

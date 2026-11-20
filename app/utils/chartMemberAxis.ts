@@ -100,7 +100,6 @@ export function heatmapPhotoSize(cellPx: number) {
   return Math.max(14, Math.min(22, cellPx - 16));
 }
 
-
 export function memberPhotoTooltipHtml(
   name: string,
   foto?: string | null,
@@ -216,9 +215,7 @@ export function loadCircularChartPhoto(
           }),
         );
       } catch {
-        resolve(
-          toDataUrl((ctx) => drawInitialsAvatar(ctx, size, label)),
-        );
+        resolve(toDataUrl((ctx) => drawInitialsAvatar(ctx, size, label)));
       }
     };
     image.onerror = () => {

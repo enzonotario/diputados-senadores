@@ -465,7 +465,9 @@ function dietaBoolBadge(value: boolean | null | undefined) {
                 </h3>
               </div>
 
-              <div class="flex items-center gap-3 shrink-0 flex-wrap justify-end">
+              <div
+                class="flex items-center gap-3 shrink-0 flex-wrap justify-end"
+              >
                 <div
                   v-if="
                     (row.original as SenadoresGroupedTableRow).presentismo !=
@@ -480,8 +482,8 @@ function dietaBoolBadge(value: boolean | null | undefined) {
                     size="sm"
                     class="flex-1"
                     :color="
-                      ((row.original as SenadoresGroupedTableRow)
-                        .presentismo || 0) > 80
+                      ((row.original as SenadoresGroupedTableRow).presentismo ||
+                        0) > 80
                         ? 'success'
                         : 'error'
                     "
@@ -626,9 +628,7 @@ function dietaBoolBadge(value: boolean | null | undefined) {
                     title="Viajes 12m"
                     @click.stop
                   >
-                    {{
-                      (nested.original as Senador).viajesUltimos12Meses ?? 0
-                    }}
+                    {{ (nested.original as Senador).viajesUltimos12Meses ?? 0 }}
                   </NuxtLink>
                 </template>
                 <template
@@ -637,8 +637,8 @@ function dietaBoolBadge(value: boolean | null | undefined) {
                 >
                   <UBadge
                     :color="
-                      ((nested.original as Senador).estadisticas
-                        ?.presentismo || 0) > 80
+                      ((nested.original as Senador).estadisticas?.presentismo ||
+                        0) > 80
                         ? 'success'
                         : 'error'
                     "

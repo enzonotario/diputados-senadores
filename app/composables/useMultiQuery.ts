@@ -9,15 +9,17 @@ export function useMultiQuery(key: string) {
       get: (raw) => {
         if (raw == null || raw === "") return [];
         if (Array.isArray(raw)) {
-          return raw.flatMap((v) => String(v).split(",")).map((s) => s.trim()).filter(Boolean);
+          return raw
+            .flatMap((v) => String(v).split(","))
+            .map((s) => s.trim())
+            .filter(Boolean);
         }
         return String(raw)
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
       },
-      set: (value: string[]) =>
-        value?.length ? value.join(",") : null,
+      set: (value: string[]) => (value?.length ? value.join(",") : null),
     },
   });
 }

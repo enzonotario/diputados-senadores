@@ -114,9 +114,7 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
 
     <FilterPeriodo />
 
-    <div
-      class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3"
-    >
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
       <div class="w-full sm:max-w-sm">
         <FilterSearch
           v-model="searchQuery"

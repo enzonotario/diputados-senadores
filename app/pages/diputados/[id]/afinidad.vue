@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import {
-  getBloqueColores,
-} from "@/lib/diputados-data";
+import { getBloqueColores } from "@/lib/diputados-data";
 import { bloquePath } from "@/utils/bloque";
 import {
   memberActasInWindow,

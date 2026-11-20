@@ -2,9 +2,7 @@
 import { getChamberConfig } from "@/lib/chamber";
 
 const { chamberId } = useChamber();
-const bodyName = computed(
-  () => getChamberConfig(chamberId.value).bodyName,
-);
+const bodyName = computed(() => getChamberConfig(chamberId.value).bodyName);
 
 defineProps<{
   actas: Array<{

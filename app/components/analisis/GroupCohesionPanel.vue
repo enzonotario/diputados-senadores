@@ -73,9 +73,7 @@ const quorumRows = computed(() =>
   }),
 );
 
-const heatmapMembers = computed(() =>
-  props.members.slice(0, props.heatmapMax),
-);
+const heatmapMembers = computed(() => props.members.slice(0, props.heatmapMax));
 
 const heatmapData = computed(() => {
   if (heatmapMembers.value.length < 2) return null;
@@ -100,7 +98,8 @@ const heatmapLayout = computed(() => {
   const labelChars = n > 16 ? 11 : n > 10 ? 13 : 16;
   const fontSize = n > 16 ? 9 : 10;
   const leftPad = photoSize + 12 + Math.ceil(labelChars * fontSize * 0.62);
-  const bottomPad = photoSize + 16 + Math.ceil(labelChars * fontSize * 0.62) + 8;
+  const bottomPad =
+    photoSize + 16 + Math.ceil(labelChars * fontSize * 0.62) + 8;
   const topPad = 52;
   const rightPad = 28;
   return {
@@ -124,8 +123,16 @@ const heatmapOption = computed(() => {
   const p = palette.value;
   const chrome = baseChartChrome(p);
   const layout = heatmapLayout.value;
-  const { n, photoSize, labelChars, fontSize, leftPad, bottomPad, topPad, rightPad } =
-    layout;
+  const {
+    n,
+    photoSize,
+    labelChars,
+    fontSize,
+    leftPad,
+    bottomPad,
+    topPad,
+    rightPad,
+  } = layout;
   const fotos = chartFotos.value;
   const names = memberNameByIndex.value;
 
@@ -278,7 +285,9 @@ function memberTo(id: string) {
               <div class="text-3xl font-bold tabular-nums text-highlighted">
                 {{ formatAffinityPct(cohesion.pairwiseAvg) }}
               </div>
-              <p class="text-sm text-muted">Coincidencia promedio entre integrantes</p>
+              <p class="text-sm text-muted">
+                Coincidencia promedio entre integrantes
+              </p>
             </div>
             <div v-if="cohesion.modeAlignment != null">
               <div class="flex justify-between mb-1.5 text-sm">

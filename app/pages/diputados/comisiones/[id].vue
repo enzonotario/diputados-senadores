@@ -97,7 +97,8 @@ useChamberSeo(() => {
   if (!c) {
     return {
       title: "Comisión",
-      description: "Comisiones de la Cámara de Diputados de la Nación Argentina.",
+      description:
+        "Comisiones de la Cámara de Diputados de la Nación Argentina.",
       og: { kind: "group", eyebrow: "comisión" },
     };
   }
@@ -143,7 +144,9 @@ useChamberSeo(() => {
 
     <template v-else>
       <UCard>
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div
+          class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+        >
           <div class="min-w-0 space-y-2">
             <p class="text-sm text-toned">Comisión</p>
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -176,9 +179,7 @@ useChamberSeo(() => {
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-muted">
           {{ integrantes.length }}
-          {{
-            integrantes.length === 1 ? "integrante" : "integrantes"
-          }}
+          {{ integrantes.length === 1 ? "integrante" : "integrantes" }}
         </p>
         <ClientOnly>
           <UFieldGroup size="sm">
@@ -203,7 +204,10 @@ useChamberSeo(() => {
         </ClientOnly>
       </div>
 
-      <DataTableCard v-if="integrantesVista === 'lista'" :show-periodo-badge="false">
+      <DataTableCard
+        v-if="integrantesVista === 'lista'"
+        :show-periodo-badge="false"
+      >
         <UTable
           v-model:sorting="sorting"
           :data="integrantes"
@@ -276,8 +280,8 @@ useChamberSeo(() => {
               @click.stop
             >
               {{
-                (row.original as IntegranteRow).diputado?.viajesUltimos12Meses ??
-                0
+                (row.original as IntegranteRow).diputado
+                  ?.viajesUltimos12Meses ?? 0
               }}
             </NuxtLink>
             <span v-else class="tabular-nums text-muted">—</span>
@@ -285,10 +289,7 @@ useChamberSeo(() => {
         </UTable>
       </DataTableCard>
 
-      <div
-        v-else
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-      >
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <UCard
           v-for="row in integrantes"
           :key="`${row.diputadoId || row.nombre}-${row.cargo}`"
@@ -319,19 +320,13 @@ useChamberSeo(() => {
                     .join(" · ")
                 }}
               </p>
-              <p
-                v-else-if="row.camara === 'senado'"
-                class="text-xs text-muted"
-              >
+              <p v-else-if="row.camara === 'senado'" class="text-xs text-muted">
                 Senador/a
               </p>
             </div>
           </div>
         </UCard>
-        <p
-          v-if="!integrantes.length"
-          class="text-sm text-muted col-span-full"
-        >
+        <p v-if="!integrantes.length" class="text-sm text-muted col-span-full">
           No hay integrantes en esta comisión.
         </p>
       </div>

@@ -12,7 +12,7 @@ export type QuorumActaRow = {
   resultado: string | null;
 };
 
-const props = defineProps<{
+defineProps<{
   actas: QuorumActaRow[];
   groupLabel: string;
 }>();

@@ -42,7 +42,8 @@ export function claveApellidoNombre(nombre: string): string | null {
 }
 
 export function flattenAliasMap(
-  aliases: AliasNombresFile | null | undefined = aliasesFile as AliasNombresFile,
+  aliases:
+    AliasNombresFile | null | undefined = aliasesFile as AliasNombresFile,
 ): Map<string, string> {
   const map = new Map<string, string>();
   if (!aliases) return map;

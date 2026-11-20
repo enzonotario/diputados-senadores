@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { DiputadosMisionesExploreRow } from "@/lib/diputados-data";
-import { useChartPalette, baseChartChrome } from "@/composables/useChartPalette";
 import {
-  formatMisionMontoCompact,
-  paisFromDestino,
-} from "@/utils/misiones";
+  useChartPalette,
+  baseChartChrome,
+} from "@/composables/useChartPalette";
+import { formatMisionMontoCompact, paisFromDestino } from "@/utils/misiones";
 
 const props = defineProps<{
   misiones: DiputadosMisionesExploreRow[];

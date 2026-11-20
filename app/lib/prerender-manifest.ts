@@ -104,11 +104,11 @@ export async function collectChamberPrerenderRoutes(
 
     const [rawDiputados, rawActas, rawComisiones, rawMisiones] =
       await Promise.all([
-      fetchJson<any[]>("/v1/diputados/diputados"),
-      fetchJson<any[]>("/v1/diputados/actas"),
-      fetchJson<any[]>("/v1/diputados/comisiones").catch(() => [] as any[]),
-      fetchJson<any>("/v1/diputados/misiones/lista").catch(() => [] as any[]),
-    ]);
+        fetchJson<any[]>("/v1/diputados/diputados"),
+        fetchJson<any[]>("/v1/diputados/actas"),
+        fetchJson<any[]>("/v1/diputados/comisiones").catch(() => [] as any[]),
+        fetchJson<any>("/v1/diputados/misiones/lista").catch(() => [] as any[]),
+      ]);
 
     const diputados = dedupeById(rawDiputados);
     const bloques = new Set<string>();

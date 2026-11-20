@@ -31,8 +31,7 @@ export function sortComisionIntegrantes<
   T extends { cargo?: string | null; nombre?: string | null },
 >(integrantes: T[]): T[] {
   return [...integrantes].sort((a, b) => {
-    const rank =
-      comisionCargoRank(a.cargo) - comisionCargoRank(b.cargo);
+    const rank = comisionCargoRank(a.cargo) - comisionCargoRank(b.cargo);
     if (rank !== 0) return rank;
     return String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
   });

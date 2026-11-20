@@ -4,9 +4,6 @@ import type { DiputadoMisiones, MisionOficial } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
 import {
-  MISIONES_FUENTE_URL_DIPUTADOS,
-} from "@/utils/viajes";
-import {
   buildMisionId,
   formatMisionMonto,
   misionMontoPrincipal,
@@ -146,7 +143,11 @@ useChamberSeo(() => {
 </script>
 
 <template>
-  <DataTableCard v-if="diputado" :show-periodo-badge="false" :scrollable="false">
+  <DataTableCard
+    v-if="diputado"
+    :show-periodo-badge="false"
+    :scrollable="false"
+  >
     <template #header>
       <div
         class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -200,9 +201,7 @@ useChamberSeo(() => {
       </template>
       <template #monto-cell="{ row }">
         {{
-          formatMisionMonto(
-            misionMontoPrincipal(row.original as MisionOficial),
-          )
+          formatMisionMonto(misionMontoPrincipal(row.original as MisionOficial))
         }}
       </template>
       <template #motivo-cell="{ row }">
@@ -216,9 +215,7 @@ useChamberSeo(() => {
         </NuxtLink>
       </template>
       <template #institucion-cell="{ row }">
-        <span
-          :title="(row.original as MisionOficial).institucion || undefined"
-        >
+        <span :title="(row.original as MisionOficial).institucion || undefined">
           {{ (row.original as MisionOficial).institucion || "—" }}
         </span>
       </template>

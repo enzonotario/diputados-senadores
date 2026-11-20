@@ -79,10 +79,7 @@ const hasVoto = computed(() => Boolean(props.diputado.tipoVoto));
           <p class="text-sm font-semibold leading-snug text-highlighted">
             {{ fullName }}
           </p>
-          <p
-            v-if="diputado.bloque"
-            class="text-xs leading-snug text-toned"
-          >
+          <p v-if="diputado.bloque" class="text-xs leading-snug text-toned">
             <NuxtLink
               v-if="bloquePath(diputado.bloque)"
               :to="bloquePath(diputado.bloque)!"
@@ -93,10 +90,7 @@ const hasVoto = computed(() => Boolean(props.diputado.tipoVoto));
             </NuxtLink>
             <template v-else>{{ diputado.bloque }}</template>
           </p>
-          <p
-            v-if="diputado.provincia"
-            class="text-xs leading-snug text-muted"
-          >
+          <p v-if="diputado.provincia" class="text-xs leading-snug text-muted">
             {{ diputado.provincia }}
           </p>
           <div
@@ -108,10 +102,7 @@ const hasVoto = computed(() => Boolean(props.diputado.tipoVoto));
               class="size-4 shrink-0"
               :class="voto.iconClass"
             />
-            <span
-              class="text-xs font-medium"
-              :class="voto.textClass"
-            >
+            <span class="text-xs font-medium" :class="voto.textClass">
               {{ voto.label }}
             </span>
           </div>

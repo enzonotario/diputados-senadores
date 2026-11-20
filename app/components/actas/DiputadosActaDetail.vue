@@ -186,7 +186,9 @@ const tableColumns = [
   { id: "tipoVoto", accessorKey: "tipoVoto", header: sortableHeader("Voto") },
 ];
 
-const provinciaTableColumns = tableColumns.filter((col) => col.id !== "provincia");
+const provinciaTableColumns = tableColumns.filter(
+  (col) => col.id !== "provincia",
+);
 
 function onRowSelect(_e: Event, row: { original: Diputado }) {
   navigateTo(`/diputados/${row.original.id}`);
@@ -207,12 +209,17 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
     </UCard>
 
     <template v-else>
-      <UCard :ui="{
-        body: 'p-3!',
-        header: 'border-0 p-3! pb-0!'
-      }" class="">
+      <UCard
+        :ui="{
+          body: 'p-3!',
+          header: 'border-0 p-3! pb-0!',
+        }"
+        class=""
+      >
         <template #header>
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div
+            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+          >
             <h1 class="text-lg md:text-2xl font-semibold">
               {{ acta.titulo }}
             </h1>
@@ -230,7 +237,9 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           </div>
         </template>
 
-        <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        <dl
+          class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+        >
           <div v-if="acta.sesion" class="flex flex-col min-w-0 sm:col-span-2">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Sesión</dt>
             <dd class="text-sm font-medium break-words">{{ acta.sesion }}</dd>
@@ -239,7 +248,9 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
             v-else-if="acta.periodo || acta.reunion"
             class="flex flex-col min-w-0"
           >
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Período / Reunión</dt>
+            <dt class="text-sm text-gray-600 dark:text-gray-300">
+              Período / Reunión
+            </dt>
             <dd class="text-sm font-medium">
               {{ [acta.periodo, acta.reunion].filter(Boolean).join(" · ") }}
             </dd>
@@ -259,7 +270,9 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
             <dt class="text-sm text-gray-600 dark:text-gray-300">
               Miembros del cuerpo
             </dt>
-            <dd class="text-sm font-medium tabular-nums">{{ acta.miembros }}</dd>
+            <dd class="text-sm font-medium tabular-nums">
+              {{ acta.miembros }}
+            </dd>
           </div>
           <div v-if="acta.presidente" class="flex flex-col min-w-0">
             <dt class="text-sm text-gray-600 dark:text-gray-300">Presidente</dt>
@@ -355,9 +368,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
         >
           <template #header>
             <div>
-              <h2 class="text-xl font-semibold text-center">
-                Cómo votaron
-              </h2>
+              <h2 class="text-xl font-semibold text-center">Cómo votaron</h2>
             </div>
           </template>
         </HemicicloChart>
@@ -509,9 +520,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
               empty-message="No hay diputados para mostrar con los filtros actuales."
             />
             <template v-else>
-              <div
-                class="flex flex-wrap items-center justify-between gap-3"
-              >
+              <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-lg font-semibold">
                   {{ selectedProvinciaTitle }}
                 </h2>
@@ -531,9 +540,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
                     <UButton
                       color="neutral"
                       :variant="
-                        provinciasMembersLayout === 'grid'
-                          ? 'solid'
-                          : 'outline'
+                        provinciasMembersLayout === 'grid' ? 'solid' : 'outline'
                       "
                       icon="i-lucide-layout-grid"
                       label="Grid"
@@ -541,7 +548,9 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
                     />
                   </UFieldGroup>
                   <template #fallback>
-                    <div class="h-8 w-36 animate-pulse rounded-md bg-elevated" />
+                    <div
+                      class="h-8 w-36 animate-pulse rounded-md bg-elevated"
+                    />
                   </template>
                 </ClientOnly>
               </div>

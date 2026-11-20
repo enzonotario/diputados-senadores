@@ -117,8 +117,6 @@ const hemicicloLayout = computed(() => {
   return fitLayout(layoutOgHemiciclo(groups), maxW, maxH);
 });
 
-const showHemiciclo = computed(() => Boolean(hemicicloLayout.value?.seats.length));
-
 const voteRows = computed(() => {
   const decoded = decodeOgVotes(props.votes);
   if (!decoded) return [];

@@ -19,12 +19,10 @@ withDefaults(
       <USkeleton class="h-10 w-full sm:w-40" />
       <USkeleton class="h-10 w-full sm:flex-1" />
     </div>
-    <div class="rounded-lg border border-default overflow-hidden divide-y divide-default">
-      <div
-        v-for="i in 8"
-        :key="i"
-        class="flex items-center gap-3 p-3"
-      >
+    <div
+      class="rounded-lg border border-default overflow-hidden divide-y divide-default"
+    >
+      <div v-for="i in 8" :key="i" class="flex items-center gap-3 p-3">
         <USkeleton class="size-10 rounded-full shrink-0" />
         <div class="flex-1 flex flex-col gap-2 min-w-0">
           <USkeleton class="h-4 w-2/3" />
@@ -44,7 +42,9 @@ withDefaults(
   >
     <div class="rounded-lg border border-default overflow-hidden">
       <div class="flex flex-col md:flex-row">
-        <USkeleton class="w-40 sm:w-48 md:w-xs aspect-square shrink-0 mx-auto md:mx-0" />
+        <USkeleton
+          class="w-40 sm:w-48 md:w-xs aspect-square shrink-0 mx-auto md:mx-0"
+        />
         <div class="flex flex-col gap-4 flex-1 p-6">
           <USkeleton class="h-8 w-64" />
           <div class="grid sm:grid-cols-2 gap-3">

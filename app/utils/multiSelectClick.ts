@@ -38,8 +38,7 @@ export function applyMultiSelectClick(
     keys.findIndex((k) => keyOf(k) === keyOf(name));
 
   if (shift) {
-    const anchor =
-      shiftAnchorKey || selected[selected.length - 1] || key;
+    const anchor = shiftAnchorKey || selected[selected.length - 1] || key;
     const i0 = indexOf(anchor);
     const i1 = indexOf(key);
     if (i0 < 0 || i1 < 0) {

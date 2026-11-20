@@ -40,9 +40,7 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
       pageTitle,
       fullTitle: `${pageTitle} | ${chamber.value.siteHost}`,
       description,
-      imageAlt: description
-        ? `${pageTitle} — ${description}`
-        : pageTitle,
+      imageAlt: description ? `${pageTitle} — ${description}` : pageTitle,
       og: value.og,
     };
   });
@@ -50,8 +48,10 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
   const pageUrl = computed(() => {
     // Host canónico de la cámara (prod); path del request actual.
     try {
-      return new URL(requestURL.pathname + requestURL.search, chamber.value.siteUrl)
-        .href;
+      return new URL(
+        requestURL.pathname + requestURL.search,
+        chamber.value.siteUrl,
+      ).href;
     } catch {
       return chamber.value.siteUrl;
     }
@@ -99,15 +99,10 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
     // No usar useRequestURL().origin: con Host senadores.localhost sin puerto
     // queda :80 y el fetch del logo falla.
     logoSrc: computed(() => siteOgLogoSrc(chamber.value)),
-    eyebrow: computed(
-      () => seo.value.og?.eyebrow || chamber.value.brand,
-    ),
+    eyebrow: computed(() => seo.value.og?.eyebrow || chamber.value.brand),
     badge: computed(() => seo.value.og?.badge || ""),
     accent: computed(() =>
-      resolveOgAccent(
-        seo.value.og?.accent,
-        chamber.value.id as ChamberId,
-      ),
+      resolveOgAccent(seo.value.og?.accent, chamber.value.id as ChamberId),
     ),
     footerLeft: computed(() => seo.value.og?.footerLeft || ""),
     kind: computed(() => seo.value.og?.kind || ""),

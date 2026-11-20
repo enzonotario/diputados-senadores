@@ -323,3 +323,35 @@ export function wrapOgActaTitle(
 
   return lines.slice(0, maxLines);
 }
+
+/** Member card: career vote counts + attendance line. */
+export function buildMemberOgStats(
+  stats?: {
+    totalVotaciones?: number | null;
+    votosAfirmativos?: number | null;
+    votosNegativos?: number | null;
+    abstenciones?: number | null;
+    ausencias?: number | null;
+    presentismo?: number | null;
+  } | null,
+  provincia?: string | null,
+): Partial<ChamberOgInput> {
+  const parts: string[] = [];
+  if (provincia) parts.push(provincia);
+  if (!stats?.totalVotaciones) {
+    return parts.length ? { footerLeft: parts.join(" · ") } : {};
+  }
+  if (stats.presentismo != null) {
+    parts.push(`Presentismo ${Math.round(stats.presentismo)}%`);
+  }
+  parts.push(
+    `${stats.totalVotaciones} ${stats.totalVotaciones === 1 ? "votación" : "votaciones"}`,
+  );
+  return {
+    votosAfirmativos: stats.votosAfirmativos ?? 0,
+    votosNegativos: stats.votosNegativos ?? 0,
+    abstenciones: stats.abstenciones ?? 0,
+    ausentes: stats.ausencias ?? 0,
+    footerLeft: parts.join(" · "),
+  };
+}

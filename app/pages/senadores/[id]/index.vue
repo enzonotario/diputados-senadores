@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { buildMemberOgStats } from "@/lib/og";
 import type { Senador } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
@@ -206,6 +207,7 @@ useChamberSeo(() => {
       eyebrow: "senador",
       badge: s.bloque || s.partido || undefined,
       photoSrc: s.foto || "/placeholder-user.jpg",
+      ...buildMemberOgStats(s.estadisticas, s.provincia),
     },
   };
 });

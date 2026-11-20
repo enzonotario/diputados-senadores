@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { buildMemberOgStats } from "@/lib/og";
 import type { Diputado } from "@/lib/types-diputados";
 import { formatDate } from "@/lib/utils";
 import { sortableHeader } from "@/utils/sortableHeader";
@@ -184,6 +185,7 @@ useChamberSeo(() => {
       eyebrow: "diputado",
       badge: d.bloque || undefined,
       photoSrc: d.foto || "/placeholder-user.jpg",
+      ...buildMemberOgStats(d.estadisticas, d.provincia),
     },
   };
 });

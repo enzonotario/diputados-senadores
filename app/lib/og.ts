@@ -47,6 +47,8 @@ export type ChamberOgInput = {
   vista?: string;
   /** Compact per-view data (see `app/lib/og-acta.ts`). */
   breakdown?: string;
+  /** Bloque/partido slug → photo hemiciclo of its active members. */
+  group?: string;
 };
 
 /** Props for `Chamber.takumi` — shared by `useChamberSeo` and server patches. */
@@ -75,6 +77,7 @@ export function buildChamberOgProps(input: {
     chamber: site.id,
     vista: og?.vista || "",
     breakdown: og?.breakdown || "",
+    group: og?.group || "",
   };
 }
 

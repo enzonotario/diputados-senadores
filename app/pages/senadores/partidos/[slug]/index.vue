@@ -186,6 +186,8 @@ useChamberSeo(() => {
       badge: `${n} ${n === 1 ? "senador" : "senadores"}`,
       accent: color,
       hemiciclo: encodeOgHemiciclo([{ count: n, color }]),
+      // Members' photos (server composite); dots above stay as fallback.
+      group: slug.value,
     },
   };
 });

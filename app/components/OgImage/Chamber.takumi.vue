@@ -42,6 +42,7 @@ const props = withDefaults(
     chamber?: string;
     vista?: string;
     breakdown?: string;
+    group?: string;
   }>(),
   {
     title: "ArgentinaDatos.com",
@@ -59,6 +60,7 @@ const props = withDefaults(
     chamber: "",
     vista: "",
     breakdown: "",
+    group: "",
   },
 );
 
@@ -102,12 +104,17 @@ const resolvedPhoto = computed(() => (props.photoSrc || "").trim());
  * Home: hemiciclo with every legislator's photo, pre-rendered server-side
  * (`/api/og/hemiciclo/:chamber`, dots fallback until photos are cached).
  */
-const homeHemicicloSrc = computed(() =>
-  props.kind === "home" &&
-  (props.chamber === "diputados" || props.chamber === "senadores")
-    ? `/api/og/hemiciclo/${props.chamber}`
-    : "",
-);
+const homeHemicicloSrc = computed(() => {
+  if (props.chamber !== "diputados" && props.chamber !== "senadores") {
+    return "";
+  }
+  if (props.kind === "home") return `/api/og/hemiciclo/${props.chamber}`;
+  // Bloque/partido: same composite, only that group's active members.
+  if (props.kind === "group" && /^[a-z0-9-]+$/.test(props.group)) {
+    return `/api/og/hemiciclo/${props.chamber}?group=${props.group}`;
+  }
+  return "";
+});
 
 /** Escala el layout para que entre en `maxW × maxH` (sin deformar). */
 function fitLayout(

@@ -198,6 +198,8 @@ useChamberSeo(() => {
       badge: `${n} ${n === 1 ? "diputado" : "diputados"}`,
       accent: color,
       hemiciclo: encodeOgHemiciclo([{ count: n, color }]),
+      // Members' photos (server composite); dots above stay as fallback.
+      group: slug.value,
     },
   };
 });

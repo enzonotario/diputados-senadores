@@ -1,11 +1,18 @@
 import type { ChamberId } from "../../app/lib/chamber";
-import { getDiputadosPorBloques } from "../../app/lib/diputados-data";
-import { getSenadoresPorPartidos } from "../../app/lib/senadores-data";
+import {
+  getBloqueBySlug,
+  getDiputadosPorBloques,
+} from "../../app/lib/diputados-data";
+import {
+  getPartidoBySlug,
+  getSenadoresPorPartidos,
+} from "../../app/lib/senadores-data";
 import { layoutOgHemiciclo } from "../../app/lib/hemiciclo-layout";
 
 /**
- * Home OG hemiciclo with each legislator's photo (current composition),
- * pre-rendered once per chamber as a single PNG and kept in RAM.
+ * OG hemiciclo with each legislator's photo (current composition), for the
+ * chamber home or one bloque/partido, pre-rendered once as a single PNG and
+ * kept in RAM (bounded LRU of group composites).
  *
  * Why a composite: the OG renderer would otherwise fetch ~257 remote photos
  * on every render. Here photos are fetched once (bounded concurrency, short
@@ -28,23 +35,75 @@ const PRERENDER_WAIT_MS = 60_000;
 
 type SeatMember = { photo: string; color: string };
 
-type ChamberState = {
+type CompositeState = {
   photos?: Buffer;
   dots?: Buffer;
   building?: Promise<Buffer | null>;
 };
 
-const state: Record<ChamberId, ChamberState> = {
-  diputados: {},
-  senadores: {},
-};
+/** Max cached composites (2 chamber homes + recently shared groups). */
+const MAX_ENTRIES = 48;
+/** Cap seat size so tiny groups do not blow a single photo up. */
+const MAX_SEAT_DIAMETER = 110 * DPR;
+
+let state = new Map<string, CompositeState>();
 
 export function clearOgHemicicloPhotosCache() {
-  state.diputados = {};
-  state.senadores = {};
+  state = new Map();
 }
 
-async function loadSeatMembers(chamber: ChamberId): Promise<SeatMember[]> {
+function stateFor(key: string): CompositeState {
+  let s = state.get(key);
+  if (s) {
+    // Refresh LRU position.
+    state.delete(key);
+  } else {
+    s = {};
+  }
+  state.set(key, s);
+  while (state.size > MAX_ENTRIES) {
+    state.delete(state.keys().next().value!);
+  }
+  return s;
+}
+
+async function loadGroupMembers(
+  chamber: ChamberId,
+  slug: string,
+): Promise<SeatMember[]> {
+  const group =
+    chamber === "diputados"
+      ? await getBloqueBySlug(slug).then(
+          (b) =>
+            b && {
+              color: b.color,
+              members: b.activos.map((d) => ({
+                sortKey: `${d.apellido} ${d.nombre}`,
+                photo: d.foto || "",
+              })),
+            },
+        )
+      : await getPartidoBySlug(slug).then(
+          (p) =>
+            p && {
+              color: p.color,
+              members: p.activos.map((s) => ({
+                sortKey: s.nombreCompleto || s.nombre || "",
+                photo: s.foto || "",
+              })),
+            },
+        );
+  if (!group) return [];
+  return group.members
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey, "es"))
+    .map((m) => ({ photo: m.photo, color: group.color || "#6b7280" }));
+}
+
+async function loadSeatMembers(
+  chamber: ChamberId,
+  groupSlug?: string,
+): Promise<SeatMember[]> {
+  if (groupSlug) return loadGroupMembers(chamber, groupSlug);
   const rows =
     chamber === "diputados"
       ? await getDiputadosPorBloques().then(({ diputados, bloqueColores }) =>
@@ -122,18 +181,19 @@ async function fetchPhotos(urls: string[]) {
   return out;
 }
 
-async function renderComposite(
+type PixelSeat = { x: number; y: number; r: number; color: string };
+
+/** Hemiciclo seats scaled into `W×H` px (bbox-fit, bottom-aligned). */
+function hemicicloSeats(
   members: SeatMember[],
-  photos: Map<string, Uint8Array> | null,
-): Promise<Buffer | null> {
+  W: number,
+  H: number,
+): PixelSeat[] {
   // One group per seat keeps the member order (already grouped by politics).
   const layout = layoutOgHemiciclo(
     members.map((m) => ({ count: 1, color: m.color })),
   );
-  if (!layout) return null;
-
-  const W = OG_HEMICICLO_PHOTOS_SIZE.width * DPR;
-  const H = OG_HEMICICLO_PHOTOS_SIZE.height * DPR;
+  if (!layout) return [];
   // Fit the seats' bounding box (the geometry viewBox has slack on top).
   let minX = Infinity;
   let minY = Infinity;
@@ -148,18 +208,71 @@ async function renderComposite(
   const k = Math.min(W / (maxX - minX), H / (maxY - minY));
   const offsetX = (W - (maxX - minX) * k) / 2 - minX * k;
   const offsetY = H - (maxY - minY) * k - minY * k;
+  return layout.seats.map((seat) => ({
+    x: offsetX + seat.x * k,
+    y: offsetY + seat.y * k,
+    r: seat.r * k,
+    color: seat.color,
+  }));
+}
+
+/**
+ * Small groups: a packed grid reads better than a sparse arc. Picks the
+ * column count that maximizes the circle size; centered, bottom-aligned.
+ */
+function gridSeats(members: SeatMember[], W: number, H: number): PixelSeat[] {
+  const n = members.length;
+  if (!n) return [];
+  let best = { cols: 1, d: 0 };
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols);
+    const d = Math.min(W / cols, H / rows, MAX_SEAT_DIAMETER / 0.88);
+    if (d > best.d) best = { cols, d };
+  }
+  const { cols, d } = best;
+  const rows = Math.ceil(n / cols);
+  const r = (d * 0.88) / 2;
+  const top = H - rows * d;
+  return members.map((m, i) => {
+    const row = Math.floor(i / cols);
+    const inRow = row === rows - 1 ? n - row * cols : cols;
+    const left = (W - inRow * d) / 2;
+    return {
+      x: left + (i % cols) * d + d / 2,
+      y: top + row * d + d / 2,
+      r,
+      color: m.color,
+    };
+  });
+}
+
+/** Groups up to this size use the grid instead of the hemiciclo. */
+const GRID_MAX_MEMBERS = 40;
+
+async function renderComposite(
+  members: SeatMember[],
+  photos: Map<string, Uint8Array> | null,
+  grid = false,
+): Promise<Buffer | null> {
+  const W = OG_HEMICICLO_PHOTOS_SIZE.width * DPR;
+  const H = OG_HEMICICLO_PHOTOS_SIZE.height * DPR;
+  const pixelSeats =
+    grid && members.length <= GRID_MAX_MEMBERS
+      ? gridSeats(members, W, H)
+      : hemicicloSeats(members, W, H);
+  if (!pixelSeats.length) return null;
 
   const images: { src: string; data: Uint8Array; cache: "none" }[] = [];
-  const seats = layout.seats.map((seat, i) => {
+  const seats = pixelSeats.map((seat, i) => {
     const member = members[i];
-    const r = seat.r * k;
+    const r = seat.r;
     const size = Math.round(r * 2 * 10) / 10;
     const ring = Math.max(2, Math.round(r * 0.22));
     const photo = member?.photo ? photos?.get(member.photo) : undefined;
     const base = {
       position: "absolute" as const,
-      left: offsetX + seat.x * k - r,
-      top: offsetY + seat.y * k - r,
+      left: seat.x - r,
+      top: seat.y - r,
       width: size,
       height: size,
       borderRadius: "50%",
@@ -210,23 +323,29 @@ async function renderComposite(
   );
 }
 
-async function buildPhotos(chamber: ChamberId): Promise<Buffer | null> {
-  const members = await loadSeatMembers(chamber);
+async function buildPhotos(
+  chamber: ChamberId,
+  groupSlug?: string,
+): Promise<Buffer | null> {
+  const members = await loadSeatMembers(chamber, groupSlug);
   const photos = await fetchPhotos(members.map((m) => m.photo));
-  return renderComposite(members, photos);
+  return renderComposite(members, photos, Boolean(groupSlug));
 }
 
-function startPhotoBuild(chamber: ChamberId): Promise<Buffer | null> {
-  const s = state[chamber];
+function startPhotoBuild(
+  s: CompositeState,
+  chamber: ChamberId,
+  groupSlug?: string,
+): Promise<Buffer | null> {
   if (s.building) return s.building;
-  const building = buildPhotos(chamber)
+  const building = buildPhotos(chamber, groupSlug)
     .then((buf) => {
-      if (buf && state[chamber] === s) s.photos = buf;
+      if (buf) s.photos = buf;
       return buf;
     })
     .catch((err) => {
       console.warn(
-        `[og] hemiciclo photos build failed (${chamber}):`,
+        `[og] hemiciclo photos build failed (${chamber}${groupSlug ? `/${groupSlug}` : ""}):`,
         err?.message || err,
       );
       return null;
@@ -239,26 +358,30 @@ function startPhotoBuild(chamber: ChamberId): Promise<Buffer | null> {
   return building;
 }
 
-async function getDots(chamber: ChamberId): Promise<Buffer | null> {
-  const s = state[chamber];
+async function getDots(
+  s: CompositeState,
+  chamber: ChamberId,
+  groupSlug?: string,
+): Promise<Buffer | null> {
   if (s.dots) return s.dots;
-  const members = await loadSeatMembers(chamber);
-  const buf = await renderComposite(members, null);
+  const members = await loadSeatMembers(chamber, groupSlug);
+  const buf = await renderComposite(members, null, Boolean(groupSlug));
   if (buf) s.dots = buf;
   return buf;
 }
 
 /**
- * PNG for the home OG hemiciclo. Photos when ready; dots otherwise.
- * During prerender, waits for photos (bounded).
+ * PNG for the home (or one group's) OG hemiciclo. Photos when ready; dots
+ * otherwise. During prerender, waits for photos (bounded).
  */
 export async function getOgHemicicloPhotosPng(
   chamber: ChamberId,
+  groupSlug?: string,
 ): Promise<Buffer | null> {
-  const s = state[chamber];
+  const s = stateFor(`${chamber}:${groupSlug || ""}`);
   if (s.photos) return s.photos;
 
-  const building = startPhotoBuild(chamber);
+  const building = startPhotoBuild(s, chamber, groupSlug);
   if (import.meta.prerender) {
     const timeout = new Promise<null>((resolve) =>
       setTimeout(() => resolve(null), PRERENDER_WAIT_MS),
@@ -266,5 +389,5 @@ export async function getOgHemicicloPhotosPng(
     const photos = await Promise.race([building, timeout]);
     if (photos) return photos;
   }
-  return getDots(chamber);
+  return getDots(s, chamber, groupSlug);
 }

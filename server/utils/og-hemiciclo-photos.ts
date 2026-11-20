@@ -2,12 +2,18 @@ import type { ChamberId } from "../../app/lib/chamber";
 import {
   getBloqueBySlug,
   getDiputadosPorBloques,
+  getActas as getDiputadosActas,
 } from "../../app/lib/diputados-data";
 import {
   getPartidoBySlug,
   getSenadoresPorPartidos,
 } from "../../app/lib/senadores-data";
 import { layoutOgHemiciclo } from "../../app/lib/hemiciclo-layout";
+import { RECINTO_SEATS } from "../../app/lib/diputados-recinto-layout";
+import {
+  matchMemberByPresidenteNombre,
+  modePresidenteNombre,
+} from "../../app/utils/actaPresidente";
 
 /**
  * OG hemiciclo with each legislator's photo (current composition), for the
@@ -33,7 +39,7 @@ const PHOTO_MAX_BYTES = 512 * 1024;
 /** Prerender waits for photos; runtime never does. */
 const PRERENDER_WAIT_MS = 60_000;
 
-type SeatMember = { photo: string; color: string };
+type SeatMember = { photo: string; color: string; banca?: number | null };
 
 type CompositeState = {
   photos?: Buffer;
@@ -104,6 +110,10 @@ async function loadSeatMembers(
   groupSlug?: string,
 ): Promise<SeatMember[]> {
   if (groupSlug) return loadGroupMembers(chamber, groupSlug);
+  if (chamber === "diputados") {
+    const recinto = await loadRecintoMembers();
+    if (useRecinto(recinto)) return recinto;
+  }
   const rows =
     chamber === "diputados"
       ? await getDiputadosPorBloques().then(({ diputados, bloqueColores }) =>
@@ -111,6 +121,7 @@ async function loadSeatMembers(
             group: d.bloque || "",
             sortKey: `${d.apellido} ${d.nombre}`,
             photo: d.foto || "",
+            banca: d.banca ?? null,
             colors: bloqueColores,
           })),
         )
@@ -146,7 +157,100 @@ async function loadSeatMembers(
     .map((r) => ({
       photo: r.photo,
       color: colors[groupKey(r.group)] || colors[r.group] || "#6b7280",
+      banca: "banca" in r ? (r.banca as number | null) : null,
     }));
+}
+
+/**
+ * Diputados home: members placed on their real HCDN seat (`banca`), plus the
+ * chamber president on the podium (banca 0), resolved like the site's home
+ * (most frequent `acta.presidente` of the latest periodo).
+ */
+async function loadRecintoMembers(): Promise<SeatMember[]> {
+  const [{ diputados, bloqueColores }, actas] = await Promise.all([
+    getDiputadosPorBloques(),
+    getDiputadosActas(),
+  ]);
+  const color = (bloque?: string | null) =>
+    bloqueColores[String(bloque || "").trim()] ||
+    bloqueColores[String(bloque || "")] ||
+    "#6b7280";
+  const members: SeatMember[] = diputados.map((d) => ({
+    photo: d.foto || "",
+    color: color(d.bloque),
+    banca: d.banca ?? null,
+  }));
+
+  if (!diputados.some((d) => d.banca === 0)) {
+    const latest = actas.reduce(
+      (max, a) => Math.max(max, Number(a.periodo) || 0),
+      0,
+    );
+    const nombre = modePresidenteNombre(
+      actas.filter((a) => (Number(a.periodo) || 0) === latest),
+    );
+    const pres = matchMemberByPresidenteNombre(diputados, nombre);
+    if (pres) {
+      members.push({
+        photo: pres.foto || "",
+        color: color(pres.bloque),
+        banca: 0,
+      });
+    }
+  }
+  return members;
+}
+
+const VACANT_SEAT_COLOR = "#e5e7eb";
+
+/**
+ * Real HCDN seat coordinates, fitted into `W×H`. Returns seats and the
+ * member drawn on each (vacant seats → gray dot, no photo).
+ */
+function recintoSeats(
+  members: SeatMember[],
+  W: number,
+  H: number,
+): { seats: PixelSeat[]; members: SeatMember[] } {
+  const byBanca = new Map<number, SeatMember>();
+  for (const m of members) {
+    if (m.banca == null || !Number.isFinite(Number(m.banca))) continue;
+    if (!byBanca.has(Number(m.banca))) byBanca.set(Number(m.banca), m);
+  }
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const s of RECINTO_SEATS) {
+    minX = Math.min(minX, s.x - s.r);
+    minY = Math.min(minY, s.y - s.r);
+    maxX = Math.max(maxX, s.x + s.r);
+    maxY = Math.max(maxY, s.y + s.r);
+  }
+  const k = Math.min(W / (maxX - minX), H / (maxY - minY));
+  const offsetX = (W - (maxX - minX) * k) / 2 - minX * k;
+  const offsetY = H - (maxY - minY) * k - minY * k;
+  const seats: PixelSeat[] = [];
+  const out: SeatMember[] = [];
+  for (const s of RECINTO_SEATS) {
+    const m = byBanca.get(s.banca) || {
+      photo: "",
+      color: VACANT_SEAT_COLOR,
+    };
+    seats.push({
+      x: offsetX + s.x * k,
+      y: offsetY + s.y * k,
+      r: s.r * k * 0.92,
+      color: m.color,
+    });
+    out.push(m);
+  }
+  return { seats, members: out };
+}
+
+/** Enough seated members to trust the official layout (same as the site). */
+function useRecinto(members: SeatMember[]): boolean {
+  return members.filter((m) => m.banca != null).length >= 20;
 }
 
 async function fetchPhoto(url: string): Promise<Uint8Array | null> {
@@ -256,10 +360,17 @@ async function renderComposite(
 ): Promise<Buffer | null> {
   const W = OG_HEMICICLO_PHOTOS_SIZE.width * DPR;
   const H = OG_HEMICICLO_PHOTOS_SIZE.height * DPR;
-  const pixelSeats =
-    grid && members.length <= GRID_MAX_MEMBERS
-      ? gridSeats(members, W, H)
-      : hemicicloSeats(members, W, H);
+  let pixelSeats: PixelSeat[];
+  if (!grid && useRecinto(members)) {
+    const placed = recintoSeats(members, W, H);
+    pixelSeats = placed.seats;
+    members = placed.members;
+  } else {
+    pixelSeats =
+      grid && members.length <= GRID_MAX_MEMBERS
+        ? gridSeats(members, W, H)
+        : hemicicloSeats(members, W, H);
+  }
   if (!pixelSeats.length) return null;
 
   const images: { src: string; data: Uint8Array; cache: "none" }[] = [];

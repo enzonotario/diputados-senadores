@@ -7,6 +7,8 @@ export default withNuxt([
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      // Props opcionales tipadas con TS ya son `undefined` por defecto.
+      "vue/require-default-prop": "off",
       "vue/block-order": [
         "error",
         {

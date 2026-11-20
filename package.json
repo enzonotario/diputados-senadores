@@ -8,12 +8,13 @@
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",
     "postinstall": "nuxt prepare",
-    "lint": "eslint --ext .js,.ts,.vue .",
-    "lint:fix": "eslint --fix --ext .js,.ts,.vue .",
-    "og:preview": "node scripts/og-preview.mjs"
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "og:preview": "node scripts/og-preview.mjs",
+    "typecheck": "nuxi typecheck"
   },
   "dependencies": {
-    "@nuxt/eslint": "1.9.0",
+    "@nuxt/eslint": "1.17.0",
     "@nuxt/image": "^2.0.0",
     "@nuxt/ui": "^4.9.0",
     "@nuxtjs/color-mode": "^4.0.1",
@@ -47,7 +48,8 @@
     "eslint-plugin-vue": "^10.9.2",
     "prettier": "^3.9.5",
     "tailwindcss": "^4.3.2",
-    "typescript": "^7.0.2"
+    "typescript": "~6.0.3",
+    "vue-tsc": "^3.3.14"
   },
   "packageManager": "pnpm@11.12.0"
 }

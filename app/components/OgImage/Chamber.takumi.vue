@@ -33,6 +33,7 @@ const props = withDefaults(
     votes?: string;
     photoSrc?: string;
     hemiciclo?: string;
+    chamber?: string;
   }>(),
   {
     title: "ArgentinaDatos.com",
@@ -47,6 +48,7 @@ const props = withDefaults(
     votes: "",
     photoSrc: "",
     hemiciclo: "",
+    chamber: "",
   },
 );
 
@@ -85,6 +87,17 @@ const resolvedLogo = computed(() => {
 });
 
 const resolvedPhoto = computed(() => (props.photoSrc || "").trim());
+
+/**
+ * Home: hemiciclo with every legislator's photo, pre-rendered server-side
+ * (`/api/og/hemiciclo/:chamber`, dots fallback until photos are cached).
+ */
+const homeHemicicloSrc = computed(() =>
+  props.kind === "home" &&
+  (props.chamber === "diputados" || props.chamber === "senadores")
+    ? `/api/og/hemiciclo/${props.chamber}`
+    : "",
+);
 
 /** Escala el layout para que entre en `maxW × maxH` (sin deformar). */
 function fitLayout(
@@ -347,7 +360,7 @@ const actaTitleLines = computed(() =>
             </div>
           </div>
           <div
-            v-else-if="description && !resolvedPhoto"
+            v-else-if="description && !resolvedPhoto && !homeHemicicloSrc"
             class="text-[24px] font-medium leading-snug"
             :style="{ color: `${rgba(INK, 0.7)}` }"
           >
@@ -365,7 +378,16 @@ const actaTitleLines = computed(() =>
       </div>
 
       <img
-        v-if="resolvedPhoto"
+        v-if="homeHemicicloSrc"
+        :src="homeHemicicloSrc"
+        :alt="title"
+        width="600"
+        height="316"
+        class="mb-[-40px] h-[316px] w-[600px] shrink-0 object-contain"
+      />
+
+      <img
+        v-else-if="resolvedPhoto"
         :src="resolvedPhoto"
         :alt="title"
         width="380"

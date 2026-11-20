@@ -109,5 +109,6 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
     votes: computed(() => encodeOgVotes(seo.value.og)),
     photoSrc: computed(() => seo.value.og?.photoSrc || ""),
     hemiciclo: computed(() => seo.value.og?.hemiciclo || ""),
+    chamber: computed(() => chamber.value.id),
   });
 }

@@ -187,14 +187,22 @@ useChamberSeo(() => {
               :variant="integrantesVista === 'lista' ? 'solid' : 'outline'"
               icon="i-lucide-table"
               label="Tabla"
-              @click="integrantesVista = 'lista'"
+              @click="
+                () => {
+                  integrantesVista = 'lista';
+                }
+              "
             />
             <UButton
               color="neutral"
               :variant="integrantesVista === 'grilla' ? 'solid' : 'outline'"
               icon="i-lucide-layout-grid"
               label="Grid"
-              @click="integrantesVista = 'grilla'"
+              @click="
+                () => {
+                  integrantesVista = 'grilla';
+                }
+              "
             />
           </UFieldGroup>
           <template #fallback>

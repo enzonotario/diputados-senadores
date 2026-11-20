@@ -118,14 +118,22 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
             :variant="layout === 'tabla' ? 'solid' : 'outline'"
             icon="i-lucide-table"
             label="Tabla"
-            @click="layout = 'tabla'"
+            @click="
+              () => {
+                layout = 'tabla';
+              }
+            "
           />
           <UButton
             color="neutral"
             :variant="layout === 'grid' ? 'solid' : 'outline'"
             icon="i-lucide-layout-grid"
             label="Grid"
-            @click="layout = 'grid'"
+            @click="
+              () => {
+                layout = 'grid';
+              }
+            "
           />
         </UFieldGroup>
         <template #fallback>

@@ -17,8 +17,8 @@ import {
 } from "@/utils/misiones";
 
 const { localFetch } = useLocalApi();
-const vista = useRouteQuery("vista", "ranking");
-const searchQuery = useRouteQuery("q", "");
+const vista = useRouteQuery<string>("vista", "ranking");
+const searchQuery = useRouteQuery<string>("q", "");
 const fuenteUrl = MISIONES_FUENTE_URL_DIPUTADOS;
 
 const { data, pending } = useAsyncData(

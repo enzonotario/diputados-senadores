@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
-import type { Diputado, FilterConfig, Voto } from "@/lib/types-diputados";
+import type { Acta, Diputado, FilterConfig, Voto } from "@/lib/types-diputados";
 import {
   filterDiputados,
   formatDate,
@@ -27,7 +27,7 @@ const pdfHref = computed(() => actaPdfUrl(chamberId.value, id.value));
 
 const { data, pending } = await useAsyncData(
   () => `acta-${id.value}`,
-  () => localFetch(`/api/actas/${id.value}`),
+  () => localFetch<Acta>(`/api/actas/${id.value}`),
   { watch: [id] },
 );
 const acta = computed(() => data.value || null);
@@ -535,7 +535,11 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
                       "
                       icon="i-lucide-table"
                       label="Tabla"
-                      @click="provinciasMembersLayout = 'tabla'"
+                      @click="
+                        () => {
+                          provinciasMembersLayout = 'tabla';
+                        }
+                      "
                     />
                     <UButton
                       color="neutral"
@@ -544,7 +548,11 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
                       "
                       icon="i-lucide-layout-grid"
                       label="Grid"
-                      @click="provinciasMembersLayout = 'grid'"
+                      @click="
+                        () => {
+                          provinciasMembersLayout = 'grid';
+                        }
+                      "
                     />
                   </UFieldGroup>
                   <template #fallback>

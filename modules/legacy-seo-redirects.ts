@@ -1,4 +1,4 @@
-import { defineNuxtModule, logger } from "@nuxt/kit";
+import { defineNuxtModule, logger } from "nuxt/kit";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
@@ -25,7 +25,7 @@ function maxByPeriod(a: any, b: any) {
 function toRouteRules(redirects: RedirectRule[]) {
   const rules: Record<
     string,
-    { redirect: { to: string; statusCode: number } }
+    { redirect: { to: string; statusCode: RedirectRule["status"] } }
   > = {};
   for (const r of redirects) {
     rules[r.from] = { redirect: { to: r.to, statusCode: r.status } };

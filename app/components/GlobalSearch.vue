@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getChamberConfig } from "@/lib/chamber";
+
 type SearchItem = {
   id: string;
   label: string;
@@ -13,7 +15,9 @@ type SearchItem = {
   avatar?: { src: string };
 };
 
-const { chamber, otherChamber, otherChamberUrl } = useChamber();
+const { chamberId, otherChamber, otherChamberUrl } = useChamber();
+// Solo se renderiza en sitios legislativos (ver layouts/default.vue).
+const chamber = computed(() => getChamberConfig(chamberId.value));
 const { localFetch } = useLocalApi();
 
 const open = ref(false);

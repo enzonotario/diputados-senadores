@@ -31,7 +31,7 @@ const showInternacionales = computed(
 );
 
 const tabItems = computed(() => {
-  const items = [
+  const items: { label: string; value: "nacionales" | "internacionales" }[] = [
     {
       label: `Nacionales (${props.viajes?.nacionales.length || 0})`,
       value: "nacionales" as const,

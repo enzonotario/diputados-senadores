@@ -28,7 +28,7 @@ export function claveApellidoNombre(nombre: string): string | null {
   let apellidos: string[];
   let nombres: string[];
   if (folded.includes(",")) {
-    const [apellidoRaw, ...rest] = folded.split(",");
+    const [apellidoRaw = "", ...rest] = folded.split(",");
     apellidos = apellidoRaw.trim().split(/\s+/).filter(Boolean);
     nombres = rest.join(",").trim().split(/\s+/).filter(Boolean);
   } else {

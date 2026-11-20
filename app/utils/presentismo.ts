@@ -8,7 +8,10 @@ export type PresentismoPeriodoBucket = {
 };
 
 export type MemberWithPresentismoPeriodo = {
-  estadisticas?: { presentismo?: number | null } | null;
+  estadisticas?: {
+    presentismo?: number | null;
+    totalVotaciones?: number;
+  } | null;
   estadisticasPorPeriodo?: Record<string, PresentismoPeriodoBucket> | null;
 };
 

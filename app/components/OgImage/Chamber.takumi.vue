@@ -120,7 +120,7 @@ const hemicicloLayout = computed(() => {
 const voteRows = computed(() => {
   const decoded = decodeOgVotes(props.votes);
   if (!decoded) return [];
-  const rows = [
+  const rows: { key: string; label: string; count: number; color: string }[] = [
     {
       key: "afirmativo",
       label: "A favor",

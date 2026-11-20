@@ -7,11 +7,7 @@ import { normalizeVotoTipo } from "@/utils/votoTipo";
 const props = defineProps<{
   acta: Pick<
     Acta,
-    | "votosAfirmativos"
-    | "votosNegativos"
-    | "abstenciones"
-    | "ausentes"
-    | "votos"
+    "votosAfirmativos" | "votosNegativos" | "abstenciones" | "ausentes"
   > & { votos?: unknown[] };
   /** Tipo a resaltar con color fuerte (resultado del acta o predominante del grupo). */
   resultado: string;

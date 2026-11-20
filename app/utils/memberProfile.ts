@@ -40,7 +40,7 @@ export function careerYears(
   now = Date.now(),
 ): number {
   const ranges = cargos
-    .map((c) => [
+    .map((c): [number, number] => [
       new Date(c.inicio).getTime(),
       Math.min(c.fin ? new Date(c.fin).getTime() : now, now),
     ])

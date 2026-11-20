@@ -18,16 +18,24 @@ export function slimActas<T extends { votos?: unknown }>(
 }
 
 /** Miembro con estadísticas, sin historial de actas embebido. */
-export function slimMemberStats<
-  T extends { actasDiputado?: unknown; actasSenador?: unknown },
->(member: T): Omit<T, "actasDiputado" | "actasSenador"> {
-  const { actasDiputado: _a, actasSenador: _b, ...rest } = member;
+type MemberActasFields = { actasDiputado?: unknown; actasSenador?: unknown };
+
+// `T extends object` (no el tipo débil de arriba): TS 6 marca exceso de
+// propiedades en literales si el constraint es all-optional.
+export function slimMemberStats<T extends object>(
+  member: T,
+): Omit<T, keyof MemberActasFields> {
+  const {
+    actasDiputado: _a,
+    actasSenador: _b,
+    ...rest
+  } = member as T & MemberActasFields;
   return rest;
 }
 
-export function slimMembersStats<
-  T extends { actasDiputado?: unknown; actasSenador?: unknown },
->(members: T[]): Omit<T, "actasDiputado" | "actasSenador">[] {
+export function slimMembersStats<T extends object>(
+  members: T[],
+): Omit<T, keyof MemberActasFields>[] {
   return members.map(slimMemberStats);
 }
 

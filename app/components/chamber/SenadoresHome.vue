@@ -50,10 +50,8 @@ const { data: membersData, pending: pendingMembers } = useAsyncData(
       partido: m.partido,
       bloque: m.bloque,
       foto: m.foto,
-      periodoMandato: m.periodoMandato,
-      periodoReal: (m as any).periodoReal,
-      periodoLegal: (m as any).periodoLegal,
-      ceseFecha: (m as any).ceseFecha,
+      periodoReal: m.periodoReal,
+      periodoLegal: m.periodoLegal,
     }));
   },
   { lazy: true },

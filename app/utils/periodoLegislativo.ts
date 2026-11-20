@@ -361,9 +361,7 @@ export function recentPeriodoKeys(
 }
 
 /** Normaliza query/`periodo=` a lista de claves (sin `todos`). */
-export function normalizePeriodoKeys(
-  periodo: string | string[] | null | undefined,
-): string[] {
+export function normalizePeriodoKeys(periodo: unknown): string[] {
   const raw = Array.isArray(periodo)
     ? periodo
     : periodo == null || periodo === ""

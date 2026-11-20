@@ -34,7 +34,7 @@ function parseNombreVoto(raw: string) {
     return { apellido: "", nombre: "", nombreCompleto: "" };
   }
   if (full.includes(",")) {
-    const [apellido, ...rest] = full.split(",");
+    const [apellido = "", ...rest] = full.split(",");
     return {
       apellido: apellido.trim(),
       nombre: rest.join(",").trim(),
@@ -492,8 +492,10 @@ const basePalette = [
 function colorForBloqueFactory() {
   let i = 0;
   return (bloque: string) => {
-    if (preassigned[bloque]) return preassigned[bloque];
-    const c = basePalette[i % basePalette.length];
+    const pre = preassigned[bloque];
+    if (pre) return pre;
+    // Palette is a non-empty literal array; modulo keeps the index in range.
+    const c = basePalette[i % basePalette.length]!;
     i++;
     return c;
   };

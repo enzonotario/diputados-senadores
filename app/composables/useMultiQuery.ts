@@ -4,7 +4,7 @@ import { useRouteQuery } from "@vueuse/router";
  * Query param multi-valor: ?provincia=Salta,Jujuy ↔ string[]
  */
 export function useMultiQuery(key: string) {
-  return useRouteQuery(key, [] as string[], {
+  return useRouteQuery<string | string[] | null, string[]>(key, [], {
     transform: {
       get: (raw) => {
         if (raw == null || raw === "") return [];

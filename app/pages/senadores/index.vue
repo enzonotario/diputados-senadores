@@ -467,7 +467,11 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                     "
                     icon="i-lucide-table"
                     label="Tabla"
-                    @click="provinciasMembersLayout = 'tabla'"
+                    @click="
+                      () => {
+                        provinciasMembersLayout = 'tabla';
+                      }
+                    "
                   />
                   <UButton
                     color="neutral"
@@ -476,7 +480,11 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
                     "
                     icon="i-lucide-layout-grid"
                     label="Grid"
-                    @click="provinciasMembersLayout = 'grid'"
+                    @click="
+                      () => {
+                        provinciasMembersLayout = 'grid';
+                      }
+                    "
                   />
                 </UFieldGroup>
                 <template #fallback>

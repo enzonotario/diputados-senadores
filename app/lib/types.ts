@@ -42,7 +42,7 @@ export interface Senador {
     string,
     { totalVotaciones: number; ausencias: number; presentismo: number }
   >;
-  actasSenador?: Acta[];
+  actasSenador?: MemberActaSenador[];
   tipoVoto?: string;
 }
 
@@ -349,6 +349,12 @@ export interface Acta {
   periodo?: string;
   reunion?: string;
 }
+
+/**
+ * Acta embebida en `Senador.actasSenador`: resumen sin `votos` del recinto,
+ * con el voto de ese senador.
+ */
+export type MemberActaSenador = Omit<Acta, "votos"> & { votos?: Voto[] };
 
 export type SortDirection = "asc" | "desc";
 

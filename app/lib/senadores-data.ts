@@ -734,8 +734,10 @@ const basePalette = [
 function colorForPartidoFactory() {
   let i = 0;
   return (partido: string) => {
-    if (preassigned[partido]) return preassigned[partido];
-    const c = basePalette[i % basePalette.length];
+    const pre = preassigned[partido];
+    if (pre) return pre;
+    // Palette is a non-empty literal array; modulo keeps the index in range.
+    const c = basePalette[i % basePalette.length]!;
     i++;
     return c;
   };

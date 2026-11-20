@@ -44,7 +44,7 @@ export interface Diputado {
     string,
     { totalVotaciones: number; ausencias: number; presentismo: number }
   >;
-  actasDiputado?: Acta[];
+  actasDiputado?: MemberActaDiputado[];
   tipoVoto?: string;
 }
 
@@ -88,6 +88,21 @@ export interface Acta {
   sinVotar?: number | null;
   ultModVer?: string | null;
 }
+
+/**
+ * Acta embebida en `Diputado.actasDiputado`: resumen sin `votos` del recinto,
+ * con el voto de ese diputado.
+ */
+export type MemberActaDiputado = Omit<
+  Acta,
+  "votos" | "numeroActa" | "presidente" | "presentes" | "miembros"
+> &
+  Partial<Pick<Acta, "votos" | "numeroActa" | "presidente">> & {
+    proyecto?: string;
+    descripcion?: string;
+    presentes?: number | null;
+    miembros?: number | null;
+  };
 
 export type SortDirection = "asc" | "desc";
 

@@ -145,9 +145,10 @@ export function resolveSiteFromHost(
   hostname: string,
   fallback: SiteId = "senadores",
 ): SiteId {
-  const host = String(hostname || "")
-    .toLowerCase()
-    .split(":")[0];
+  const host =
+    String(hostname || "")
+      .toLowerCase()
+      .split(":")[0] ?? "";
 
   if (host.includes("diputados")) return "diputados";
   if (host.includes("senadores")) return "senadores";
@@ -185,9 +186,10 @@ export function otherChamberId(id: ChamberId): ChamberId {
  * (p.ej. diputados.localhost.test → senadores.localhost.test).
  */
 export function swapSiteHostname(hostname: string, to: SiteId): string {
-  const host = String(hostname || "")
-    .toLowerCase()
-    .split(":")[0];
+  const host =
+    String(hostname || "")
+      .toLowerCase()
+      .split(":")[0] ?? "";
 
   const markers: SiteId[] = ["diputados", "senadores", "congreso"];
   for (const from of markers) {

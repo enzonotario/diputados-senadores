@@ -385,7 +385,7 @@ export function miembroPresentismoSeries(actas: ActaChartRow[]) {
 }
 
 export function miembroVotoBreakdown(actas: ActaChartRow[]) {
-  const counts: Record<string, number> = {
+  const counts = {
     afirmativo: 0,
     negativo: 0,
     abstencion: 0,

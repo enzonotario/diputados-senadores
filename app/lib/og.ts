@@ -13,13 +13,13 @@ export const OG_CHAMBER_ACCENT: Record<ChamberId, string> = {
 };
 
 /** Colores por resultado de acta. */
-export const OG_RESULTADO_ACCENT: Record<string, string> = {
+export const OG_RESULTADO_ACCENT = {
   afirmativo: "#14b8a6",
   negativo: "#ef4444",
   abstencion: "#3b82f6",
   empate: "#f59e0b",
   cancelada: "#6b7280",
-};
+} satisfies Record<string, string>;
 
 export type OgKind = "home" | "list" | "member" | "group" | "acta" | "afinidad";
 

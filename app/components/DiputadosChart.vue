@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { Diputado } from "@/lib/types-diputados";
+import type { HemicicloMember } from "@/components/HemicicloChart.vue";
 import { bloquePath } from "@/utils/bloque";
 import { getVotoTipoConfig } from "@/utils/votoTipo";
 
 const props = withDefaults(
   defineProps<{
-    diputados: Diputado[];
+    diputados: HemicicloMember[];
     bloqueColores: Record<string, string>;
     /** Presidente del período (asiento central). */
-    president?: Diputado | null;
+    president?: HemicicloMember | null;
     /** Fotos en asientos (desactivar solo si hace falta por peso de red). */
     showPhotos?: boolean;
   }>(),

@@ -72,7 +72,7 @@ function splitApellidoNombre(opts: {
   if ((!apellido || !nombre) && opts.nombreCompleto) {
     const folded = foldNombre(opts.nombreCompleto);
     if (folded.includes(",")) {
-      const [ape, ...rest] = folded.split(",");
+      const [ape = "", ...rest] = folded.split(",");
       apellido = ape.trim();
       nombre = rest.join(",").trim();
     } else {

@@ -10,7 +10,7 @@ import { DIETAS_MECANISMOS_PDF_URL, DIETAS_PAGE_URL } from "@/utils/dieta";
 
 const { localFetch } = useLocalApi();
 const { sorting } = useTableSorting("donacion", true);
-const vista = useRouteQuery("vista", "lista");
+const vista = useRouteQuery<string>("vista", "lista");
 
 const searchQuery = useRouteQuery("q", "");
 const renunciaFilter = useMultiQuery("renuncia");

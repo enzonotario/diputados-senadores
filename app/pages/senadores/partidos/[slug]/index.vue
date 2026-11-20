@@ -73,7 +73,7 @@ const groupColors = computed(() => {
 });
 
 const actasMeta = computed(() => partido.value?.actasMeta || {});
-const pageVista = useRouteQuery("vista", "integrantes");
+const pageVista = useRouteQuery<string>("vista", "integrantes");
 const pageVistaItems: TabsItem[] = [
   { label: "Integrantes", value: "integrantes", icon: "i-lucide-users" },
   {
@@ -304,14 +304,22 @@ useChamberSeo(() => {
               :variant="integrantesVista === 'lista' ? 'solid' : 'outline'"
               icon="i-lucide-list"
               aria-label="Vista lista"
-              @click="integrantesVista = 'lista'"
+              @click="
+                () => {
+                  integrantesVista = 'lista';
+                }
+              "
             />
             <UButton
               color="neutral"
               :variant="integrantesVista === 'grilla' ? 'solid' : 'outline'"
               icon="i-lucide-layout-grid"
               aria-label="Vista grilla"
-              @click="integrantesVista = 'grilla'"
+              @click="
+                () => {
+                  integrantesVista = 'grilla';
+                }
+              "
             />
           </UFieldGroup>
         </div>

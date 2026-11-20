@@ -576,11 +576,10 @@ export async function buildMemberProfile(
 }
 
 export async function buildSlimActas(chamber: ChamberId) {
-  const actas =
-    chamber === "diputados"
-      ? await getActasDiputados()
-      : await getActasSenadores();
-  return { chamber, actas: slimActas(actas) };
+  if (chamber === "diputados") {
+    return { chamber, actas: slimActas(await getActasDiputados()) };
+  }
+  return { chamber, actas: slimActas(await getActasSenadores()) };
 }
 
 export async function buildPeriodos(

@@ -29,7 +29,7 @@ const displayName = computed(() => {
   }
 
   if (d.apellido?.trim()) return d.apellido.trim();
-  if (full.includes(",")) return full.split(",")[0].trim();
+  if (full.includes(",")) return (full.split(",")[0] ?? "").trim();
   return full || "—";
 });
 

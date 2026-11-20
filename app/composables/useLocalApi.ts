@@ -35,6 +35,7 @@ export function useLocalApi() {
     // Absolute URL → $fetch directo (no reescribe al origen del request SSR).
     const fetcher = appApiBase ? $fetch : requestFetch;
 
+    // Ruta dinámica (string): Nitro no puede inferir el payload; T lo fija el caller.
     return fetcher<T>(target, {
       ...opts,
       query: {
@@ -45,7 +46,7 @@ export function useLocalApi() {
         ...prevHeaders,
         "x-chamber": chamber,
       },
-    } as any);
+    } as any) as Promise<T>;
   }
 
   return { localFetch };

@@ -130,7 +130,11 @@ const timelinePeriodsResolved = computed<PeriodoInfo[]>(() => {
           :variant="expanded ? 'soft' : 'outline'"
           size="sm"
           :aria-expanded="expanded"
-          @click="expanded = !expanded"
+          @click="
+            () => {
+              expanded = !expanded;
+            }
+          "
         />
       </div>
     </div>

@@ -1,5 +1,12 @@
-import type { Acta, Senador, FilterConfig, SortConfig, Voto } from "./types";
-import type { Acta as DiputadoActa, Diputado } from "./types-diputados";
+import type {
+  Acta,
+  MemberActaSenador,
+  Senador,
+  FilterConfig,
+  SortConfig,
+  Voto,
+} from "./types";
+import type { Diputado, MemberActaDiputado } from "./types-diputados";
 
 const ARGENTINA_DATE_FORMATTER = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
@@ -160,7 +167,7 @@ export function sortSenadores(
     let bValue: any;
 
     if (sortConfig.key.includes(".")) {
-      const [parent, child] = sortConfig.key.split(".");
+      const [parent = "", child = ""] = sortConfig.key.split(".");
       aValue = (a as any)[parent]?.[child];
       bValue = (b as any)[parent]?.[child];
     } else {
@@ -213,7 +220,7 @@ export function filterSenadores(
       if (isEmptyFilterValue(value)) return true;
 
       if (key.includes(".")) {
-        const [parent, child] = key.split(".");
+        const [parent = "", child = ""] = key.split(".");
         const parentValue = (senador as any)[parent];
         if (typeof parentValue === "object" && parentValue !== null) {
           const childValue = parentValue[child];
@@ -260,11 +267,12 @@ export function sortActas(actas: Acta[], sortConfig: SortConfig): Acta[] {
   });
 }
 
-export function filterActas(
-  actas: Acta[] | any[],
+/** Genérico: sirve para `Acta` de diputados o senadores. */
+export function filterActas<T extends { fecha: string }>(
+  actas: T[],
   filters: FilterConfig,
-): Acta[] {
-  return (actas as Acta[]).filter((acta) => {
+): T[] {
+  return actas.filter((acta) => {
     return Object.entries(filters).every(([key, value]) => {
       if (isEmptyFilterValue(value)) return true;
 
@@ -307,7 +315,7 @@ export function getUniqueValues(items: any[], key: string): string[] {
   const values = new Set<string>();
   items.forEach((item) => {
     if (key.includes(".")) {
-      const [parent, child] = key.split(".");
+      const [parent = "", child = ""] = key.split(".");
       const parentValue = item[parent];
       if (typeof parentValue === "object" && parentValue !== null) {
         const childValue = parentValue[child];
@@ -329,7 +337,7 @@ export function getYearsFromActas(actas: Acta[] | any[]): string[] {
   return Array.from(years).sort((a, b) => b.localeCompare(a));
 }
 
-export function calcularEstadisticasSenador(actas: Acta[]) {
+export function calcularEstadisticasSenador(actas: MemberActaSenador[]) {
   let totalVotaciones = 0;
   let votosAfirmativos = 0;
   let votosNegativos = 0;
@@ -394,7 +402,7 @@ export function parseNombreSenador(raw: string) {
     return { apellido: "", nombreDePila: "", nombreCompleto: "" };
   }
   if (full.includes(",")) {
-    const [apellido, ...rest] = full.split(",");
+    const [apellido = "", ...rest] = full.split(",");
     return {
       apellido: apellido.trim(),
       nombreDePila: rest.join(",").trim(),
@@ -420,7 +428,7 @@ export function sortDiputados(
     let bValue: any;
 
     if (sortConfig.key.includes(".")) {
-      const [parent, child] = sortConfig.key.split(".");
+      const [parent = "", child = ""] = sortConfig.key.split(".");
       aValue = (a as any)[parent]?.[child];
       bValue = (b as any)[parent]?.[child];
     } else {
@@ -446,7 +454,7 @@ export function filterDiputados(
       if (isEmptyFilterValue(value)) return true;
 
       if (key.includes(".")) {
-        const [parent, child] = key.split(".");
+        const [parent = "", child = ""] = key.split(".");
         const parentValue = (diputado as any)[parent];
         if (typeof parentValue === "object" && parentValue !== null) {
           const childValue = parentValue[child];
@@ -479,7 +487,7 @@ export function filterDiputados(
   });
 }
 
-export function calcularEstadisticasDiputado(actas: DiputadoActa[]) {
+export function calcularEstadisticasDiputado(actas: MemberActaDiputado[]) {
   let totalVotaciones = 0;
   let votosAfirmativos = 0;
   let votosNegativos = 0;

@@ -43,7 +43,7 @@ export default defineEventHandler((event) => {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, x-chamber",
   );
-  setResponseHeader(event, "Access-Control-Max-Age", "86400");
+  setResponseHeader(event, "Access-Control-Max-Age", 86400);
   appendResponseHeader(event, "Vary", "Origin");
 
   if (getMethod(event) === "OPTIONS") {

@@ -12,7 +12,7 @@ export type HemicicloMember = {
   nombre?: string;
   nombreDePila?: string;
   provincia?: string;
-  bloque?: string;
+  bloque?: string | null;
   partido?: string;
   tipoVoto?: string;
   /** Banca física HCDN (solo diputados con datos de recinto). */

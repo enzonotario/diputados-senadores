@@ -10,7 +10,7 @@ import { sortableHeader } from "@/utils/sortableHeader";
 import { gastoFuentesLinks, SENADO_DIETAS_URL } from "@/utils/senadoFuentes";
 
 const { localFetch } = useLocalApi();
-const vista = useRouteQuery("vista", "bloques");
+const vista = useRouteQuery<string>("vista", "bloques");
 const searchQuery = useRouteQuery("q", "");
 const { sorting } = useTableSorting("bruto", true);
 const { sorting: sortingSenadores } = useTableSorting("total", true);

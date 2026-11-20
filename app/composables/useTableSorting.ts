@@ -1,5 +1,7 @@
 import { useRouteQuery } from "@vueuse/router";
-import type { SortingState } from "@tanstack/vue-table";
+
+/** Same shape as TanStack `SortingState` (UTable `v-model:sorting`). */
+type SortingState = { id: string; desc: boolean }[];
 
 /**
  * Estado de sorting de UTable, sincronizado con ?sort=&dir= en la URL.

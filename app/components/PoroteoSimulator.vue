@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
-import { useDebounceFn } from "@vueuse/core";
+import type { LocationQueryRaw } from "vue-router";
 import { domToBlob } from "modern-screenshot";
 import type { TableColumn } from "@nuxt/ui";
 import { getBloqueColores } from "@/lib/diputados-data";
@@ -309,7 +309,7 @@ watch(
 function applyShareToUrl() {
   if (!import.meta.client || suppressUrlWrite.value) return;
   const encoded = encodePoroteoShare(votes.value);
-  const nextQuery: Record<string, string | string[] | undefined | null> = {
+  const nextQuery: LocationQueryRaw = {
     ...route.query,
   };
   if (encoded) nextQuery[POROTEO_SHARE_QUERY] = encoded;
@@ -818,13 +818,21 @@ const groupsSectionTitle = computed(() => {
                 color="neutral"
                 :variant="verPor === 'grupo' ? 'solid' : 'outline'"
                 :label="verPorGroupLabel"
-                @click="verPor = 'grupo'"
+                @click="
+                  () => {
+                    verPor = 'grupo';
+                  }
+                "
               />
               <UButton
                 color="neutral"
                 :variant="verPor === 'provincia' ? 'solid' : 'outline'"
                 label="Provincia"
-                @click="verPor = 'provincia'"
+                @click="
+                  () => {
+                    verPor = 'provincia';
+                  }
+                "
               />
             </UFieldGroup>
           </div>
@@ -836,14 +844,22 @@ const groupsSectionTitle = computed(() => {
                 :variant="verComo === 'grid' ? 'solid' : 'outline'"
                 icon="i-lucide-layout-grid"
                 label="Grid"
-                @click="verComo = 'grid'"
+                @click="
+                  () => {
+                    verComo = 'grid';
+                  }
+                "
               />
               <UButton
                 color="neutral"
                 :variant="verComo === 'tabla' ? 'solid' : 'outline'"
                 icon="i-lucide-table"
                 label="Tabla"
-                @click="verComo = 'tabla'"
+                @click="
+                  () => {
+                    verComo = 'tabla';
+                  }
+                "
               />
             </UFieldGroup>
           </div>

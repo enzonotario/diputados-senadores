@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { Diputado } from "@/lib/types-diputados";
 import type { DiputadoMisiones, DiputadoViajes } from "@/lib/types";
+import { isDiputadoActivo } from "@/lib/utils";
 import type { CareerCargo } from "@/utils/memberCareer";
 import {
+  diputadoMemberBasePath,
   diputadoMemberTabFromPath,
   diputadoMemberTabItems,
   diputadoMemberTabPath,
@@ -12,6 +14,7 @@ import {
 type MemberProfileResponse = {
   member: Diputado;
   career?: CareerCargo[];
+  chartActas?: Array<{ fecha?: string | null; periodo?: string | null }>;
   viajes?: DiputadoViajes | null;
   misiones?: DiputadoMisiones | null;
 };
@@ -28,6 +31,14 @@ const { data, pending } = await useAsyncData(
 
 const diputado = computed(() => data.value?.member || null);
 const career = computed(() => data.value?.career || []);
+
+// Miembro inactivo: default de período = su último período con votos.
+useMemberPeriodoAutoSelect({
+  basePath: () => diputadoMemberBasePath(id.value),
+  active: () => (diputado.value ? isDiputadoActivo(diputado.value) : null),
+  actas: () => data.value?.chartActas || [],
+  chamber: "diputados",
+});
 const viajes = computed(() => data.value?.viajes || null);
 const misiones = computed(() => data.value?.misiones || null);
 const comisiones = computed(() => diputado.value?.meta?.comisiones || []);

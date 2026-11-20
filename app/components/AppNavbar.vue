@@ -16,9 +16,12 @@ const legislative = computed(() =>
   isLegislative.value ? getChamberConfig(chamberId.value) : null,
 );
 
+/** Excluye la auto-selección de fichas de miembros inactivos. */
+const navPeriodo = useNavPeriodoQuery();
+
 function withPeriodo(path: string) {
   if (!routeUsesPeriodoQuery(path)) return path;
-  const periodo = String(route.query.periodo || "").trim();
+  const periodo = navPeriodo.value;
   return periodo ? { path, query: { periodo } } : path;
 }
 

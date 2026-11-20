@@ -16,6 +16,69 @@ import { formatDateRange as formatArgentinaDateRange } from "@/lib/utils";
 
 type PeriodosApi = PeriodosCatalog & { chamber?: string };
 
+/**
+ * Selección automática de período en la ficha de un miembro inactivo
+ * (último período con votos). Vive solo bajo `basePath` y NO se guarda
+ * como selección global recordada.
+ */
+export type MemberPeriodoAuto = {
+  /** `/senadores/:id` o `/diputados/:id`. */
+  basePath: string;
+  /** Claves auto-elegidas, coma-separadas (como en la URL). */
+  keys: string;
+  /** El usuario cambió el período a mano en esta ficha: no reaplicar. */
+  dismissed?: boolean;
+};
+
+export function useMemberPeriodoAutoState() {
+  return useState<MemberPeriodoAuto | null>("periodo-member-auto", () => null);
+}
+
+export function isPathUnder(path: string, basePath: string): boolean {
+  const p = path.replace(/\/+$/, "");
+  return p === basePath || p.startsWith(`${basePath}/`);
+}
+
+function queryKeysString(raw: unknown): string {
+  if (raw == null) return "";
+  const list = Array.isArray(raw) ? raw.map(String) : String(raw);
+  return normalizePeriodoKeys(list).join(",");
+}
+
+/** ¿La URL actual tiene la selección automática de ficha (no elegida por el usuario)? */
+function isMemberAutoQuery(
+  auto: MemberPeriodoAuto | null,
+  path: string,
+  rawQuery: unknown,
+): boolean {
+  if (!auto || auto.dismissed) return false;
+  if (!isPathUnder(path, auto.basePath)) return false;
+  return queryKeysString(rawQuery) === auto.keys;
+}
+
+/**
+ * `?periodo=` a propagar en links globales (navbar). Si la URL tiene la
+ * selección automática de una ficha inactiva, se usa la selección recordada
+ * global en su lugar, para no arrastrar ese período a los listados.
+ */
+export function useNavPeriodoQuery() {
+  const route = useRoute();
+  const memberAuto = useMemberPeriodoAutoState();
+  const remembered = useState<string[]>("periodo-selected-keys", () => []);
+  const rememberedTodos = useState<boolean>(
+    "periodo-selected-todos",
+    () => false,
+  );
+  return computed(() => {
+    const raw = route.query.periodo;
+    if (isMemberAutoQuery(memberAuto.value, route.path, raw)) {
+      if (rememberedTodos.value) return TODOS_PERIODO_KEY;
+      return remembered.value.join(",");
+    }
+    return String(raw || "").trim();
+  });
+}
+
 function queryMeansTodos(raw: string | string[] | null | undefined): boolean {
   if (raw == null) return false;
   const list = Array.isArray(raw) ? raw : String(raw).split(",");
@@ -40,6 +103,7 @@ export function usePeriodoFilter() {
     "periodo-selected-todos",
     () => false,
   );
+  const memberAuto = useMemberPeriodoAutoState();
 
   const { data: catalog, pending } = useAsyncData(
     () => `periodos-catalog-${chamberId.value}`,
@@ -72,6 +136,11 @@ export function usePeriodoFilter() {
     },
     set(value: string[]) {
       const next = normalizePeriodoKeys(value);
+      // Elección explícita en una ficha con auto-selección: no reaplicarla.
+      const auto = memberAuto.value;
+      if (auto && !auto.dismissed && isPathUnder(route.path, auto.basePath)) {
+        memberAuto.value = { ...auto, dismissed: true };
+      }
       remembered.value = next;
       rememberedTodos.value = next.length === 0;
       // Vacío → `todos` en la URL (para no reaplicar el default).
@@ -114,6 +183,14 @@ export function usePeriodoFilter() {
       if (!isLegislative.value) return;
       if (import.meta.prerender) return;
 
+      // Salimos de la ficha con auto-selección → olvidarla.
+      if (
+        memberAuto.value &&
+        !isPathUnder(route.path, memberAuto.value.basePath)
+      ) {
+        memberAuto.value = null;
+      }
+
       if (!routeUsesPeriodoQuery(route.path)) {
         const q = route.query.periodo;
         const hasPeriodo =
@@ -136,6 +213,8 @@ export function usePeriodoFilter() {
         q != null &&
         String(Array.isArray(q) ? q.join(",") : q).trim() !== "";
       if (hasQuery) {
+        // Auto-selección de ficha inactiva: no pisar la selección global.
+        if (isMemberAutoQuery(memberAuto.value, route.path, q)) return;
         if (queryMeansTodos(Array.isArray(q) ? q.map(String) : String(q))) {
           remembered.value = [];
           rememberedTodos.value = true;
@@ -155,10 +234,14 @@ export function usePeriodoFilter() {
         });
         return;
       }
+      // Cambio de pestaña dentro de una ficha con auto-selección → mantenerla.
+      const auto = memberAuto.value;
       const next =
-        remembered.value.length > 0
-          ? remembered.value
-          : [c.defaultKey];
+        auto && !auto.dismissed && isPathUnder(route.path, auto.basePath)
+          ? auto.keys.split(",")
+          : remembered.value.length > 0
+            ? remembered.value
+            : [c.defaultKey];
       const current = String(route.query.periodo || "");
       const nextStr = next.join(",");
       if (current === nextStr) return;

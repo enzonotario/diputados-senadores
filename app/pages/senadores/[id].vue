@@ -5,8 +5,10 @@ import type {
   SenadorPersonalDetalle,
   SenadorViajes,
 } from "@/lib/types";
+import { isSenadorActivo } from "@/lib/utils";
 import type { CareerCargo } from "@/utils/memberCareer";
 import {
+  senadorMemberBasePath,
   senadorMemberTabFromPath,
   senadorMemberTabItems,
   senadorMemberTabPath,
@@ -16,6 +18,7 @@ import {
 type MemberProfileResponse = {
   member: Senador;
   career?: CareerCargo[];
+  chartActas?: Array<{ fecha?: string | null; periodo?: string | null }>;
   viajes?: SenadorViajes | null;
   gasto?: GastoSenadoSenadorRow | null;
   personal?: SenadorPersonalDetalle | null;
@@ -33,6 +36,14 @@ const { data, pending } = await useAsyncData(
 
 const senador = computed(() => data.value?.member || null);
 const career = computed(() => data.value?.career || []);
+
+// Miembro inactivo: default de período = su último período con votos.
+useMemberPeriodoAutoSelect({
+  basePath: () => senadorMemberBasePath(id.value),
+  active: () => (senador.value ? isSenadorActivo(senador.value) : null),
+  actas: () => data.value?.chartActas || [],
+  chamber: "senadores",
+});
 const viajes = computed(() => data.value?.viajes || null);
 const gasto = computed(() => data.value?.gasto || null);
 const personal = computed(() => data.value?.personal || null);

@@ -324,7 +324,13 @@ export interface Acta {
   proyecto?: string;
   descripcion?: string;
   quorumTipo?: string;
+  /** Timestamp de la votación (puede ser día siguiente si la sesión se extiende). */
   fecha: string;
+  /**
+   * Día de sesión oficial (`yyyy-MM-dd`), del listado del Senado.
+   * Preferir sobre el día civil de `fecha` para agrupar/ordenar.
+   */
+  fechaSesion?: string | null;
   numeroActa?: string;
   mayoria?: string;
   miembros?: number;

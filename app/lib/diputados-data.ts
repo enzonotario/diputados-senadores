@@ -11,6 +11,7 @@ import {
 } from "./matchDiputadoNombre";
 import { buildMisionId } from "../utils/misiones";
 import { normalizeDiputadosActaConteos } from "../utils/actaConteos";
+import { compareActasBySesionThenActa } from "../utils/actaFechaSesion";
 import recintoAsignacion from "../data/diputados-recinto-asignacion.json";
 
 import { createSingleflight } from "./singleflight";
@@ -214,12 +215,14 @@ export async function getActas(): Promise<Acta[]> {
     const origin = getApiOrigin();
     const raw = await $fetch<Acta[]>(`${origin}/v1/diputados/actas`);
 
-    return raw.map((acta) =>
-      normalizeDiputadosActaConteos({
-        ...acta,
-        votos: (acta.votos || []).filter((v) => v.tipoVoto !== "presidente"),
-      }),
-    );
+    return raw
+      .map((acta) =>
+        normalizeDiputadosActaConteos({
+          ...acta,
+          votos: (acta.votos || []).filter((v) => v.tipoVoto !== "presidente"),
+        }),
+      )
+      .sort(compareActasBySesionThenActa);
   });
 }
 

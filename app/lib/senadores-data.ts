@@ -19,6 +19,7 @@ import {
   fakeSenadoPeriodoKey,
   SIN_PERIODO_KEY,
 } from "../utils/periodoLegislativo";
+import { compareActasBySesionThenActa } from "../utils/actaFechaSesion";
 
 import { createSingleflight } from "./singleflight";
 
@@ -227,6 +228,10 @@ function mapActa(raw: any): Acta {
     descripcion: raw.descripcion || "",
     quorumTipo: raw.quorumTipo || "",
     fecha,
+    fechaSesion: (() => {
+      const fs = String(raw.fechaSesion || "").trim();
+      return /^\d{4}-\d{2}-\d{2}$/.test(fs) ? fs : null;
+    })(),
     numeroActa: raw.acta != null ? String(raw.acta) : "",
     mayoria: raw.mayoria || "",
     miembros: raw.miembros ?? 0,
@@ -530,9 +535,7 @@ export async function getActas(): Promise<Acta[]> {
     return raw
       .filter((a) => a.fecha && String(a.fecha).trim())
       .map(mapActa)
-      .sort(
-        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-      );
+      .sort(compareActasBySesionThenActa);
   });
 }
 

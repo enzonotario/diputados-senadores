@@ -6,6 +6,8 @@ type ActaCard = {
   id: string;
   titulo: string;
   fecha: string;
+  fechaSesion?: string | null;
+  numeroActa?: string | null;
   resultado: string;
   votosAfirmativos: number;
   votosNegativos: number;
@@ -14,9 +16,20 @@ type ActaCard = {
   votos?: unknown[];
 };
 
-const props = defineProps<{
-  acta: ActaCard;
-}>();
+const props = withDefaults(
+  defineProps<{
+    acta: ActaCard;
+    /** Override de la fecha mostrada (p. ej. fecha de sesión). */
+    fechaLabel?: string;
+  }>(),
+  {
+    fechaLabel: undefined,
+  },
+);
+
+const displayFecha = computed(
+  () => props.fechaLabel || formatDate(props.acta.fecha),
+);
 
 const totalVotos = computed(() => actaVoteTotal(props.acta));
 
@@ -40,9 +53,15 @@ function pct(n: number) {
           <div
             class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300"
           >
-            <div class="flex items-center gap-1">
-              <UIcon name="lucide:calendar" class="size-3" />
-              <span>{{ formatDate(acta.fecha) }}</span>
+            <div class="flex items-center gap-1 min-w-0">
+              <UIcon name="lucide:calendar" class="size-3 shrink-0" />
+              <span class="truncate">{{ displayFecha }}</span>
+              <span
+                v-if="acta.numeroActa"
+                class="shrink-0 text-xs text-muted tabular-nums"
+              >
+                · Acta {{ acta.numeroActa }}
+              </span>
             </div>
             <ResultadoBadge :resultado="acta.resultado" />
           </div>

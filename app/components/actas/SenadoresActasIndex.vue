@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { useRouteQuery } from "@vueuse/router";
 import type { Acta, FilterConfig } from "@/lib/types";
+import { filterActas as applyActaFilters, getUniqueValues } from "@/lib/utils";
 import {
-  filterActas as applyActaFilters,
-  formatDate,
-  formatTime,
-  getUniqueValues,
-} from "@/lib/utils";
-import { sortableHeader } from "@/utils/sortableHeader";
-import { voteMarginSortValue } from "@/utils/voteMargin";
+  actaFechaSesionLabel,
+  sortActasBySesionThenActa,
+} from "@/utils/actaFechaSesion";
 
 useChamberSeo({
   title: "Votaciones",
@@ -18,7 +15,6 @@ useChamberSeo({
 });
 
 const { filterActas: filterByPeriodo } = usePeriodoFilter();
-const { sorting } = useTableSorting("fecha", true);
 const resultado = useMultiQuery("resultado");
 const searchQuery = useRouteQuery("q", "");
 
@@ -46,7 +42,9 @@ const filters = computed<FilterConfig>(() => ({
 }));
 
 const displayed = computed(() =>
-  applyActaFilters(actasInPeriodo.value, filters.value),
+  sortActasBySesionThenActa(
+    applyActaFilters(actasInPeriodo.value, filters.value),
+  ),
 );
 
 const resultados = computed(() =>
@@ -57,55 +55,6 @@ const resultadoItems = computed(() =>
 );
 
 const emptyMessage = "No se encontraron actas con los filtros aplicados.";
-
-const tableColumns = [
-  { accessorKey: "fecha", header: sortableHeader("Fecha") },
-  {
-    accessorKey: "titulo",
-    header: sortableHeader("Título"),
-    meta: {
-      class: {
-        td: "whitespace-normal",
-      },
-    },
-  },
-  {
-    accessorKey: "proyecto",
-    header: sortableHeader("Proyecto"),
-    meta: {
-      class: {
-        td: "whitespace-normal",
-      },
-    },
-  },
-  {
-    accessorKey: "descripcion",
-    header: sortableHeader("Descripción"),
-    meta: {
-      class: {
-        td: "whitespace-normal max-w-[9rem]",
-      },
-    },
-  },
-  { accessorKey: "resultado", header: sortableHeader("Resultado") },
-  {
-    id: "margen",
-    accessorFn: (row: Acta) =>
-      voteMarginSortValue(row.votosAfirmativos, row.votosNegativos),
-    header: sortableHeader("Margen"),
-  },
-  {
-    accessorKey: "votosAfirmativos",
-    header: sortableHeader("A favor"),
-  },
-  { accessorKey: "votosNegativos", header: sortableHeader("En contra") },
-  { accessorKey: "abstenciones", header: sortableHeader("Abstenciones") },
-  { accessorKey: "ausentes", header: sortableHeader("Ausentes") },
-];
-
-function onRowSelect(_e: Event, row: { original: Acta }) {
-  navigateTo(`/actas/${row.original.id}`);
-}
 </script>
 
 <template>
@@ -164,55 +113,12 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
     <template v-else>
       <ChartsActasOverviewCharts :actas="displayed" />
 
-      <DataTableCard v-if="layout === 'tabla'">
-        <UTable
-          v-model:sorting="sorting"
-          :data="displayed"
-          :columns="tableColumns"
-          :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
-          :empty="emptyMessage"
-          :on-select="onRowSelect"
-        >
-          <template #titulo-cell="{ row }">
-            <NuxtLink
-              :to="`/actas/${(row.original as Acta).id}`"
-              class="hover:underline line-clamp-5"
-              @click.stop
-            >
-              {{ (row.original as Acta).titulo }}
-            </NuxtLink>
-          </template>
-          <template #fecha-cell="{ row }">
-            <div class="flex flex-col leading-tight">
-              <span class="tabular-nums">{{
-                formatDate((row.original as Acta).fecha)
-              }}</span>
-              <span
-                v-if="formatTime((row.original as Acta).fecha, '')"
-                class="text-xs text-muted tabular-nums"
-              >
-                {{ formatTime((row.original as Acta).fecha) }}
-              </span>
-            </div>
-          </template>
-          <template #descripcion-cell="{ row }">
-            <span
-              class="block max-w-[9rem] text-xs text-toned leading-snug whitespace-normal break-words"
-            >
-              {{ (row.original as Acta).descripcion || "—" }}
-            </span>
-          </template>
-          <template #resultado-cell="{ row }">
-            <ResultadoBadge :resultado="(row.original as Acta).resultado" />
-          </template>
-          <template #margen-cell="{ row }">
-            <MargenBadge
-              :afirmativos="(row.original as Acta).votosAfirmativos"
-              :negativos="(row.original as Acta).votosNegativos"
-            />
-          </template>
-        </UTable>
-      </DataTableCard>
+      <ActasSessionGroupedTable
+        v-if="layout === 'tabla'"
+        :actas="displayed"
+        variant="senadores"
+        :empty-message="emptyMessage"
+      />
 
       <template v-else>
         <div
@@ -223,6 +129,7 @@ function onRowSelect(_e: Event, row: { original: Acta }) {
             v-for="acta in displayed"
             :key="acta.id"
             :acta="acta"
+            :fecha-label="actaFechaSesionLabel(acta)"
           />
         </div>
         <UCard v-else>

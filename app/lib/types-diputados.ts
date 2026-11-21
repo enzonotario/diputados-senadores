@@ -64,7 +64,12 @@ export interface Acta {
   numeroActa: string;
   titulo: string;
   resultado: string;
+  /** Timestamp de la votación. */
   fecha: string;
+  /**
+   * Día de sesión (`yyyy-MM-dd`) si la API lo expone; si no, se deriva de `fecha`.
+   */
+  fechaSesion?: string | null;
   presidente: string;
   /** Diputado resuelto desde `presidente` (para hemiciclo / links). */
   presidenteObj?: Diputado | null;

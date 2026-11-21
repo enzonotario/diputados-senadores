@@ -19,6 +19,7 @@ import { buildActaSeo } from "@/lib/og-acta";
 import { getPartidoColores } from "@/lib/senadores-data";
 import { groupMembersBySelectedProvincias } from "@/utils/groupMembersBySelectedProvincias";
 import { actaPdfUrl } from "@/utils/staticPdf";
+import { actaFechaSesionLabel } from "@/utils/actaFechaSesion";
 
 const route = useRoute();
 const id = computed(() => String(route.params.id));
@@ -276,7 +277,17 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
             </dd>
           </div>
           <div class="flex flex-col min-w-0">
-            <dt class="text-sm text-gray-600 dark:text-gray-300">Fecha</dt>
+            <dt class="text-sm text-gray-600 dark:text-gray-300">
+              Fecha de sesión
+            </dt>
+            <dd class="text-sm font-medium tabular-nums">
+              {{ actaFechaSesionLabel(acta) }}
+            </dd>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <dt class="text-sm text-gray-600 dark:text-gray-300">
+              Hora de votación
+            </dt>
             <dd class="text-sm font-medium tabular-nums">
               {{ formatDateTime(acta.fecha) }}
             </dd>

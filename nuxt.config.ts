@@ -60,13 +60,28 @@ export default defineNuxtConfig({
       crawlLinks: false,
       failOnError: false,
     },
-    ...(dockerBuild
-      ? {
-          rollupConfig: {
-            maxParallelFileOps: 1,
+    rollupConfig: {
+      ...(dockerBuild ? { maxParallelFileOps: 1 } : {}),
+      plugins: [
+        {
+          // Nitro's @rollup/plugin-replace maps `typeof window` → `"undefined"`
+          // with `\b` delimiters, so a renamed binding like `window$1` becomes
+          // `"undefined"$1` (syntax error) whenever chunking renames vueuse's
+          // `window`. Wrap those identifiers first so the replace can't match.
+          name: "guard-typeof-window-rename",
+          transform: {
+            order: "pre",
+            handler(code: string) {
+              if (!code.includes("typeof window$")) return null;
+              return {
+                code: code.replace(/typeof (window\$\w*)/g, "typeof ($1)"),
+                map: null,
+              };
+            },
           },
-        }
-      : {}),
+        },
+      ],
+    },
   },
 
   hooks: {

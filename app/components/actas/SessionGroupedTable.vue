@@ -100,7 +100,12 @@ const tableColumns = computed(() => {
   cols.push({
     accessorKey: "titulo",
     header: sortableHeader("Título"),
-    meta: { class: { td: "whitespace-normal" } },
+    meta: {
+      class: {
+        th: "max-w-[18rem] sm:max-w-[22rem]",
+        td: "max-w-[18rem] sm:max-w-[22rem] whitespace-normal align-top",
+      },
+    },
   });
 
   if (props.variant === "senadores") {
@@ -108,33 +113,67 @@ const tableColumns = computed(() => {
       {
         accessorKey: "proyecto",
         header: sortableHeader("Proyecto"),
-        meta: { class: { td: "whitespace-normal" } },
+        meta: {
+          class: {
+            th: "max-w-[10rem]",
+            td: "max-w-[10rem] whitespace-normal align-top",
+          },
+        },
       },
       {
         accessorKey: "descripcion",
         header: sortableHeader("Descripción"),
         meta: {
-          class: { td: "whitespace-normal max-w-[9rem]" },
+          class: {
+            th: "max-w-[8rem]",
+            td: "max-w-[8rem] whitespace-normal align-top",
+          },
         },
       },
     );
   }
 
   cols.push(
-    { accessorKey: "resultado", header: sortableHeader("Resultado") },
+    {
+      accessorKey: "resultado",
+      header: sortableHeader("Resultado"),
+      meta: { class: { th: "w-28", td: "w-28 whitespace-nowrap" } },
+    },
     {
       id: "margen",
       accessorFn: (row) =>
         voteMarginSortValue(row.votosAfirmativos, row.votosNegativos),
       header: sortableHeader("Margen"),
+      meta: { class: { th: "w-24", td: "w-24 whitespace-nowrap" } },
     },
     {
       accessorKey: "votosAfirmativos",
       header: sortableHeader("A favor"),
+      meta: {
+        class: { th: "w-20", td: "w-20 tabular-nums whitespace-nowrap" },
+      },
     },
-    { accessorKey: "votosNegativos", header: sortableHeader("En contra") },
-    { accessorKey: "abstenciones", header: sortableHeader("Abstenciones") },
-    { accessorKey: "ausentes", header: sortableHeader("Ausentes") },
+    {
+      accessorKey: "votosNegativos",
+      header: sortableHeader("En contra"),
+      meta: {
+        class: { th: "w-20", td: "w-20 tabular-nums whitespace-nowrap" },
+      },
+    },
+    {
+      accessorKey: "abstenciones",
+      header: sortableHeader("Abstenciones"),
+      meta: {
+        class: { th: "w-24", td: "w-24 tabular-nums whitespace-nowrap" },
+      },
+    },
+    {
+      accessorKey: "ausentes",
+      header: sortableHeader("Ausentes"),
+      meta: {
+        class: { th: "w-20", td: "w-20 tabular-nums whitespace-nowrap" },
+      },
+    },
   );
 
   return cols;
@@ -201,7 +240,7 @@ function onRowSelect(_e: Event, row: { original: ActaRow }) {
             :columns="tableColumns"
             :ui="{
               root: 'overflow-visible',
-              base: 'min-w-max w-full',
+              base: 'w-full table-fixed',
               tr: 'cursor-pointer hover:bg-elevated/50',
             }"
             :empty="emptyMessage"
@@ -220,18 +259,25 @@ function onRowSelect(_e: Event, row: { original: ActaRow }) {
             <template #titulo-cell="{ row }">
               <NuxtLink
                 :to="`/actas/${(row.original as ActaRow).id}`"
-                class="hover:underline line-clamp-5"
+                class="block max-w-[18rem] sm:max-w-[22rem] whitespace-normal break-words leading-snug hover:underline line-clamp-4"
                 @click.stop
               >
                 {{ (row.original as ActaRow).titulo }}
               </NuxtLink>
+            </template>
+            <template v-if="variant === 'senadores'" #proyecto-cell="{ row }">
+              <span
+                class="block max-w-[10rem] text-sm leading-snug whitespace-normal break-words"
+              >
+                {{ (row.original as ActaRow).proyecto || "—" }}
+              </span>
             </template>
             <template
               v-if="variant === 'senadores'"
               #descripcion-cell="{ row }"
             >
               <span
-                class="block max-w-[9rem] text-xs text-toned leading-snug whitespace-normal break-words"
+                class="block max-w-[8rem] text-xs text-toned leading-snug whitespace-normal break-words"
               >
                 {{ (row.original as ActaRow).descripcion || "—" }}
               </span>

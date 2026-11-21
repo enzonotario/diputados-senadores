@@ -50,6 +50,8 @@ const props = withDefaults(
     breakdown?: string;
     group?: string;
     summary?: string;
+    /** Build id: only busts CDN-cached OG URLs per deploy (unused in render). */
+    rev?: string;
   }>(),
   {
     title: "ArgentinaDatos.com",
@@ -69,6 +71,7 @@ const props = withDefaults(
     breakdown: "",
     group: "",
     summary: "",
+    rev: "",
   },
 );
 

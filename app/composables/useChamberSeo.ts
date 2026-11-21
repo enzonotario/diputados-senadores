@@ -82,12 +82,14 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
 
   // Takumi via Nuxt OG Image — defineOgImage setea og:image / twitter:image.
   // Props compartidas con el patch server de actas prerenderizadas (`?vista=`).
+  const buildId = useRuntimeConfig().app.buildId;
   const ogProps = computed(() =>
     buildChamberOgProps({
       pageTitle: seo.value.pageTitle,
       description: seo.value.description,
       site: chamber.value,
       og: seo.value.og,
+      rev: buildId,
     }),
   );
   const prop = (key: string) => computed(() => ogProps.value[key] || "");
@@ -109,5 +111,6 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
     breakdown: prop("breakdown"),
     group: prop("group"),
     summary: prop("summary"),
+    rev: prop("rev"),
   });
 }

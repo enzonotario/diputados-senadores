@@ -73,6 +73,7 @@ export default defineNitroPlugin((nitroApp) => {
         description: seo.description,
         site: SITES[site],
         og: seo.og,
+        rev: config.app.buildId,
       });
       const ogConfig = (config as any)["nuxt-og-image"] || {};
       const secret =

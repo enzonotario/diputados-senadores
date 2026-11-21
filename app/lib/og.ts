@@ -91,9 +91,16 @@ export function buildChamberOgProps(input: {
   description: string;
   site: SiteConfig;
   og?: ChamberOgInput;
+  /**
+   * Build id. Part of the props so every deploy gets new OG URLs: static OG
+   * images are served `immutable`, so the CDN would otherwise keep a stale
+   * image whenever its content changes but its props don't.
+   */
+  rev?: string;
 }): Record<string, string> {
   const { pageTitle, description, site, og } = input;
   return {
+    rev: input.rev || "",
     title: og?.kind === "acta" ? pageTitle : truncateOgText(pageTitle, 110),
     description: truncateOgText(description, 160),
     brand: site.brand,

@@ -168,14 +168,18 @@ function onRowSelect(_e: Event, row: { original: ActaRow }) {
     </DataTableCard>
 
     <div v-else class="space-y-3">
+      <!--
+        Sin overflow en el section: el sticky de la fecha necesita el viewport
+        como containing block (mismo patrón que TerminalTable / ActasGroupedBoard).
+      -->
       <section
         v-for="group in groups"
         :key="group.key"
-        class="rounded-lg border border-default overflow-hidden"
+        class="rounded-lg border border-default"
       >
         <button
           type="button"
-          class="w-full flex items-center gap-2 px-3 py-2.5 text-left bg-elevated/60 hover:bg-elevated transition-colors"
+          class="sticky top-(--ui-header-height) z-20 w-full flex items-center gap-2 px-3 py-2.5 text-left border-b border-default bg-default/75 backdrop-blur hover:bg-elevated/80 transition-colors"
           :aria-expanded="isExpanded(group.key)"
           @click="toggleGroup(group.key)"
         >
@@ -191,11 +195,14 @@ function onRowSelect(_e: Event, row: { original: ActaRow }) {
           </UBadge>
         </button>
 
-        <div v-show="isExpanded(group.key)" class="border-t border-default">
+        <div v-show="isExpanded(group.key)">
           <UTable
             :data="group.actas"
             :columns="tableColumns"
-            :ui="{ tr: 'cursor-pointer hover:bg-elevated/50' }"
+            :ui="{
+              root: 'overflow-visible',
+              tr: 'cursor-pointer hover:bg-elevated/50',
+            }"
             :empty="emptyMessage"
             :on-select="onRowSelect"
           >

@@ -177,6 +177,11 @@ export default defineNuxtConfig({
     security: {
       maxDimension: 2400,
       maxDpr: 2,
+      // Default 3s. The home/group OG embeds `/api/og/hemiciclo/*`, which
+      // during prerender waits for legislator photos (see
+      // server/utils/og-hemiciclo-photos.ts PRERENDER_WAIT_MS); a shorter
+      // timeout silently drops the hemiciclo from the static OG.
+      imageFetchTimeout: 15_000,
     },
   },
 

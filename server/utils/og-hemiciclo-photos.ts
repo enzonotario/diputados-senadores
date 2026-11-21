@@ -37,7 +37,8 @@ const PHOTO_FETCH_TIMEOUT_MS = 4000;
 const PHOTO_FETCH_CONCURRENCY = 8;
 const PHOTO_MAX_BYTES = 512 * 1024;
 /** Prerender waits for photos; runtime never does. */
-const PRERENDER_WAIT_MS = 60_000;
+/** Must stay below `ogImage.security.imageFetchTimeout` (nuxt.config). */
+const PRERENDER_WAIT_MS = 10_000;
 
 type SeatMember = { photo: string; color: string; banca?: number | null };
 

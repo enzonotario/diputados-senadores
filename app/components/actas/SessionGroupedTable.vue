@@ -146,7 +146,7 @@ function onRowSelect(_e: Event, row: { original: ActaRow }) {
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div class="min-w-0 w-full space-y-3">
     <div
       v-if="groups.length"
       class="flex flex-wrap items-center justify-end gap-2"
@@ -167,15 +167,15 @@ function onRowSelect(_e: Event, row: { original: ActaRow }) {
       <p class="text-sm text-toned px-1 py-2">{{ emptyMessage }}</p>
     </DataTableCard>
 
-    <div v-else class="space-y-3">
+    <div v-else class="min-w-0 space-y-3">
       <!--
-        Sin overflow en el section: el sticky de la fecha necesita el viewport
-        como containing block (mismo patrón que TerminalTable / ActasGroupedBoard).
+        Sticky de fecha fuera del overflow-x: así no ensancha la página y
+        el header sigue pegado bajo el navbar (viewport = containing block).
       -->
       <section
         v-for="group in groups"
         :key="group.key"
-        class="rounded-lg border border-default"
+        class="min-w-0 rounded-lg border border-default"
       >
         <button
           type="button"
@@ -195,12 +195,13 @@ function onRowSelect(_e: Event, row: { original: ActaRow }) {
           </UBadge>
         </button>
 
-        <div v-show="isExpanded(group.key)">
+        <div v-show="isExpanded(group.key)" class="min-w-0 overflow-x-auto">
           <UTable
             :data="group.actas"
             :columns="tableColumns"
             :ui="{
               root: 'overflow-visible',
+              base: 'min-w-max w-full',
               tr: 'cursor-pointer hover:bg-elevated/50',
             }"
             :empty="emptyMessage"

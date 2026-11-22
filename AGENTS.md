@@ -40,13 +40,12 @@ Package manager: **pnpm**.
 | Senadores | `senadores.argentinadatos.com` | `senadores-latest` | `senadores` |
 | Congreso | `congreso.argentinadatos.com` | `congreso-latest` | `congreso` |
 
-**Opina (CSAT):** un proyecto Opina por sitio (trigger `manual`, cooldown 30d). Defaults en `nuxt.config.ts` por `DEFAULT_CHAMBER`; override Coolify con `NUXT_PUBLIC_OPINA_KEY` si hace falta. Prompt desde la app tras 3+ paths distintos / 30 días; footer “Dejanos tu opinión” fuerza `Opina.show()`.
+**Opina (CSAT):** solo Diputados y Senadores (Congreso es landing). Trigger `manual`, cooldown 30d. Defaults en `nuxt.config.ts` por `DEFAULT_CHAMBER`; override Coolify con `NUXT_PUBLIC_OPINA_KEY`. Prompt tras 3+ paths / 30 días; footer “Dejanos tu opinión” → `Opina.show()`.
 
 | Sitio | `pk_…` |
 |-------|--------|
 | Diputados | `pk_ycaun077rml3ysql` |
 | Senadores | `pk_ecituqr2yvfq96oi` |
-| Congreso | `pk_l1it1d5dafl3vwha` |
 
 Runtime sigue resolviendo sitio por `Host`; el env fija el **manifiesto SSG** del build (hybrid). Congreso solo prerenderiza `/`.
 

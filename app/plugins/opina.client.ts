@@ -62,10 +62,11 @@ function waitForOpina(timeoutMs = 8000): Promise<OpinaApi | null> {
  */
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
-  const { siteId } = useChamber();
+  const { siteId, isCongreso } = useChamber();
   const base = String(config.public.opinaUrl || "").replace(/\/$/, "");
   const key = String(config.public.opinaKey || "").trim();
-  if (!base || !key) return;
+  // Congreso = landing → no survey.
+  if (isCongreso.value || !base || !key) return;
 
   useHead({
     link: [

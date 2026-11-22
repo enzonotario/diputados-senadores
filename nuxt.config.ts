@@ -277,13 +277,14 @@ export default defineNuxtConfig({
        * Public key del proyecto Opina de este sitio (una por Coolify service).
        * Override: NUXT_PUBLIC_OPINA_KEY — default por DEFAULT_CHAMBER.
        */
+      // Congreso = landing only → no Opina project.
       opinaKey:
         process.env.NUXT_PUBLIC_OPINA_KEY ||
         (
           {
             diputados: "pk_ycaun077rml3ysql",
             senadores: "pk_ecituqr2yvfq96oi",
-            congreso: "pk_l1it1d5dafl3vwha",
+            congreso: "",
           } as Record<SiteId, string>
         )[defaultSite] ||
         "",

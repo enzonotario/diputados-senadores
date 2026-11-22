@@ -40,6 +40,8 @@ Package manager: **pnpm**.
 | Senadores | `senadores.argentinadatos.com` | `senadores-latest` | `senadores` |
 | Congreso | `congreso.argentinadatos.com` | `congreso-latest` | `congreso` |
 
+**Opina (CSAT):** un proyecto Opina por sitio. En cada servicio Coolify seteá `NUXT_PUBLIC_OPINA_KEY` (`pk_…`) distinto; `NUXT_PUBLIC_OPINA_URL` default `https://opina.enzonotario.me`. Trigger `manual` + prompt desde la app tras 3+ paths distintos / 30 días.
+
 Runtime sigue resolviendo sitio por `Host`; el env fija el **manifiesto SSG** del build (hybrid). Congreso solo prerenderiza `/`.
 
 ### Hybrid SSG

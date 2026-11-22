@@ -270,6 +270,14 @@ export default defineNuxtConfig({
         /\/$/,
         "",
       ),
+      /** Opina CSAT host. Override: NUXT_PUBLIC_OPINA_URL */
+      opinaUrl:
+        process.env.NUXT_PUBLIC_OPINA_URL || "https://opina.enzonotario.me",
+      /**
+       * Public key del proyecto Opina de este sitio (una por Coolify service).
+       * Override: NUXT_PUBLIC_OPINA_KEY
+       */
+      opinaKey: process.env.NUXT_PUBLIC_OPINA_KEY || "",
     },
   },
 

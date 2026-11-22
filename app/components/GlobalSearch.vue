@@ -54,7 +54,13 @@ async function loadCatalog() {
 }
 
 watch(open, (isOpen) => {
-  if (isOpen) void loadCatalog();
+  if (isOpen) {
+    // Opina CSAT (z-index alto) tapa la paleta si queda abierto.
+    if (import.meta.client) {
+      (window as Window & { Opina?: { hide?: () => void } }).Opina?.hide?.();
+    }
+    void loadCatalog();
+  }
 });
 
 watch(

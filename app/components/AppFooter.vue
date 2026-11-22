@@ -13,6 +13,12 @@ const {
   senadoresUrl,
 } = useChamber();
 
+const { openOpinaFeedback } = useOpinaFeedback();
+const opinaEnabled = computed(() => {
+  const config = useRuntimeConfig();
+  return Boolean(String(config.public.opinaKey || "").trim());
+});
+
 const legislative = computed(() =>
   isLegislative.value ? getChamberConfig(chamberId.value) : null,
 );
@@ -129,17 +135,29 @@ const sourceItems = computed<NavigationMenuItem[]>(() => {
               {{ legislative.bodyName }}.
             </template>
           </p>
-          <UButton
-            :to="chamber.githubUrl"
-            target="_blank"
-            external
-            color="neutral"
-            variant="soft"
-            icon="i-lucide-github"
-            size="sm"
-          >
-            Reportar un error
-          </UButton>
+          <div class="flex flex-wrap gap-2">
+            <UButton
+              v-if="opinaEnabled"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-message-circle-heart"
+              size="sm"
+              @click="openOpinaFeedback"
+            >
+              Dejanos tu opinión
+            </UButton>
+            <UButton
+              :to="chamber.githubUrl"
+              target="_blank"
+              external
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-github"
+              size="sm"
+            >
+              Reportar un error
+            </UButton>
+          </div>
         </div>
 
         <div class="space-y-3 lg:col-span-3 lg:col-start-7">

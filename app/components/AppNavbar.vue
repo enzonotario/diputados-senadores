@@ -323,7 +323,7 @@ const sidebarItems = computed<NavigationMenuItem[]>(() => {
   </UDashboardSidebar>
 
   <div
-    class="sticky top-0 z-10 border-b bg-white/70 dark:bg-gray-950/70 backdrop-blur supports-[backdrop-filter]:bg-white/50"
+    class="sticky top-0 z-50 border-b bg-white/70 dark:bg-gray-950/70 backdrop-blur supports-[backdrop-filter]:bg-white/50"
   >
     <UDashboardNavbar
       toggle-side="left"

@@ -260,7 +260,7 @@ function mobileCardLabel(acta: ActaRow) {
       >
         <button
           type="button"
-          class="sticky top-[calc(var(--ui-header-height)+1px)] z-20 w-full flex items-center gap-2 px-3 py-2.5 text-left border-b border-default bg-default/75 backdrop-blur hover:bg-elevated/80 transition-colors"
+          class="sticky top-[calc(var(--ui-header-height)_-_0.20rem)] z-20 w-full flex items-center gap-2 px-3 py-2.5 text-left border-b border-default bg-default/75 backdrop-blur hover:bg-elevated/80 transition-colors"
           :aria-expanded="isExpanded(group.key)"
           @click="toggleGroup(group.key)"
         >

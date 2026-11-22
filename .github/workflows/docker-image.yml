@@ -32,6 +32,12 @@ permissions:
   contents: read
   packages: write
 
+# Un push/dispatch nuevo cancela builds en curso del mismo workflow+ref
+# (evita colas de matrix × 3 sitios cuando main se mueve seguido).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   COOLIFY_API_BASE: https://app.coolify.io/api/v1

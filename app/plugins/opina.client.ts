@@ -4,6 +4,10 @@ type OpinaApi = {
   show: (surveyId?: string) => void;
   prompt: (surveyId?: string) => void;
   hide: () => void;
+  on: (
+    event: string,
+    handler: (payload?: { surveyId?: string; reason?: string }) => void,
+  ) => void;
 };
 
 const MIN_DISTINCT_PATHS = 3;
@@ -104,12 +108,15 @@ export default defineNuxtPlugin(() => {
     const opina = await waitForOpina();
     if (!opina?.prompt) return;
 
+    // Solo marcar cooldown host si Opina realmente muestra (no si frequency suprime).
     promptedThisSession = true;
-    try {
-      localStorage.setItem(lastKey, String(Date.now()));
-    } catch {
-      /* ignore */
-    }
+    opina.on("shown", () => {
+      try {
+        localStorage.setItem(lastKey, String(Date.now()));
+      } catch {
+        /* ignore */
+      }
+    });
     opina.prompt();
   }
 

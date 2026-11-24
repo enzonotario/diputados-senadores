@@ -12,6 +12,7 @@ import {
 import { buildMisionId } from "../utils/misiones";
 import { normalizeDiputadosActaConteos } from "../utils/actaConteos";
 import { compareActasBySesionThenActa } from "../utils/actaFechaSesion";
+import { bancaDeVotoEnActa, resolveActaBancasModo } from "../utils/actaBancas";
 import recintoAsignacion from "../data/diputados-recinto-asignacion.json";
 
 import { createSingleflight } from "./singleflight";
@@ -392,6 +393,10 @@ export async function getActaWithDiputadosById(
     })),
   );
 
+  // La banca del hemiciclo es la del momento de la votación (`voto.banca`), no la
+  // actual: ver `utils/actaBancas.ts`.
+  const bancasModo = resolveActaBancasModo(acta.fecha, acta.votos);
+
   const votos = acta.votos.map((v) => {
     const matched = resolve(v.diputado, (v as any).diputadoSlug || "");
     const diputado = matched ? diputadosById.get(matched.id) : undefined;
@@ -416,6 +421,7 @@ export async function getActaWithDiputadosById(
           periodoBloque: { inicio: "", fin: "" },
           foto: v.imagen || "",
         }),
+        banca: bancaDeVotoEnActa(bancasModo, v.banca, diputado?.banca),
         tipoVoto: v.tipoVoto,
       } as Diputado,
     };

@@ -55,6 +55,11 @@ export interface Voto {
   tipoVoto: string;
   imagen: string;
   videoDiscurso: string;
+  /**
+   * Banca que ocupaba el diputado cuando se votó (la API la congela por acta).
+   * Ausente en actas anteriores al historial del recinto.
+   */
+  banca?: number | null;
 }
 
 export interface Acta {

@@ -2,6 +2,7 @@ import { siteOgLogoSrc, type ChamberId, type SiteConfig } from "./chamber";
 import { encodeOgHemiciclo } from "./hemiciclo-layout";
 import { encodeOgRecintoActa } from "./og-recinto";
 import { getVotoTipoConfig } from "../utils/votoTipo";
+import { MIN_VOTOS_CON_BANCA } from "../utils/actaBancas";
 
 /** Barra lateral / badge por defecto (sin color de resultado). */
 export const OG_BAR_ACCENT = "#232D4F";
@@ -263,6 +264,12 @@ export function buildDiputadosActaChamberOg(
     banca: v.diputadoObj?.banca ?? null,
     tipoVoto: v.tipoVoto ?? null,
   }));
+  // Acta sin bancas conocidas (anterior al historial del recinto): el hemiciclo
+  // agrupado por conteos de `base` evita una tarjeta llena de bancas vacías.
+  const conBanca = votos.filter(
+    (v) => v.banca != null && Number.isFinite(Number(v.banca)),
+  ).length;
+  if (conBanca < MIN_VOTOS_CON_BANCA) return base;
   const recinto = encodeOgRecintoActa({
     votos,
     hasPresidente: Boolean(String(acta.presidente || "").trim()),

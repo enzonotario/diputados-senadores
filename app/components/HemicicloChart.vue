@@ -17,6 +17,10 @@ export type HemicicloMember = {
   tipoVoto?: string;
   /** Banca física HCDN (solo diputados con datos de recinto). */
   banca?: number | null;
+  /** Solo placeholders: grupo de asiento del miembro que dejó la banca. */
+  vacantSeatGroup?: string;
+  /** Solo el asiento del podio: quien preside la sesión. */
+  presiding?: boolean;
 };
 
 const props = withDefaults(
@@ -103,14 +107,53 @@ const isDark = computed(() => {
 });
 const uid = useId();
 
-const items = computed(
+const rawItems = computed(
   () => props.members || props.diputados || props.senadores || [],
 );
+
+/**
+ * Quien preside puede ser un miembro de la cámara (p. ej. Abdala presidiendo
+ * el Senado, o una vicepresidenta de Diputados) y no el presidente titular.
+ * En ese caso su banca queda vacía y él ocupa el asiento del presidente.
+ */
+const presidingMember = computed(() => {
+  const id = props.president?.id ? String(props.president.id) : "";
+  if (!id) return null;
+  return rawItems.value.find((d) => String(d.id) === id) ?? null;
+});
+
+/** Asientos de la cámara: el miembro que preside se reemplaza por una banca vacía. */
+const items = computed<HemicicloMember[]>(() => {
+  const presiding = presidingMember.value;
+  if (!presiding) return rawItems.value;
+  return rawItems.value.map((d) =>
+    d === presiding
+      ? {
+          id: "vacant-presidente",
+          nombreCompleto: "Banca vacante",
+          banca: presiding.banca ?? null,
+          vacantSeatGroup: seatGroupKey(presiding),
+        }
+      : d,
+  );
+});
+
+/** Miembro que se dibuja en el asiento del presidente (conserva su voto, si votó). */
+const presidentMember = computed<HemicicloMember | null>(() => {
+  const president = props.president;
+  if (!president) return null;
+  return {
+    ...president,
+    tipoVoto:
+      presidingMember.value?.tipoVoto || president.tipoVoto || PRESIDENT_GROUP,
+    presiding: true,
+  };
+});
 
 /** Layout oficial si hay suficientes `banca` en los miembros. */
 const useRecintoLayout = computed(() => {
   if (props.seatLayout === "grouped") return false;
-  const withBanca = items.value.filter(
+  const withBanca = rawItems.value.filter(
     (d) => d.banca != null && Number.isFinite(Number(d.banca)),
   ).length;
   if (withBanca < 20) return false;
@@ -130,7 +173,7 @@ function groupKey(d: HemicicloMember): string {
 }
 
 const autoPoliticalSeatField = computed<"bloque" | "partido">(() => {
-  const list = items.value;
+  const list = rawItems.value;
   if (!list.length) return "bloque";
   let withBloque = 0;
   let withPartido = 0;
@@ -148,7 +191,7 @@ const autoPoliticalSeatField = computed<"bloque" | "partido">(() => {
 });
 
 function seatGroupKey(d: HemicicloMember): string {
-  if (d.id.startsWith("vacant-")) return "__vacant__";
+  if (d.id.startsWith("vacant-")) return d.vacantSeatGroup ?? "__vacant__";
   if (typeof props.seatGroupBy === "function") return props.seatGroupBy(d);
   if (props.seatGroupBy === "bloque") {
     return d.bloque?.trim() || d.partido?.trim() || "Sin bloque";
@@ -190,8 +233,9 @@ function groupMetaPath(d: HemicicloMember) {
 }
 
 const groupConteo = computed(() => {
+  // Cuenta a todos los votantes, incluido quien preside (su banca está vacía).
   const map: Record<string, number> = {};
-  for (const d of items.value) {
+  for (const d of rawItems.value) {
     const k = groupKey(d);
     if (k === "__vacant__") continue;
     map[k] = (map[k] || 0) + 1;
@@ -637,6 +681,7 @@ const puntos = computed<Punto[]>(() => {
   if (useRecintoLayout.value) {
     const byBanca = new Map<number, HemicicloMember>();
     for (const m of items.value) {
+      if (m.id.startsWith("vacant-")) continue;
       if (m.banca == null || !Number.isFinite(Number(m.banca))) continue;
       const b = Number(m.banca);
       // Colisión (banca 0): preferir quien tiene bloque.
@@ -646,13 +691,10 @@ const puntos = computed<Punto[]>(() => {
     const out: Punto[] = [];
     for (const seat of RECINTO_SEATS) {
       let member = byBanca.get(seat.banca);
-      // Banca 0 = podio del presidente (no figura en la lista de votos).
-      if (!member && seat.banca === 0 && props.president) {
-        member = {
-          ...props.president,
-          banca: 0,
-          tipoVoto: props.president.tipoVoto || PRESIDENT_GROUP,
-        };
+      // Banca 0 = podio: siempre quien preside (el presidente titular puede
+      // figurar ausente en la lista de votos).
+      if (seat.banca === 0 && presidentMember.value) {
+        member = { ...presidentMember.value, banca: 0 };
       }
       if (member) {
         out.push({
@@ -681,10 +723,10 @@ const puntos = computed<Punto[]>(() => {
     return out;
   }
 
-  return allSeats.value.map((s, i) => ({
-    ...s,
-    member: membersSorted.value[i]!,
-  }));
+  return allSeats.value.map((s, i) => {
+    const member = membersSorted.value[i]!;
+    return { ...s, member, vacant: member.id.startsWith("vacant-") };
+  });
 });
 
 const PRESIDENT_GROUP = "presidente";
@@ -698,7 +740,7 @@ const presidentDotR = computed(() => Math.round(DOT_R.value * 1.2));
 const presidentSeat = computed(() => {
   // En layout recinto la banca 0 ya es el podio oficial.
   if (useRecintoLayout.value) return null;
-  const member = props.president;
+  const member = presidentMember.value;
   if (!member) return null;
   const g = geom.value;
   const r = presidentDotR.value;
@@ -707,11 +749,26 @@ const presidentSeat = computed(() => {
   return {
     x: g.cx,
     y: g.cy - r * 1.55,
-    member: {
-      ...member,
-      tipoVoto: member.tipoVoto || PRESIDENT_GROUP,
-    },
+    member,
   };
+});
+
+/** Grupo del asiento del presidente: su voto si votó, si no "presidente". */
+const presidentGroupKey = computed(() => {
+  const m = presidentSeat.value?.member;
+  if (!m || (m.tipoVoto || "").toLowerCase() === PRESIDENT_GROUP) {
+    return PRESIDENT_GROUP;
+  }
+  return groupKey(m);
+});
+
+/** Relleno del asiento del presidente: color del voto si votó. */
+const presidentFill = computed(() => {
+  const m = presidentSeat.value?.member;
+  if (!m || presidentGroupKey.value === PRESIDENT_GROUP) {
+    return presidentColor.value;
+  }
+  return colorFor(m);
 });
 
 const bgPath = computed(() => {
@@ -796,7 +853,7 @@ const tooltip = computed<Tooltip | null>(() => {
 const hoveredGroup = computed<string | null>(() => {
   if (hoveredLegendGroup.value) return hoveredLegendGroup.value;
   if (!hoveredSeat.value) return null;
-  if (hoveredSeat.value.kind === "president") return PRESIDENT_GROUP;
+  if (hoveredSeat.value.kind === "president") return presidentGroupKey.value;
   return tooltip.value ? groupKey(tooltip.value.member) : null;
 });
 
@@ -831,7 +888,7 @@ function seatOpacity(d: HemicicloMember): number {
 
 function presidentOpacity(): number {
   if (!hoveredGroup.value) return 1;
-  return hoveredGroup.value === PRESIDENT_GROUP ? 1 : 0.22;
+  return hoveredGroup.value === presidentGroupKey.value ? 1 : 0.22;
 }
 
 function onClick(d: HemicicloMember) {
@@ -869,6 +926,7 @@ function tooltipRoleLabel(m: HemicicloMember): string {
   if ((m.tipoVoto || "").toLowerCase() === PRESIDENT_GROUP) {
     return "Presidente";
   }
+  if (m.presiding) return `Presidente · ${labelFor(groupKey(m))}`;
   return labelFor(groupKey(m));
 }
 
@@ -1079,7 +1137,7 @@ const seatLabelFontSize = computed(() => Math.max(7, DOT_R.value * 0.42));
             :cx="presidentSeat.x"
             :cy="presidentSeat.y"
             :r="presidentDotR"
-            :fill="presidentColor"
+            :fill="presidentFill"
           />
           <text
             v-if="!showPhotos || !presidentSeat.member.foto"

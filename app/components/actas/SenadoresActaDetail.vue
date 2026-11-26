@@ -357,6 +357,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
       <ClientOnly>
         <HemicicloChart
           :senadores="senadores"
+          :president="presidenteMember"
           :group-colors="votoColores"
           group-by="tipoVoto"
           :group-order="votoGroupOrder"

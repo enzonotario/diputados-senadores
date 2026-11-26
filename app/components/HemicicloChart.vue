@@ -32,6 +32,13 @@ const props = withDefaults(
     groupColors: Record<string, string>;
     groupBy?:
       "bloque" | "partido" | "tipoVoto" | ((d: HemicicloMember) => string);
+    /**
+     * Criterio de ordenamiento de bancas cuando no hay layout de recinto.
+     * `auto`: respeta `groupBy` para bloque/partido y ordena por bloque/partido
+     * cuando `groupBy === "tipoVoto"` (evita que las bancas salten al cambiar voto).
+     */
+    seatGroupBy?:
+      "auto" | "bloque" | "partido" | ((d: HemicicloMember) => string);
     groupOrder?: string[];
     groupLabel?: (key: string) => string;
     clickable?: boolean;
@@ -67,6 +74,7 @@ const props = withDefaults(
   }>(),
   {
     groupBy: "partido",
+    seatGroupBy: "auto",
     clickable: true,
     showLegend: true,
     showPhotos: true,
@@ -121,6 +129,47 @@ function groupKey(d: HemicicloMember): string {
   return d.partido || "Sin partido";
 }
 
+const autoPoliticalSeatField = computed<"bloque" | "partido">(() => {
+  const list = items.value;
+  if (!list.length) return "bloque";
+  let withBloque = 0;
+  let withPartido = 0;
+  for (const d of list) {
+    if (d.bloque?.trim()) withBloque++;
+    if (d.partido?.trim()) withPartido++;
+  }
+  if (
+    withBloque > 0 &&
+    (withPartido === 0 || withBloque >= list.length * 0.5)
+  ) {
+    return "bloque";
+  }
+  return "partido";
+});
+
+function seatGroupKey(d: HemicicloMember): string {
+  if (d.id.startsWith("vacant-")) return "__vacant__";
+  if (typeof props.seatGroupBy === "function") return props.seatGroupBy(d);
+  if (props.seatGroupBy === "bloque") {
+    return d.bloque?.trim() || d.partido?.trim() || "Sin bloque";
+  }
+  if (props.seatGroupBy === "partido") {
+    return d.partido?.trim() || d.bloque?.trim() || "Sin partido";
+  }
+  if (typeof props.groupBy === "function") return props.groupBy(d);
+  if (props.groupBy === "bloque") {
+    return d.bloque?.trim() || "Sin bloque";
+  }
+  if (props.groupBy === "partido") {
+    return d.partido?.trim() || "Sin partido";
+  }
+  // groupBy === "tipoVoto": ordenar por bloque/partido (posición estable).
+  if (autoPoliticalSeatField.value === "bloque") {
+    return d.bloque?.trim() || d.partido?.trim() || "Sin bloque";
+  }
+  return d.partido?.trim() || d.bloque?.trim() || "Sin partido";
+}
+
 function colorFor(d: HemicicloMember): string {
   if (d.id.startsWith("vacant-")) return "#a9a9a9";
   return props.groupColors[groupKey(d)] ?? "#6b7280";
@@ -165,6 +214,43 @@ const groupsOrdenados = computed(() => {
   }
   return keys.sort(
     (a, b) => (groupConteo.value[b] || 0) - (groupConteo.value[a] || 0),
+  );
+});
+
+const seatGroupConteo = computed(() => {
+  const map: Record<string, number> = {};
+  for (const d of items.value) {
+    const k = seatGroupKey(d);
+    if (k === "__vacant__") continue;
+    map[k] = (map[k] || 0) + 1;
+  }
+  return map;
+});
+
+const seatGroupsOrdenados = computed(() => {
+  const keys = Object.keys(seatGroupConteo.value);
+  const useGroupOrder =
+    props.groupOrder?.length &&
+    props.seatGroupBy === "auto" &&
+    props.groupBy !== "tipoVoto";
+  if (useGroupOrder) {
+    const order = props.groupOrder!;
+    return keys.sort((a, b) => {
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      const ra = ia === -1 ? 999 : ia;
+      const rb = ib === -1 ? 999 : ib;
+      if (ra !== rb) return ra - rb;
+      return (
+        (seatGroupConteo.value[b] || 0) - (seatGroupConteo.value[a] || 0) ||
+        a.localeCompare(b, "es")
+      );
+    });
+  }
+  return keys.sort(
+    (a, b) =>
+      (seatGroupConteo.value[b] || 0) - (seatGroupConteo.value[a] || 0) ||
+      a.localeCompare(b, "es"),
   );
 });
 
@@ -524,13 +610,17 @@ const allSeats = computed(() => {
 
 const membersSorted = computed(() => {
   const order: Record<string, number> = {};
-  groupsOrdenados.value.forEach((g, i) => {
+  seatGroupsOrdenados.value.forEach((g, i) => {
     order[g] = i;
   });
   return [...items.value].sort((a, b) => {
-    const diff = (order[groupKey(a)] ?? 999) - (order[groupKey(b)] ?? 999);
+    const diff =
+      (order[seatGroupKey(a)] ?? 999) - (order[seatGroupKey(b)] ?? 999);
     if (diff !== 0) return diff;
-    return (a.nombreCompleto ?? "").localeCompare(b.nombreCompleto ?? "");
+    return (
+      (a.nombreCompleto ?? "").localeCompare(b.nombreCompleto ?? "", "es") ||
+      String(a.id).localeCompare(String(b.id))
+    );
   });
 });
 
@@ -649,8 +739,8 @@ type GroupRange = { group: string; from: number; to: number };
 const groupRanges = computed<GroupRange[]>(() => {
   const ranges: GroupRange[] = [];
   let i = 0;
-  for (const group of groupsOrdenados.value) {
-    const count = groupConteo.value[group] ?? 0;
+  for (const group of seatGroupsOrdenados.value) {
+    const count = seatGroupConteo.value[group] ?? 0;
     if (count > 0) {
       ranges.push({ group, from: i, to: i + count - 1 });
       i += count;

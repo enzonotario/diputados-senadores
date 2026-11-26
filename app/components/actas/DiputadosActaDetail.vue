@@ -66,7 +66,7 @@ const diputados = computed<Diputado[]>(() => {
 });
 
 const filters = computed<FilterConfig>(() => ({
-  ...(searchQuery.value ? { nombreCompleto: searchQuery.value } : {}),
+  ...(searchQuery.value ? { search: searchQuery.value } : {}),
   ...(bloqueFilter.value.length ? { bloque: bloqueFilter.value } : {}),
   ...(provinciaFilter.value.length ? { provincia: provinciaFilter.value } : {}),
   ...(tipoVotoFilter.value.length ? { tipoVoto: tipoVotoFilter.value } : {}),
@@ -392,7 +392,7 @@ function onRowSelect(_e: Event, row: { original: Diputado }) {
           <div class="sm:col-span-2">
             <FilterSearch
               v-model="searchQuery"
-              placeholder="Nombre del diputado..."
+              placeholder="Nombre, provincia o bloque..."
             />
           </div>
           <FilterSelect

@@ -190,17 +190,44 @@ function isEmptyFilterValue(value: unknown): boolean {
   return false;
 }
 
+function normalizeSearchText(value: string): string {
+  return value.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+}
+
 function matchesStringFilter(
   fieldValue: string,
   filterValue: string | string[],
   mode: "exact" | "includes" = "exact",
 ): boolean {
-  const field = fieldValue.toLowerCase();
   const candidates = Array.isArray(filterValue) ? filterValue : [filterValue];
 
+  if (mode === "includes") {
+    const field = normalizeSearchText(fieldValue);
+    return candidates.some((candidate) => {
+      const needle = normalizeSearchText(String(candidate));
+      return !needle || field.includes(needle);
+    });
+  }
+
+  const field = fieldValue.toLowerCase();
+  return candidates.some(
+    (candidate) => field === String(candidate).toLowerCase(),
+  );
+}
+
+function matchesMultiFieldSearch(
+  fields: Array<string | null | undefined>,
+  filterValue: string | string[],
+): boolean {
+  const candidates = Array.isArray(filterValue) ? filterValue : [filterValue];
+  const haystack = normalizeSearchText(fields.filter(Boolean).join(" "));
+
   return candidates.some((candidate) => {
-    const needle = String(candidate).toLowerCase();
-    return mode === "includes" ? field.includes(needle) : field === needle;
+    const tokens = normalizeSearchText(String(candidate))
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!tokens.length) return true;
+    return tokens.every((token) => haystack.includes(token));
   });
 }
 
@@ -218,6 +245,21 @@ export function filterSenadores(
   return senadores.filter((senador) => {
     return Object.entries(filters).every(([key, value]) => {
       if (isEmptyFilterValue(value)) return true;
+
+      if (key === "search") {
+        return matchesMultiFieldSearch(
+          [
+            senador.nombreCompleto,
+            senador.nombre,
+            senador.apellido,
+            senador.nombreDePila,
+            senador.provincia,
+            senador.partido,
+            senador.bloque,
+          ],
+          value as string | string[],
+        );
+      }
 
       if (key.includes(".")) {
         const [parent = "", child = ""] = key.split(".");
@@ -452,6 +494,19 @@ export function filterDiputados(
   return diputados.filter((diputado) => {
     return Object.entries(filters).every(([key, value]) => {
       if (isEmptyFilterValue(value)) return true;
+
+      if (key === "search") {
+        return matchesMultiFieldSearch(
+          [
+            diputado.nombreCompleto,
+            diputado.nombre,
+            diputado.apellido,
+            diputado.provincia,
+            diputado.bloque,
+          ],
+          value as string | string[],
+        );
+      }
 
       if (key.includes(".")) {
         const [parent = "", child = ""] = key.split(".");

@@ -43,7 +43,7 @@ const senadores = computed(() => (data.value as Senador[]) || []);
 const baseList = computed(() => senadores.value.filter(isSenadorActivo));
 
 const filters = computed<FilterConfig>(() => ({
-  ...(searchQuery.value ? { nombreCompleto: searchQuery.value } : {}),
+  ...(searchQuery.value ? { search: searchQuery.value } : {}),
 }));
 
 function matchBoolFilter(

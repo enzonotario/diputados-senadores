@@ -50,7 +50,7 @@ const filters = computed<FilterConfig>(() => ({
   ...(provinciaFilter.value.length ? { provincia: provinciaFilter.value } : {}),
   ...(bloqueFilter.value.length ? { bloque: bloqueFilter.value } : {}),
   ...(generoFilter.value.length ? { genero: generoFilter.value } : {}),
-  ...(searchQuery.value ? { nombreCompleto: searchQuery.value } : {}),
+  ...(searchQuery.value ? { search: searchQuery.value } : {}),
 }));
 
 const filtersForMap = computed<FilterConfig>(() => {

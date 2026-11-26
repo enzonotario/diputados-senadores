@@ -51,7 +51,7 @@ const filters = computed<FilterConfig>(() => ({
   ...(provinciaFilter.value.length ? { provincia: provinciaFilter.value } : {}),
   ...(partidoFilter.value.length ? { partido: partidoFilter.value } : {}),
   ...(bloqueFilter.value.length ? { bloque: bloqueFilter.value } : {}),
-  ...(searchQuery.value ? { nombreCompleto: searchQuery.value } : {}),
+  ...(searchQuery.value ? { search: searchQuery.value } : {}),
 }));
 
 const filtersForMap = computed<FilterConfig>(() => {

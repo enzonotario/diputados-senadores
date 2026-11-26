@@ -68,7 +68,7 @@ const senadores = computed<Senador[]>(() => {
 });
 
 const filters = computed<FilterConfig>(() => ({
-  ...(searchQuery.value ? { nombreCompleto: searchQuery.value } : {}),
+  ...(searchQuery.value ? { search: searchQuery.value } : {}),
   ...(partidoFilter.value.length ? { partido: partidoFilter.value } : {}),
   ...(provinciaFilter.value.length ? { provincia: provinciaFilter.value } : {}),
   ...(tipoVotoFilter.value.length ? { tipoVoto: tipoVotoFilter.value } : {}),
@@ -390,7 +390,7 @@ function onRowSelect(_e: Event, row: { original: Senador }) {
           <div class="sm:col-span-2">
             <FilterSearch
               v-model="searchQuery"
-              placeholder="Nombre del senador..."
+              placeholder="Nombre, provincia, partido o bloque..."
             />
           </div>
           <FilterSelect

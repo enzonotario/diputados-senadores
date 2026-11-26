@@ -776,32 +776,48 @@ function initials(d: HemicicloMember): string {
 }
 
 type Tooltip = { member: HemicicloMember; x: number; y: number };
-const tooltip = ref<Tooltip | null>(null);
+type HoveredSeat = { kind: "member"; id: string } | { kind: "president" };
+
+const hoveredSeat = ref<HoveredSeat | null>(null);
+const hoveredLegendGroup = ref<string | null>(null);
+
+const tooltip = computed<Tooltip | null>(() => {
+  if (!props.showTooltip || !hoveredSeat.value) return null;
+  if (hoveredSeat.value.kind === "president") {
+    const seat = presidentSeat.value;
+    return seat ? { member: seat.member, x: seat.x, y: seat.y } : null;
+  }
+  const id = hoveredSeat.value.id;
+  const pt = puntos.value.find((p) => p.member.id === id);
+  return pt ? { member: pt.member, x: pt.x, y: pt.y } : null;
+});
+
 /** Bloque/partido/voto resaltado (leyenda o banca). */
-const hoveredGroup = ref<string | null>(null);
+const hoveredGroup = computed<string | null>(() => {
+  if (hoveredLegendGroup.value) return hoveredLegendGroup.value;
+  if (!hoveredSeat.value) return null;
+  if (hoveredSeat.value.kind === "president") return PRESIDENT_GROUP;
+  return tooltip.value ? groupKey(tooltip.value.member) : null;
+});
 
 function onEnter(p: Punto) {
   if (!props.showTooltip) return;
-  tooltip.value = { member: p.member, x: p.x, y: p.y };
-  hoveredGroup.value = groupKey(p.member);
+  hoveredSeat.value = { kind: "member", id: p.member.id };
 }
 function onEnterPresident() {
   if (!props.showTooltip) return;
-  const seat = presidentSeat.value;
-  if (!seat) return;
-  tooltip.value = { member: seat.member, x: seat.x, y: seat.y };
-  hoveredGroup.value = PRESIDENT_GROUP;
+  if (!presidentSeat.value) return;
+  hoveredSeat.value = { kind: "president" };
 }
 function onLeave() {
-  tooltip.value = null;
-  hoveredGroup.value = null;
+  hoveredSeat.value = null;
 }
 
 function onLegendEnter(group: string) {
-  hoveredGroup.value = group;
+  hoveredLegendGroup.value = group;
 }
 function onLegendLeave() {
-  hoveredGroup.value = null;
+  hoveredLegendGroup.value = null;
 }
 
 function seatOpacity(d: HemicicloMember): number {

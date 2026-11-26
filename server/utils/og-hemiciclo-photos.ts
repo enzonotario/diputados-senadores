@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { ChamberId } from "../../app/lib/chamber";
 import {
   getBloqueBySlug,
@@ -14,6 +15,9 @@ import {
   matchMemberByPresidenteNombre,
   modePresidenteNombre,
 } from "../../app/utils/actaPresidente";
+import { voteOf } from "../../app/utils/poroteo";
+import { decodePoroteoShare } from "../../app/utils/poroteoShare";
+import { getVotoTipoConfig } from "../../app/utils/votoTipo";
 
 /**
  * OG hemiciclo with each legislator's photo (current composition), for the
@@ -47,15 +51,21 @@ type CompositeState = {
   building?: Promise<Buffer | null>;
 };
 
-/** Max cached composites (2 chamber homes + recently shared groups). */
-const MAX_ENTRIES = 48;
+/** Max cached composites (2 chamber homes + recently shared groups/poroteos). */
+const MAX_ENTRIES = 64;
 /** Cap seat size so tiny groups do not blow a single photo up. */
 const MAX_SEAT_DIAMETER = 110 * DPR;
+/** Bounded in-memory cache of fetched legislator photos (~350 active members). */
+const MAX_PHOTO_CACHE = 400;
+/** Max time to wait for remote photo downloads on an uncached poroteo OG. */
+const POROTEO_PHOTOS_BUDGET_MS = 6000;
 
 let state = new Map<string, CompositeState>();
+let photoCache = new Map<string, Uint8Array>();
 
 export function clearOgHemicicloPhotosCache() {
   state = new Map();
+  photoCache = new Map();
 }
 
 function stateFor(key: string): CompositeState {
@@ -268,15 +278,33 @@ async function fetchPhoto(url: string): Promise<Uint8Array | null> {
   }
 }
 
-async function fetchPhotos(urls: string[]) {
+async function fetchPhotos(urls: string[], budgetMs?: number) {
   const unique = [...new Set(urls.filter(Boolean))];
   const out = new Map<string, Uint8Array>();
+  const missing: string[] = [];
+  for (const url of unique) {
+    const cached = photoCache.get(url);
+    if (cached) {
+      out.set(url, cached);
+    } else {
+      missing.push(url);
+    }
+  }
+  if (!missing.length) return out;
+
+  const deadline = budgetMs ? Date.now() + budgetMs : Infinity;
   let cursor = 0;
   const worker = async () => {
-    while (cursor < unique.length) {
-      const url = unique[cursor++]!;
+    while (cursor < missing.length && Date.now() < deadline) {
+      const url = missing[cursor++]!;
       const data = await fetchPhoto(url);
-      if (data) out.set(url, data);
+      if (data) {
+        out.set(url, data);
+        if (photoCache.size >= MAX_PHOTO_CACHE) {
+          photoCache.delete(photoCache.keys().next().value!);
+        }
+        photoCache.set(url, data);
+      }
     }
   };
   await Promise.all(
@@ -501,4 +529,123 @@ export async function getOgHemicicloPhotosPng(
     if (photos) return photos;
   }
   return getDots(s, chamber, groupSlug);
+}
+
+async function loadPoroteoSeatMembers(
+  chamber: ChamberId,
+  share: string,
+): Promise<SeatMember[] | null> {
+  if (chamber === "diputados") {
+    const { diputados } = await getDiputadosPorBloques();
+    const votes = decodePoroteoShare(
+      share,
+      diputados.map((d) => d.id),
+    );
+    if (!votes) return null;
+
+    const rows = diputados.map((d) => ({
+      group: d.bloque || "",
+      sortKey: `${d.apellido} ${d.nombre}`,
+      photo: d.foto || "",
+      color: getVotoTipoConfig(voteOf(votes, d.id)).color,
+      banca: d.banca ?? null,
+    }));
+    if (useRecinto(rows)) {
+      return rows.map((r) => ({
+        photo: r.photo,
+        color: r.color,
+        banca: r.banca,
+      }));
+    }
+    return sortPoliticalSeatRows(rows);
+  }
+
+  const { senadores } = await getSenadoresPorPartidos();
+  const votes = decodePoroteoShare(
+    share,
+    senadores.map((s) => s.id),
+  );
+  if (!votes) return null;
+
+  const rows = senadores.map((s) => ({
+    group: s.partido || "",
+    sortKey: s.nombreCompleto || s.nombre || "",
+    photo: s.foto || "",
+    color: getVotoTipoConfig(voteOf(votes, s.id)).color,
+  }));
+  return sortPoliticalSeatRows(rows);
+}
+
+function sortPoliticalSeatRows(
+  rows: Array<{
+    group: string;
+    sortKey: string;
+    photo: string;
+    color: string;
+    banca?: number | null;
+  }>,
+): SeatMember[] {
+  const groupKey = (g: string) => g.trim() || "Sin grupo";
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const key = groupKey(r.group);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return [...rows]
+    .sort((a, b) => {
+      const ga = groupKey(a.group);
+      const gb = groupKey(b.group);
+      if (ga !== gb) {
+        return (
+          (counts.get(gb) || 0) - (counts.get(ga) || 0) ||
+          ga.localeCompare(gb, "es")
+        );
+      }
+      return a.sortKey.localeCompare(b.sortKey, "es");
+    })
+    .map((r) => ({
+      photo: r.photo,
+      color: r.color,
+      banca: r.banca ?? null,
+    }));
+}
+
+/**
+ * PNG del hemiciclo de un poroteo compartido: cada legislador con su foto
+ * y el anillo del color de su voto. Espera las fotos (acotado por budget)
+ * para que los crawlers de redes sociales reciban las caras en el primer hit.
+ */
+export async function getOgPoroteoHemicicloPhotosPng(
+  chamber: ChamberId,
+  share: string,
+): Promise<Buffer | null> {
+  const hash = createHash("sha1").update(share).digest("hex").slice(0, 16);
+  const s = stateFor(`poroteo:${chamber}:${hash}`);
+  if (s.photos) return s.photos;
+  if (s.building) return s.building;
+
+  const building = (async () => {
+    const members = await loadPoroteoSeatMembers(chamber, share);
+    if (!members) return null;
+    const photos = await fetchPhotos(
+      members.map((m) => m.photo),
+      POROTEO_PHOTOS_BUDGET_MS,
+    );
+    const buf = await renderComposite(members, photos, false);
+    if (buf) s.photos = buf;
+    return buf;
+  })()
+    .catch((err) => {
+      console.warn(
+        `[og] poroteo hemiciclo build failed (${chamber}):`,
+        err?.message || err,
+      );
+      return null;
+    })
+    .finally(() => {
+      if (!s.photos) s.building = undefined;
+    });
+
+  s.building = building;
+  return building;
 }

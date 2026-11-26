@@ -50,6 +50,7 @@ const props = withDefaults(
     breakdown?: string;
     group?: string;
     summary?: string;
+    poroteo?: string;
     /** Build id: only busts CDN-cached OG URLs per deploy (unused in render). */
     rev?: string;
   }>(),
@@ -71,6 +72,7 @@ const props = withDefaults(
     breakdown: "",
     group: "",
     summary: "",
+    poroteo: "",
     rev: "",
   },
 );
@@ -94,9 +96,13 @@ const VOTE_COLORS = {
   negativo: "#ef4444",
   abstencion: "#3b82f6",
   ausente: "#6b7280",
+  indeciso: "#fbbf24",
 } as const;
 
 const isActa = computed(() => props.kind === "acta");
+const isPoroteo = computed(
+  () => props.kind === "poroteo" && Boolean(props.poroteo),
+);
 
 /**
  * Listing pages: KPIs + top rows, computed server-side from the RAM data
@@ -161,6 +167,15 @@ const homeHemicicloSrc = computed(() => {
   return "";
 });
 
+/** Poroteo compartido: hemiciclo con fotos + anillo del color del voto. */
+const poroteoHemicicloSrc = computed(() => {
+  if (!isPoroteo.value) return "";
+  if (props.chamber !== "diputados" && props.chamber !== "senadores") {
+    return "";
+  }
+  return `/api/og/hemiciclo/${props.chamber}?poroteo=${encodeURIComponent(props.poroteo)}`;
+});
+
 /** Escala el layout para que entre en `maxW × maxH` (sin deformar). */
 function fitLayout(
   layout: OgHemicicloLayout | null,
@@ -215,12 +230,20 @@ const voteRows = computed(() => {
       color: VOTE_COLORS.abstencion,
     },
   ];
-  if (isActa.value || decoded.ausentes > 0) {
+  if (isActa.value || isPoroteo.value || decoded.ausentes > 0) {
     rows.push({
       key: "ausente",
       label: "Ausentes",
       count: decoded.ausentes,
       color: VOTE_COLORS.ausente,
+    });
+  }
+  if (decoded.indecisos > 0) {
+    rows.push({
+      key: "indeciso",
+      label: "Indecisos",
+      count: decoded.indecisos,
+      color: VOTE_COLORS.indeciso,
     });
   }
   return rows;
@@ -231,7 +254,8 @@ const showVotes = computed(() => voteRows.value.length > 0);
 const actaVista = computed(() => (isActa.value ? props.vista : ""));
 
 const actaTitleLines = computed(() => {
-  if (!isActa.value) return [props.title];
+  if (!isActa.value && !isPoroteo.value) return [props.title];
+  if (isPoroteo.value) return wrapOgActaTitle(props.title, 2, 54);
   if (actaVista.value === "provincias")
     return wrapOgActaTitle(props.title, 4, 32);
   if (actaVista.value) return wrapOgActaTitle(props.title, 2, 58);
@@ -397,7 +421,7 @@ const tileMapSize = {
     </div>
 
     <div
-      v-if="isActa"
+      v-if="isActa || isPoroteo"
       class="relative flex h-full w-full flex-col pb-[92px] pl-[4.25rem] pr-14 pt-10"
       :style="
         tiles.length ? { paddingRight: `${tileMapSize.width + 96}px` } : {}
@@ -571,11 +595,16 @@ const tileMapSize = {
         v-else
         class="mt-4 flex w-full flex-1 items-center justify-between gap-8"
       >
-        <div v-if="showVotes" class="flex w-[460px] flex-wrap gap-x-8 gap-y-4">
+        <div
+          v-if="showVotes"
+          class="flex flex-wrap gap-x-8 gap-y-4"
+          :class="isPoroteo ? 'w-[420px]' : 'w-[460px]'"
+        >
           <div
             v-for="row in voteRows"
             :key="row.key"
-            class="flex w-[200px] items-center gap-3"
+            class="flex items-center gap-3"
+            :class="isPoroteo ? 'w-[188px]' : 'w-[200px]'"
           >
             <div
               class="h-5 w-5 shrink-0 rounded-full"
@@ -583,7 +612,8 @@ const tileMapSize = {
             />
             <div class="flex flex-col">
               <div
-                class="text-[44px] font-extrabold leading-none tabular-nums"
+                class="font-extrabold leading-none tabular-nums"
+                :class="isPoroteo ? 'text-[40px]' : 'text-[44px]'"
                 :style="{ color: row.color }"
               >
                 {{ row.count }}
@@ -598,8 +628,17 @@ const tileMapSize = {
           </div>
         </div>
 
+        <img
+          v-if="poroteoHemicicloSrc"
+          :src="poroteoHemicicloSrc"
+          :alt="title"
+          width="580"
+          height="305"
+          class="h-[305px] w-[580px] shrink-0 object-contain"
+        />
+
         <div
-          v-if="hemicicloLayout"
+          v-else-if="hemicicloLayout"
           class="relative shrink-0"
           :style="{
             width: `${hemicicloLayout.width}px`,

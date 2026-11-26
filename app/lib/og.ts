@@ -22,7 +22,8 @@ export const OG_RESULTADO_ACCENT = {
   cancelada: "#6b7280",
 } satisfies Record<string, string>;
 
-export type OgKind = "home" | "list" | "member" | "group" | "acta" | "afinidad";
+export type OgKind =
+  "home" | "list" | "member" | "group" | "acta" | "afinidad" | "poroteo";
 
 export type ChamberOgInput = {
   eyebrow?: string;
@@ -32,11 +33,12 @@ export type ChamberOgInput = {
   kind?: OgKind;
   /** Texto abajo a la izquierda (p. ej. fecha de votación). */
   footerLeft?: string;
-  /** Conteos para actas — se muestran como indicador coloreado en la OG. */
+  /** Conteos para actas / poroteo — se muestran como indicador coloreado en la OG. */
   votosAfirmativos?: number;
   votosNegativos?: number;
   abstenciones?: number;
   ausentes?: number;
+  indecisos?: number;
   /** Foto/avatar del miembro (URL absoluta o path público). */
   photoSrc?: string;
   /**
@@ -52,6 +54,8 @@ export type ChamberOgInput = {
   group?: string;
   /** Listing summary key → KPIs + top rows fetched by the OG component. */
   summary?: OgSummaryKey;
+  /** Payload comprimido (`?s=`) de un poroteo compartido → hemiciclo con fotos. */
+  poroteo?: string;
 };
 
 /** Listing-page OG summaries (built in `server/utils/og-summary.ts`). */
@@ -121,35 +125,46 @@ export function buildChamberOgProps(input: {
     breakdown: og?.breakdown || "",
     group: og?.group || "",
     summary: og?.summary || "",
+    poroteo: og?.poroteo || "",
   };
 }
 
-/** Serializa conteos para props OG (`144:102:9:1`). */
+/** Serializa conteos para props OG (`144:102:9:1` o `...:indecisos`). */
 export function encodeOgVotes(input?: {
   votosAfirmativos?: number;
   votosNegativos?: number;
   abstenciones?: number;
   ausentes?: number;
+  indecisos?: number;
 }): string {
   if (!input) return "";
-  const { votosAfirmativos, votosNegativos, abstenciones, ausentes } = input;
+  const {
+    votosAfirmativos,
+    votosNegativos,
+    abstenciones,
+    ausentes,
+    indecisos,
+  } = input;
   if (
     votosAfirmativos == null &&
     votosNegativos == null &&
     abstenciones == null &&
-    ausentes == null
+    ausentes == null &&
+    indecisos == null
   ) {
     return "";
   }
-  return `${votosAfirmativos ?? 0}:${votosNegativos ?? 0}:${abstenciones ?? 0}:${ausentes ?? 0}`;
+  const base = `${votosAfirmativos ?? 0}:${votosNegativos ?? 0}:${abstenciones ?? 0}:${ausentes ?? 0}`;
+  return indecisos && indecisos > 0 ? `${base}:${indecisos}` : base;
 }
 
-/** Parsea `144:102:9:1` → conteos (3 o 4 segmentos). */
+/** Parsea `144:102:9:1[:indecisos]` → conteos (3, 4 o 5 segmentos). */
 export function decodeOgVotes(raw?: string | null): {
   afirmativos: number;
   negativos: number;
   abstenciones: number;
   ausentes: number;
+  indecisos: number;
 } | null {
   const s = String(raw || "").trim();
   if (!s) return null;
@@ -160,6 +175,7 @@ export function decodeOgVotes(raw?: string | null): {
     negativos: parts[1]!,
     abstenciones: parts[2]!,
     ausentes: parts[3] ?? 0,
+    indecisos: parts[4] ?? 0,
   };
 }
 

@@ -111,6 +111,7 @@ export function useChamberSeo(input: MaybeRefOrGetter<ChamberSeoInput>) {
     breakdown: prop("breakdown"),
     group: prop("group"),
     summary: prop("summary"),
+    poroteo: prop("poroteo"),
     rev: prop("rev"),
   });
 }

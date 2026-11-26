@@ -2,12 +2,15 @@
 import type { Diputado } from "@/lib/types-diputados";
 import type { Senador } from "@/lib/types";
 import type { PoroteoMember } from "@/utils/poroteo";
+import { POROTEO_SHARE_QUERY } from "@/utils/poroteoShare";
+import { buildPoroteoSeo } from "@/lib/og-poroteo";
 import { isDiputadoActivo, isSenadorActivo } from "@/lib/utils";
 
+const route = useRoute();
 const { isDiputados, chamberId } = useChamber();
 const { localFetch } = useLocalApi();
 
-const { data: membersData, pending } = useAsyncData(
+const { data: membersData, pending } = await useAsyncData(
   () => `poroteo-members-${chamberId.value}`,
   async () => {
     const res = await localFetch<{ members: (Diputado | Senador)[] }>(
@@ -61,11 +64,12 @@ const memberBasePath = computed(() =>
 
 const storageKey = computed(() => chamberId.value);
 
-useChamberSeo(() => ({
-  title: "Poroteo",
-  description: `Simulá cómo votarían los ${membersLabel.value.toLowerCase()} y exportá una imagen para compartir.`,
-  og: { kind: "list", eyebrow: "poroteo", badge: "Poroteo" },
-}));
+useChamberSeo(() =>
+  buildPoroteoSeo(chamberId.value, members.value, {
+    s: route.query[POROTEO_SHARE_QUERY],
+    titulo: route.query.titulo,
+  }),
+);
 </script>
 
 <template>

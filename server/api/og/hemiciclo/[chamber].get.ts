@@ -1,8 +1,11 @@
-import { getOgHemicicloPhotosPng } from "../../../utils/og-hemiciclo-photos";
+import {
+  getOgHemicicloPhotosPng,
+  getOgPoroteoHemicicloPhotosPng,
+} from "../../../utils/og-hemiciclo-photos";
 
 /**
- * Home (or `?group=<slug>` bloque/partido) OG hemiciclo composite (photos + party ring), consumed by
- * `Chamber.takumi` as an <img>. Dots-only until photos are cached.
+ * Home, `?group=<slug>` (bloque/partido) o `?poroteo=<lz>` OG hemiciclo
+ * composite (photos + party/vote ring), consumed by `Chamber.takumi` as an <img>.
  */
 export default defineEventHandler(async (event) => {
   const raw = String(getRouterParam(event, "chamber") || "").replace(
@@ -12,7 +15,20 @@ export default defineEventHandler(async (event) => {
   if (raw !== "diputados" && raw !== "senadores") {
     throw createError({ statusCode: 404 });
   }
-  const group = String(getQuery(event).group || "").trim();
+  const query = getQuery(event);
+  const poroteo = String(query.poroteo || "").trim();
+  if (poroteo) {
+    if (poroteo.length > 4096) {
+      throw createError({ statusCode: 400 });
+    }
+    const png = await getOgPoroteoHemicicloPhotosPng(raw, poroteo);
+    if (!png) throw createError({ statusCode: 400 });
+    setHeader(event, "Content-Type", "image/png");
+    setHeader(event, "Cache-Control", "public, max-age=3600");
+    return png;
+  }
+
+  const group = String(query.group || "").trim();
   if (group && !/^[a-z0-9-]{1,120}$/.test(group)) {
     throw createError({ statusCode: 400 });
   }

@@ -551,7 +551,12 @@ function cancelDockCollapse() {
 function scheduleDockCollapse() {
   cancelDockCollapse();
   dockCollapseTimer = setTimeout(() => {
-    if (!dockPinned.value && !designPanelOpen.value) {
+    if (
+      !dockPinned.value &&
+      !designPanelOpen.value &&
+      previewZoom.value <= 1 &&
+      !previewDragging.value
+    ) {
       dockExpanded.value = false;
     }
   }, 200);
@@ -575,10 +580,211 @@ function closeDock() {
   dockExpanded.value = false;
   dockPinned.value = false;
   designPanelOpen.value = false;
+  resetPreviewTransform();
 }
 
+// --- Zoom & pan en la preview ---
+const PREVIEW_MIN_ZOOM = 1;
+const PREVIEW_MAX_ZOOM = 4;
+const PREVIEW_DRAG_THRESHOLD = 4;
+
+const previewViewportRef = ref<HTMLElement | null>(null);
+const previewZoom = ref(1);
+const previewPanX = ref(0);
+const previewPanY = ref(0);
+const previewDragging = ref(false);
+
+const previewZoomPct = computed(() => Math.round(previewZoom.value * 100));
+
+const previewTransformStyle = computed(() => {
+  if (!dockExpanded.value) return {};
+  if (
+    previewZoom.value === 1 &&
+    previewPanX.value === 0 &&
+    previewPanY.value === 0
+  ) {
+    return {};
+  }
+  return {
+    transform: `translate3d(${previewPanX.value}px, ${previewPanY.value}px, 0) scale(${previewZoom.value})`,
+    transformOrigin: "0 0",
+  };
+});
+
+function clampPreviewPan(x: number, y: number, zoom: number) {
+  if (zoom <= 1) return { x: 0, y: 0 };
+  const vp = previewViewportRef.value;
+  if (!vp) return { x, y };
+  const minX = -vp.clientWidth * (zoom - 1);
+  const minY = -vp.clientHeight * (zoom - 1);
+  return {
+    x: Math.min(0, Math.max(minX, x)),
+    y: Math.min(0, Math.max(minY, y)),
+  };
+}
+
+function setPreviewZoom(nextRaw: number, originX?: number, originY?: number) {
+  const prev = previewZoom.value;
+  const next = Math.min(
+    PREVIEW_MAX_ZOOM,
+    Math.max(PREVIEW_MIN_ZOOM, Math.round(nextRaw * 1000) / 1000),
+  );
+  if (next === prev) return;
+  if (next > 1) dockPinned.value = true;
+
+  const vp = previewViewportRef.value;
+  if (!vp || next <= 1) {
+    previewZoom.value = next;
+    previewPanX.value = 0;
+    previewPanY.value = 0;
+    return;
+  }
+
+  const ox = originX ?? vp.clientWidth / 2;
+  const oy = originY ?? vp.clientHeight / 2;
+  const contentX = (ox - previewPanX.value) / prev;
+  const contentY = (oy - previewPanY.value) / prev;
+  const clamped = clampPreviewPan(
+    ox - contentX * next,
+    oy - contentY * next,
+    next,
+  );
+  previewZoom.value = next;
+  previewPanX.value = clamped.x;
+  previewPanY.value = clamped.y;
+}
+
+function zoomPreviewStep(direction: 1 | -1) {
+  setPreviewZoom(previewZoom.value * (direction > 0 ? 1.25 : 0.8));
+}
+
+function resetPreviewTransform() {
+  previewZoom.value = 1;
+  previewPanX.value = 0;
+  previewPanY.value = 0;
+  previewDragging.value = false;
+  dragState = null;
+  suppressNextPreviewClick = false;
+}
+
+function onPreviewWheel(e: WheelEvent) {
+  if (!dockExpanded.value) return;
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const vp = previewViewportRef.value;
+  if (!vp) return;
+  const rect = vp.getBoundingClientRect();
+  const factor = Math.exp(-e.deltaY * 0.004);
+  setPreviewZoom(
+    previewZoom.value * factor,
+    e.clientX - rect.left,
+    e.clientY - rect.top,
+  );
+}
+
+let dragState: {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startPanX: number;
+  startPanY: number;
+  moved: boolean;
+} | null = null;
+let suppressNextPreviewClick = false;
+
+function onPreviewPointerDown(e: PointerEvent) {
+  if (!dockExpanded.value || previewZoom.value <= 1) return;
+  if (e.button !== 0 && e.button !== 1) return;
+  if (e.button === 1) e.preventDefault();
+  dragState = {
+    pointerId: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    startPanX: previewPanX.value,
+    startPanY: previewPanY.value,
+    moved: false,
+  };
+}
+
+function onPreviewPointerMove(e: PointerEvent) {
+  if (!dragState || e.pointerId !== dragState.pointerId) return;
+  const dx = e.clientX - dragState.startX;
+  const dy = e.clientY - dragState.startY;
+  if (!dragState.moved) {
+    if (Math.hypot(dx, dy) < PREVIEW_DRAG_THRESHOLD) return;
+    dragState.moved = true;
+    previewDragging.value = true;
+    dockPinned.value = true;
+    previewViewportRef.value?.setPointerCapture?.(e.pointerId);
+  }
+  const clamped = clampPreviewPan(
+    dragState.startPanX + dx,
+    dragState.startPanY + dy,
+    previewZoom.value,
+  );
+  previewPanX.value = clamped.x;
+  previewPanY.value = clamped.y;
+}
+
+function endPreviewDrag(e: PointerEvent) {
+  if (!dragState || e.pointerId !== dragState.pointerId) return;
+  if (dragState.moved) {
+    suppressNextPreviewClick = true;
+    setTimeout(() => {
+      suppressNextPreviewClick = false;
+    }, 0);
+    if (previewViewportRef.value?.hasPointerCapture?.(e.pointerId)) {
+      previewViewportRef.value.releasePointerCapture(e.pointerId);
+    }
+  }
+  dragState = null;
+  previewDragging.value = false;
+}
+
+function onPreviewClickCapture(e: MouseEvent) {
+  if (!suppressNextPreviewClick) return;
+  suppressNextPreviewClick = false;
+  e.stopPropagation();
+  e.preventDefault();
+}
+
+watch(dockExpanded, (open) => {
+  if (!open) resetPreviewTransform();
+});
+
+watch(designPanelOpen, () => {
+  nextTick(() => {
+    if (previewZoom.value > 1) {
+      const clamped = clampPreviewPan(
+        previewPanX.value,
+        previewPanY.value,
+        previewZoom.value,
+      );
+      previewPanX.value = clamped.x;
+      previewPanY.value = clamped.y;
+    }
+  });
+});
+
 function onDockKeydown(e: KeyboardEvent) {
-  if (e.key === "Escape" && dockExpanded.value) closeDock();
+  if (!dockExpanded.value) return;
+  if (e.key === "Escape") {
+    closeDock();
+    return;
+  }
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === "+" || e.key === "=") {
+      e.preventDefault();
+      zoomPreviewStep(1);
+    } else if (e.key === "-") {
+      e.preventDefault();
+      zoomPreviewStep(-1);
+    } else if (e.key === "0") {
+      e.preventDefault();
+      resetPreviewTransform();
+    }
+  }
 }
 
 onMounted(() => {
@@ -1186,10 +1392,41 @@ const groupsSectionTitle = computed(() => {
                 >
                   <p
                     class="min-w-0 flex-1 truncate text-sm font-medium text-muted"
+                    title="Clic en un asiento para ciclar · Ctrl + rueda para zoom"
                   >
-                    Así se verá la imagen — clic en un asiento para ciclar
+                    Clic en un asiento para ciclar · Ctrl + rueda para zoom
                   </p>
                   <div class="flex shrink-0 items-center gap-1">
+                    <div
+                      class="hidden items-center rounded-md bg-elevated/70 px-0.5 ring-1 ring-default sm:flex"
+                    >
+                      <UButton
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        icon="i-lucide-zoom-out"
+                        aria-label="Alejar preview"
+                        :disabled="previewZoom <= PREVIEW_MIN_ZOOM"
+                        @click="zoomPreviewStep(-1)"
+                      />
+                      <button
+                        type="button"
+                        class="min-w-[2.75rem] px-1 text-center text-xs font-medium tabular-nums text-muted transition hover:text-default"
+                        title="Restablecer zoom (Ctrl+0)"
+                        @click="resetPreviewTransform"
+                      >
+                        {{ previewZoomPct }}%
+                      </button>
+                      <UButton
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        icon="i-lucide-zoom-in"
+                        aria-label="Acercar preview"
+                        :disabled="previewZoom >= PREVIEW_MAX_ZOOM"
+                        @click="zoomPreviewStep(1)"
+                      />
+                    </div>
                     <UButton
                       color="primary"
                       variant="outline"
@@ -1287,6 +1524,13 @@ const groupsSectionTitle = computed(() => {
                         size="sm"
                         label="Título"
                       />
+                      <UInput
+                        v-if="exportDesign.showTitle"
+                        v-model="title"
+                        size="xs"
+                        placeholder="Ej. Ley de Tierras — capítulo X"
+                        aria-label="Título del poroteo"
+                      />
                       <USwitch
                         v-model="exportDesign.showPhotos"
                         size="sm"
@@ -1316,75 +1560,124 @@ const groupsSectionTitle = computed(() => {
                     </div>
                   </aside>
 
-                  <div class="min-w-0 flex-1">
+                  <div
+                    ref="previewViewportRef"
+                    class="min-w-0 flex-1"
+                    :class="[
+                      dockExpanded && previewZoom > 1
+                        ? 'overflow-hidden rounded-2xl shadow-2xl select-none touch-none'
+                        : '',
+                      dockExpanded && previewZoom > 1
+                        ? previewDragging
+                          ? 'cursor-grabbing'
+                          : 'cursor-grab'
+                        : '',
+                    ]"
+                    @wheel="onPreviewWheel"
+                    @pointerdown="onPreviewPointerDown"
+                    @pointermove="onPreviewPointerMove"
+                    @pointerup="endPreviewDrag"
+                    @pointercancel="endPreviewDrag"
+                    @click.capture="onPreviewClickCapture"
+                  >
                     <div
-                      ref="exportRoot"
-                      class="shadow-2xl"
-                      :style="exportRootStyle"
+                      :style="previewTransformStyle"
+                      class="will-change-transform"
                     >
-                      <p
-                        v-if="exportDesign.showTitle"
-                        class="mx-auto mb-5 max-w-full truncate rounded-full px-4 py-1.5 text-center text-lg font-bold tracking-tight sm:mb-6 sm:text-xl"
-                        :style="exportTitleStyle"
-                      >
-                        {{ title || "Poroteo" }}
-                      </p>
-                      <HemicicloChart
-                        :members="hemicicloMembers"
-                        :group-colors="groupColors"
-                        group-by="tipoVoto"
-                        :seat-group-by="groupField"
-                        :group-order="[...POROTEO_VOTO_ORDER]"
-                        :group-label="groupLabel"
-                        :member-base-path="memberBasePath"
-                        seat-layout="auto"
-                        :editable="dockExpanded"
-                        :clickable="false"
-                        :show-photos="exportDesign.showPhotos"
-                        :show-seat-apellidos="exportDesign.showSeatApellidos"
-                        :show-seat-nombres="
-                          exportDesign.showSeatApellidos &&
-                          exportDesign.showSeatNombres
-                        "
-                        transparent-floor
-                        :show-legend="false"
-                        :forced-color-mode="exportForcedColorMode"
-                        @select="onSeatSelect"
-                      />
                       <div
-                        v-if="exportDesign.showCounters"
-                        class="mt-6 grid grid-cols-5 gap-2 sm:mt-8"
+                        ref="exportRoot"
+                        class="shadow-2xl"
+                        :style="exportRootStyle"
                       >
-                        <div
-                          v-for="action in POROTEO_ACTIONS"
-                          :key="action.tipo"
-                          class="rounded-md px-1.5 py-2 text-center sm:px-2 sm:py-2.5"
-                          :class="
-                            action.tipo === 'indeciso'
-                              ? 'text-gray-900'
-                              : 'text-white'
+                        <input
+                          v-if="
+                            exportDesign.showTitle &&
+                            dockExpanded &&
+                            !exporting &&
+                            !copyingImage
                           "
-                          :style="{ backgroundColor: groupColors[action.tipo] }"
+                          v-model="title"
+                          type="text"
+                          placeholder="Poroteo"
+                          aria-label="Título del poroteo"
+                          title="Clic para editar el título"
+                          class="mx-auto mb-5 block w-full max-w-full cursor-text truncate rounded-full border-0 px-4 py-1.5 text-center text-lg font-bold tracking-tight outline-none transition placeholder:text-gray-400 hover:ring-2 hover:ring-primary/40 focus:ring-2 focus:ring-primary sm:mb-6 sm:text-xl"
+                          :style="exportTitleStyle"
+                          @focus="dockPinned = true"
+                          @pointerdown.stop
+                          @keydown.enter="
+                            ($event.target as HTMLInputElement).blur()
+                          "
+                          @keydown.escape.stop="
+                            ($event.target as HTMLInputElement).blur()
+                          "
+                        />
+                        <p
+                          v-else-if="exportDesign.showTitle"
+                          class="mx-auto mb-5 max-w-full truncate rounded-full px-4 py-1.5 text-center text-lg font-bold tracking-tight sm:mb-6 sm:text-xl"
+                          :style="exportTitleStyle"
                         >
-                          <p
-                            class="truncate text-[0.55rem] font-semibold uppercase tracking-wide opacity-90 sm:text-[0.65rem]"
+                          {{ title || "Poroteo" }}
+                        </p>
+                        <HemicicloChart
+                          :members="hemicicloMembers"
+                          :group-colors="groupColors"
+                          group-by="tipoVoto"
+                          :seat-group-by="groupField"
+                          :group-order="[...POROTEO_VOTO_ORDER]"
+                          :group-label="groupLabel"
+                          :member-base-path="memberBasePath"
+                          seat-layout="auto"
+                          :editable="dockExpanded"
+                          :clickable="false"
+                          :show-photos="exportDesign.showPhotos"
+                          :show-seat-apellidos="exportDesign.showSeatApellidos"
+                          :show-seat-nombres="
+                            exportDesign.showSeatApellidos &&
+                            exportDesign.showSeatNombres
+                          "
+                          transparent-floor
+                          :show-legend="false"
+                          :forced-color-mode="exportForcedColorMode"
+                          @select="onSeatSelect"
+                        />
+                        <div
+                          v-if="exportDesign.showCounters"
+                          class="mt-6 grid grid-cols-5 gap-2 sm:mt-8"
+                        >
+                          <div
+                            v-for="action in POROTEO_ACTIONS"
+                            :key="action.tipo"
+                            class="rounded-md px-1.5 py-2 text-center sm:px-2 sm:py-2.5"
+                            :class="
+                              action.tipo === 'indeciso'
+                                ? 'text-gray-900'
+                                : 'text-white'
+                            "
+                            :style="{
+                              backgroundColor: groupColors[action.tipo],
+                            }"
                           >
-                            {{ action.label }}
-                          </p>
-                          <p
-                            class="text-base font-bold tabular-nums leading-tight sm:text-lg"
-                          >
-                            {{ counts[action.tipo] }}
-                          </p>
+                            <p
+                              class="truncate text-[0.55rem] font-semibold uppercase tracking-wide opacity-90 sm:text-[0.65rem]"
+                            >
+                              {{ action.label }}
+                            </p>
+                            <p
+                              class="text-base font-bold tabular-nums leading-tight sm:text-lg"
+                            >
+                              {{ counts[action.tipo] }}
+                            </p>
+                          </div>
                         </div>
+                        <p
+                          v-if="exportDesign.showFooter"
+                          class="mt-5 text-center text-xs sm:mt-6"
+                          :style="{ color: exportMutedColor }"
+                        >
+                          {{ membersLabel }} · argentinadatos.com
+                        </p>
                       </div>
-                      <p
-                        v-if="exportDesign.showFooter"
-                        class="mt-5 text-center text-xs sm:mt-6"
-                        :style="{ color: exportMutedColor }"
-                      >
-                        {{ membersLabel }} · argentinadatos.com
-                      </p>
                     </div>
                   </div>
                 </div>

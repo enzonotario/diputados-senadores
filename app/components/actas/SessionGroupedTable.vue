@@ -73,6 +73,9 @@ function collapseAll() {
 const allExpanded = computed(() =>
   groups.value.every((g) => isExpanded(g.key)),
 );
+const noneExpanded = computed(() =>
+  groups.value.every((g) => !isExpanded(g.key)),
+);
 
 const tableMinWidth = computed(() =>
   props.variant === "senadores" ? "min-w-[72rem]" : "min-w-[60rem]",
@@ -230,17 +233,25 @@ function mobileCardLabel(acta: ActaRow) {
   <div class="min-w-0 w-full space-y-3">
     <div
       v-if="groups.length"
-      class="flex flex-wrap items-center justify-end gap-2"
+      class="flex flex-wrap items-center justify-end gap-1"
     >
       <UButton
         color="neutral"
         variant="ghost"
         size="xs"
-        :icon="
-          allExpanded ? 'i-lucide-fold-vertical' : 'i-lucide-unfold-vertical'
-        "
-        :label="allExpanded ? 'Colapsar todo' : 'Expandir todo'"
-        @click="allExpanded ? collapseAll() : expandAll()"
+        icon="i-lucide-unfold-vertical"
+        label="Expandir todo"
+        :disabled="allExpanded"
+        @click="expandAll"
+      />
+      <UButton
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        icon="i-lucide-fold-vertical"
+        label="Colapsar todo"
+        :disabled="noneExpanded"
+        @click="collapseAll"
       />
     </div>
 

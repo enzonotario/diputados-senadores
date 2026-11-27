@@ -91,6 +91,24 @@ watch(
   },
 );
 
+const expandedCount = computed(
+  () => rows.value.filter((r) => Boolean(expanded.value[r.key])).length,
+);
+const allExpanded = computed(
+  () => rows.value.length > 0 && expandedCount.value === rows.value.length,
+);
+const noneExpanded = computed(() => expandedCount.value === 0);
+
+function expandAll() {
+  const next: Record<string, boolean> = {};
+  for (const r of rows.value) next[r.key] = true;
+  expanded.value = next;
+}
+
+function collapseAll() {
+  expanded.value = {};
+}
+
 const groupLabel = computed(() => {
   if (props.groupBy === "partido") return "Partido";
   if (props.groupBy === "bloque") return "Bloque";
@@ -339,324 +357,360 @@ function dietaBoolBadge(value: boolean | null | undefined) {
 </script>
 
 <template>
-  <DataTableCard :scrollable="false">
-    <!--
+  <div class="min-w-0 space-y-2">
+    <div
+      v-if="rows.length"
+      class="flex flex-wrap items-center justify-end gap-1"
+    >
+      <UButton
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        icon="i-lucide-unfold-vertical"
+        label="Expandir todo"
+        :disabled="allExpanded"
+        @click="expandAll"
+      />
+      <UButton
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        icon="i-lucide-fold-vertical"
+        label="Colapsar todo"
+        :disabled="noneExpanded"
+        @click="collapseAll"
+      />
+    </div>
+
+    <DataTableCard :scrollable="false">
+      <!--
       Sin scrollport de alto fijo: el sticky va al viewport (bajo el navbar).
       El containing block es .group-expanded-section, así que al salir del
       contenido del grupo deja de pegarse — sin JS ni bottom calculado.
     -->
-    <div class="grouped-expandable-table min-w-0">
-      <UTable
-        v-model:sorting="sorting"
-        v-model:expanded="expanded"
-        :data="rows"
-        :columns="groupColumns"
-        :get-row-id="(row) => row.key"
-        :ui="{
-          root: 'overflow-visible',
-          base: 'w-full min-w-[40rem]',
-          tr: 'cursor-pointer',
-        }"
-        :empty="emptyMessage"
-        :on-select="onGroupSelect"
-      >
-        <template v-if="groupBy === 'partido'" #color-cell="{ row }">
-          <span
-            class="inline-block size-3.5 rounded-full ring-2 ring-default"
-            :style="{
-              backgroundColor:
-                (row.original as SenadoresGroupedTableRow).color || '#6b7280',
-            }"
-            aria-hidden="true"
-          />
-        </template>
-
-        <template #label-cell="{ row }">
-          <NuxtLink
-            v-if="hrefForGroup(row.original as SenadoresGroupedTableRow)"
-            :to="hrefForGroup(row.original as SenadoresGroupedTableRow)!"
-            class="font-medium hover:underline block truncate"
-            @click.stop
-          >
-            {{ (row.original as SenadoresGroupedTableRow).label }}
-          </NuxtLink>
-          <span v-else class="font-medium block truncate">
-            {{ (row.original as SenadoresGroupedTableRow).label }}
-          </span>
-        </template>
-
-        <template #count-cell="{ row }">
-          {{ (row.original as SenadoresGroupedTableRow).count }}
-        </template>
-
-        <template v-if="showDieta" #donacionSi-cell="{ row }">
-          {{ (row.original as SenadoresGroupedTableRow).donacionSi ?? 0 }}
-        </template>
-        <template v-if="showDieta" #renunciaSi-cell="{ row }">
-          {{ (row.original as SenadoresGroupedTableRow).renunciaSi ?? 0 }}
-        </template>
-        <template v-if="showDieta" #aportesSi-cell="{ row }">
-          {{ (row.original as SenadoresGroupedTableRow).aportesSi ?? 0 }}
-        </template>
-
-        <template #presentismo-cell="{ row }">
-          <div
-            v-if="
-              (row.original as SenadoresGroupedTableRow).presentismo != null
-            "
-            class="flex items-center gap-3 min-w-40 max-w-56"
-          >
-            <UProgress
-              :model-value="
-                (row.original as SenadoresGroupedTableRow).presentismo!
-              "
-              size="sm"
-              class="flex-1"
-              :color="
-                ((row.original as SenadoresGroupedTableRow).presentismo || 0) >
-                80
-                  ? 'success'
-                  : 'error'
-              "
+      <div class="grouped-expandable-table min-w-0">
+        <UTable
+          v-model:sorting="sorting"
+          v-model:expanded="expanded"
+          :data="rows"
+          :columns="groupColumns"
+          :get-row-id="(row) => row.key"
+          :ui="{
+            root: 'overflow-visible',
+            base: 'w-full min-w-[40rem]',
+            tr: 'cursor-pointer',
+          }"
+          :empty="emptyMessage"
+          :on-select="onGroupSelect"
+        >
+          <template v-if="groupBy === 'partido'" #color-cell="{ row }">
+            <span
+              class="inline-block size-3.5 rounded-full ring-2 ring-default"
+              :style="{
+                backgroundColor:
+                  (row.original as SenadoresGroupedTableRow).color || '#6b7280',
+              }"
+              aria-hidden="true"
             />
-            <span class="text-sm tabular-nums w-12 text-right shrink-0">
-              {{ (row.original as SenadoresGroupedTableRow).presentismo }}%
-            </span>
-          </div>
-          <span v-else class="text-muted">—</span>
-        </template>
+          </template>
 
-        <template #expanded="{ row }">
-          <div class="group-expanded-section pb-2">
-            <div
-              class="sticky top-[calc(var(--ui-header-height)_-_0.20rem)] z-10 flex items-center justify-between gap-3 flex-wrap py-3 -mx-1 px-3 sm:px-4 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80 dark:supports-[backdrop-filter]:bg-gray-950/80 border-b border-default"
+          <template #label-cell="{ row }">
+            <NuxtLink
+              v-if="hrefForGroup(row.original as SenadoresGroupedTableRow)"
+              :to="hrefForGroup(row.original as SenadoresGroupedTableRow)!"
+              class="font-medium hover:underline block truncate"
+              @click.stop
             >
-              <div class="flex items-center gap-2 min-w-0">
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-lucide-chevron-up"
-                  square
-                  aria-label="Contraer"
-                  @click.stop="row.toggleExpanded()"
-                />
-                <span
-                  v-if="
-                    groupBy === 'partido' &&
-                    (row.original as SenadoresGroupedTableRow).color
-                  "
-                  class="inline-block size-3.5 rounded-full ring-2 ring-default shrink-0"
-                  :style="{
-                    backgroundColor: (row.original as SenadoresGroupedTableRow)
-                      .color,
-                  }"
-                  aria-hidden="true"
-                />
-                <NuxtLink
-                  v-if="hrefForGroup(row.original as SenadoresGroupedTableRow)"
-                  :to="hrefForGroup(row.original as SenadoresGroupedTableRow)!"
-                  class="text-lg font-bold hover:underline truncate"
-                  @click.stop
-                >
-                  {{ (row.original as SenadoresGroupedTableRow).label }}
-                </NuxtLink>
-                <h3 v-else class="text-lg font-bold truncate">
-                  {{ (row.original as SenadoresGroupedTableRow).label }}
-                </h3>
-              </div>
+              {{ (row.original as SenadoresGroupedTableRow).label }}
+            </NuxtLink>
+            <span v-else class="font-medium block truncate">
+              {{ (row.original as SenadoresGroupedTableRow).label }}
+            </span>
+          </template>
 
-              <div
-                class="flex items-center gap-3 shrink-0 flex-wrap justify-end"
-              >
-                <div
-                  v-if="
-                    (row.original as SenadoresGroupedTableRow).presentismo !=
-                    null
-                  "
-                  class="flex items-center gap-2 min-w-36 max-w-48"
-                >
-                  <UProgress
-                    :model-value="
-                      (row.original as SenadoresGroupedTableRow).presentismo!
-                    "
-                    size="sm"
-                    class="flex-1"
-                    :color="
-                      ((row.original as SenadoresGroupedTableRow).presentismo ||
-                        0) > 80
-                        ? 'success'
-                        : 'error'
-                    "
-                  />
-                  <span class="text-sm tabular-nums w-12 text-right shrink-0">
-                    {{
-                      (row.original as SenadoresGroupedTableRow).presentismo
-                    }}%
-                  </span>
-                </div>
-                <UBadge variant="subtle" color="neutral">
-                  {{ (row.original as SenadoresGroupedTableRow).count }}
-                  {{
-                    (row.original as SenadoresGroupedTableRow).count === 1
-                      ? "senador"
-                      : "senadores"
-                  }}
-                </UBadge>
-              </div>
+          <template #count-cell="{ row }">
+            {{ (row.original as SenadoresGroupedTableRow).count }}
+          </template>
+
+          <template v-if="showDieta" #donacionSi-cell="{ row }">
+            {{ (row.original as SenadoresGroupedTableRow).donacionSi ?? 0 }}
+          </template>
+          <template v-if="showDieta" #renunciaSi-cell="{ row }">
+            {{ (row.original as SenadoresGroupedTableRow).renunciaSi ?? 0 }}
+          </template>
+          <template v-if="showDieta" #aportesSi-cell="{ row }">
+            {{ (row.original as SenadoresGroupedTableRow).aportesSi ?? 0 }}
+          </template>
+
+          <template #presentismo-cell="{ row }">
+            <div
+              v-if="
+                (row.original as SenadoresGroupedTableRow).presentismo != null
+              "
+              class="flex items-center gap-3 min-w-40 max-w-56"
+            >
+              <UProgress
+                :model-value="
+                  (row.original as SenadoresGroupedTableRow).presentismo!
+                "
+                size="sm"
+                class="flex-1"
+                :color="
+                  ((row.original as SenadoresGroupedTableRow).presentismo ||
+                    0) > 80
+                    ? 'success'
+                    : 'error'
+                "
+              />
+              <span class="text-sm tabular-nums w-12 text-right shrink-0">
+                {{ (row.original as SenadoresGroupedTableRow).presentismo }}%
+              </span>
             </div>
+            <span v-else class="text-muted">—</span>
+          </template>
 
-            <div class="pt-3 min-w-0">
-              <UTable
-                :data="(row.original as SenadoresGroupedTableRow).senadores"
-                :columns="nestedColumns"
-                :ui="{
-                  root: 'rounded-lg ring ring-default bg-default overflow-x-auto max-w-full min-w-0',
-                  tr: 'cursor-pointer hover:bg-elevated/50',
-                }"
-                empty="Sin senadores en este grupo."
-                :on-select="onSenadorSelect"
+          <template #expanded="{ row }">
+            <div class="group-expanded-section pb-2">
+              <div
+                class="sticky top-[calc(var(--ui-header-height)_-_0.20rem)] z-10 flex items-center justify-between gap-3 flex-wrap py-3 -mx-1 px-3 sm:px-4 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80 dark:supports-[backdrop-filter]:bg-gray-950/80 border-b border-default"
               >
-                <template #foto-cell="{ row: nested }">
-                  <SenadorTableAvatar
-                    :src="(nested.original as Senador).foto"
-                    :alt="(nested.original as Senador).nombreCompleto"
+                <div class="flex items-center gap-2 min-w-0">
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-lucide-chevron-up"
+                    square
+                    aria-label="Contraer"
+                    @click.stop="row.toggleExpanded()"
                   />
-                </template>
-                <template #nombreCompleto-cell="{ row: nested }">
+                  <span
+                    v-if="
+                      groupBy === 'partido' &&
+                      (row.original as SenadoresGroupedTableRow).color
+                    "
+                    class="inline-block size-3.5 rounded-full ring-2 ring-default shrink-0"
+                    :style="{
+                      backgroundColor: (
+                        row.original as SenadoresGroupedTableRow
+                      ).color,
+                    }"
+                    aria-hidden="true"
+                  />
                   <NuxtLink
-                    :to="`/senadores/${(nested.original as Senador).id}`"
-                    class="hover:underline"
+                    v-if="
+                      hrefForGroup(row.original as SenadoresGroupedTableRow)
+                    "
+                    :to="
+                      hrefForGroup(row.original as SenadoresGroupedTableRow)!
+                    "
+                    class="text-lg font-bold hover:underline truncate"
                     @click.stop
                   >
-                    {{ (nested.original as Senador).nombreCompleto }}
+                    {{ (row.original as SenadoresGroupedTableRow).label }}
                   </NuxtLink>
-                </template>
-                <template #partido-cell="{ row: nested }">
-                  <NuxtLink
-                    v-if="partidoPath((nested.original as Senador).partido)"
-                    :to="partidoPath((nested.original as Senador).partido)!"
-                    class="inline-flex"
-                    @click.stop
+                  <h3 v-else class="text-lg font-bold truncate">
+                    {{ (row.original as SenadoresGroupedTableRow).label }}
+                  </h3>
+                </div>
+
+                <div
+                  class="flex items-center gap-3 shrink-0 flex-wrap justify-end"
+                >
+                  <div
+                    v-if="
+                      (row.original as SenadoresGroupedTableRow).presentismo !=
+                      null
+                    "
+                    class="flex items-center gap-2 min-w-36 max-w-48"
                   >
+                    <UProgress
+                      :model-value="
+                        (row.original as SenadoresGroupedTableRow).presentismo!
+                      "
+                      size="sm"
+                      class="flex-1"
+                      :color="
+                        ((row.original as SenadoresGroupedTableRow)
+                          .presentismo || 0) > 80
+                          ? 'success'
+                          : 'error'
+                      "
+                    />
+                    <span class="text-sm tabular-nums w-12 text-right shrink-0">
+                      {{
+                        (row.original as SenadoresGroupedTableRow).presentismo
+                      }}%
+                    </span>
+                  </div>
+                  <UBadge variant="subtle" color="neutral">
+                    {{ (row.original as SenadoresGroupedTableRow).count }}
+                    {{
+                      (row.original as SenadoresGroupedTableRow).count === 1
+                        ? "senador"
+                        : "senadores"
+                    }}
+                  </UBadge>
+                </div>
+              </div>
+
+              <div class="pt-3 min-w-0">
+                <UTable
+                  :data="(row.original as SenadoresGroupedTableRow).senadores"
+                  :columns="nestedColumns"
+                  :ui="{
+                    root: 'rounded-lg ring ring-default bg-default overflow-x-auto max-w-full min-w-0',
+                    tr: 'cursor-pointer hover:bg-elevated/50',
+                  }"
+                  empty="Sin senadores en este grupo."
+                  :on-select="onSenadorSelect"
+                >
+                  <template #foto-cell="{ row: nested }">
+                    <SenadorTableAvatar
+                      :src="(nested.original as Senador).foto"
+                      :alt="(nested.original as Senador).nombreCompleto"
+                    />
+                  </template>
+                  <template #nombreCompleto-cell="{ row: nested }">
+                    <NuxtLink
+                      :to="`/senadores/${(nested.original as Senador).id}`"
+                      class="hover:underline"
+                      @click.stop
+                    >
+                      {{ (nested.original as Senador).nombreCompleto }}
+                    </NuxtLink>
+                  </template>
+                  <template #partido-cell="{ row: nested }">
+                    <NuxtLink
+                      v-if="partidoPath((nested.original as Senador).partido)"
+                      :to="partidoPath((nested.original as Senador).partido)!"
+                      class="inline-flex"
+                      @click.stop
+                    >
+                      <UBadge
+                        variant="outline"
+                        color="neutral"
+                        class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                      >
+                        {{ (nested.original as Senador).partido }}
+                      </UBadge>
+                    </NuxtLink>
                     <UBadge
+                      v-else
                       variant="outline"
                       color="neutral"
-                      class="w-[max-content] max-w-32 whitespace-break-spaces hover:bg-elevated"
+                      class="w-[max-content] max-w-32 whitespace-break-spaces"
                     >
-                      {{ (nested.original as Senador).partido }}
+                      {{ (nested.original as Senador).partido || "—" }}
                     </UBadge>
-                  </NuxtLink>
-                  <UBadge
-                    v-else
-                    variant="outline"
-                    color="neutral"
-                    class="w-[max-content] max-w-32 whitespace-break-spaces"
+                  </template>
+                  <template
+                    v-if="showTipoVoto"
+                    #tipoVoto-cell="{ row: nested }"
                   >
-                    {{ (nested.original as Senador).partido || "—" }}
-                  </UBadge>
-                </template>
-                <template v-if="showTipoVoto" #tipoVoto-cell="{ row: nested }">
-                  <TipoVotoLabel
-                    :tipo="(nested.original as Senador).tipoVoto"
-                  />
-                </template>
-                <template v-if="showDieta" #donacion-cell="{ row: nested }">
-                  <UBadge
-                    :color="
-                      dietaBoolBadge(
-                        (nested.original as Senador).meta?.dieta?.donacion,
-                      ).color
-                    "
-                    variant="soft"
+                    <TipoVotoLabel
+                      :tipo="(nested.original as Senador).tipoVoto"
+                    />
+                  </template>
+                  <template v-if="showDieta" #donacion-cell="{ row: nested }">
+                    <UBadge
+                      :color="
+                        dietaBoolBadge(
+                          (nested.original as Senador).meta?.dieta?.donacion,
+                        ).color
+                      "
+                      variant="soft"
+                    >
+                      {{
+                        dietaBoolBadge(
+                          (nested.original as Senador).meta?.dieta?.donacion,
+                        ).label
+                      }}
+                    </UBadge>
+                  </template>
+                  <template
+                    v-if="showDieta"
+                    #renunciaAlAumento-cell="{ row: nested }"
                   >
-                    {{
-                      dietaBoolBadge(
-                        (nested.original as Senador).meta?.dieta?.donacion,
-                      ).label
-                    }}
-                  </UBadge>
-                </template>
-                <template
-                  v-if="showDieta"
-                  #renunciaAlAumento-cell="{ row: nested }"
-                >
-                  <UBadge
-                    :color="
-                      dietaBoolBadge(
-                        (nested.original as Senador).meta?.dieta
-                          ?.renunciaAlAumento,
-                      ).color
-                    "
-                    variant="soft"
+                    <UBadge
+                      :color="
+                        dietaBoolBadge(
+                          (nested.original as Senador).meta?.dieta
+                            ?.renunciaAlAumento,
+                        ).color
+                      "
+                      variant="soft"
+                    >
+                      {{
+                        dietaBoolBadge(
+                          (nested.original as Senador).meta?.dieta
+                            ?.renunciaAlAumento,
+                        ).label
+                      }}
+                    </UBadge>
+                  </template>
+                  <template
+                    v-if="showDieta"
+                    #aportesPartidarios-cell="{ row: nested }"
                   >
-                    {{
-                      dietaBoolBadge(
-                        (nested.original as Senador).meta?.dieta
-                          ?.renunciaAlAumento,
-                      ).label
-                    }}
-                  </UBadge>
-                </template>
-                <template
-                  v-if="showDieta"
-                  #aportesPartidarios-cell="{ row: nested }"
-                >
-                  <UBadge
-                    :color="
-                      dietaBoolBadge(
-                        (nested.original as Senador).meta?.dieta
-                          ?.aportesPartidarios,
-                      ).color
-                    "
-                    variant="soft"
+                    <UBadge
+                      :color="
+                        dietaBoolBadge(
+                          (nested.original as Senador).meta?.dieta
+                            ?.aportesPartidarios,
+                        ).color
+                      "
+                      variant="soft"
+                    >
+                      {{
+                        dietaBoolBadge(
+                          (nested.original as Senador).meta?.dieta
+                            ?.aportesPartidarios,
+                        ).label
+                      }}
+                    </UBadge>
+                  </template>
+                  <template
+                    v-if="showViajesCol"
+                    #viajesUltimos12Meses-cell="{ row: nested }"
                   >
-                    {{
-                      dietaBoolBadge(
-                        (nested.original as Senador).meta?.dieta
-                          ?.aportesPartidarios,
-                      ).label
-                    }}
-                  </UBadge>
-                </template>
-                <template
-                  v-if="showViajesCol"
-                  #viajesUltimos12Meses-cell="{ row: nested }"
-                >
-                  <NuxtLink
-                    :to="`/senadores/${(nested.original as Senador).id}/viajes`"
-                    class="tabular-nums hover:underline"
-                    title="Viajes 12m"
-                    @click.stop
+                    <NuxtLink
+                      :to="`/senadores/${(nested.original as Senador).id}/viajes`"
+                      class="tabular-nums hover:underline"
+                      title="Viajes 12m"
+                      @click.stop
+                    >
+                      {{
+                        (nested.original as Senador).viajesUltimos12Meses ?? 0
+                      }}
+                    </NuxtLink>
+                  </template>
+                  <template
+                    v-if="showPresentismo"
+                    #presentismo-cell="{ row: nested }"
                   >
-                    {{ (nested.original as Senador).viajesUltimos12Meses ?? 0 }}
-                  </NuxtLink>
-                </template>
-                <template
-                  v-if="showPresentismo"
-                  #presentismo-cell="{ row: nested }"
-                >
-                  <UBadge
-                    :color="
-                      ((nested.original as Senador).estadisticas?.presentismo ||
-                        0) > 80
-                        ? 'success'
-                        : 'error'
-                    "
-                    variant="soft"
-                  >
-                    {{
-                      (nested.original as Senador).estadisticas?.presentismo ??
-                      0
-                    }}%
-                  </UBadge>
-                </template>
-              </UTable>
+                    <UBadge
+                      :color="
+                        ((nested.original as Senador).estadisticas
+                          ?.presentismo || 0) > 80
+                          ? 'success'
+                          : 'error'
+                      "
+                      variant="soft"
+                    >
+                      {{
+                        (nested.original as Senador).estadisticas
+                          ?.presentismo ?? 0
+                      }}%
+                    </UBadge>
+                  </template>
+                </UTable>
+              </div>
             </div>
-          </div>
-        </template>
-      </UTable>
-    </div>
-  </DataTableCard>
+          </template>
+        </UTable>
+      </div>
+    </DataTableCard>
+  </div>
 </template>
 
 <style scoped>

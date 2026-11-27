@@ -530,6 +530,23 @@ function toggleGroup(key: string) {
   };
 }
 
+const allGroupsExpanded = computed(() =>
+  groups.value.every((g) => isGroupExpanded(g.key)),
+);
+const noGroupsExpanded = computed(() =>
+  groups.value.every((g) => !isGroupExpanded(g.key)),
+);
+
+function expandAllGroups() {
+  expandedGroups.value = {};
+}
+
+function collapseAllGroups() {
+  const next: Record<string, boolean> = {};
+  for (const g of groups.value) next[g.key] = false;
+  expandedGroups.value = next;
+}
+
 watch(verPor, () => {
   expandedGroups.value = {};
 });
@@ -1085,9 +1102,34 @@ const groupsSectionTitle = computed(() => {
 
     <template v-else>
       <div class="space-y-3">
-        <h2 class="text-lg font-semibold">
-          {{ groupsSectionTitle }}
-        </h2>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-lg font-semibold">
+            {{ groupsSectionTitle }}
+          </h2>
+          <div
+            v-if="verComo === 'grid' && groups.length"
+            class="flex flex-wrap items-center gap-1"
+          >
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              icon="i-lucide-unfold-vertical"
+              label="Expandir todo"
+              :disabled="allGroupsExpanded"
+              @click="expandAllGroups"
+            />
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              icon="i-lucide-fold-vertical"
+              label="Colapsar todo"
+              :disabled="noGroupsExpanded"
+              @click="collapseAllGroups"
+            />
+          </div>
+        </div>
 
         <div v-if="verComo === 'grid'" class="space-y-2">
           <UCard
